@@ -1,7 +1,8 @@
 import random
+import time
 
 from PyQt5 import QtGui, uic
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtWidgets import QMainWindow
 
 import config as cf
@@ -26,13 +27,20 @@ class MainWindow(QMainWindow):
         uic.loadUi(cf.DATA_DIR + "assets/qt/main.ui", self)
         self.setWindowIcon(QtGui.QIcon(cf.DATA_DIR + "assets/images/icon.png"))
 
+        self.options = option_dialog
         self.p_num = option_dialog.p_num
         self.testing = False
         self.client_widgets = []
         self._start_button_text = self.start_btn.text()
+        self._test_start_time = 0.0
+        self._test_duration_seconds = self._read_test_duration_seconds()
 
         self._configure_main_ui()
         self._create_client_widgets()
+
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.update_app)
+        self.timer.start(1000)
 
     def _configure_main_ui(self):
         self.setting_btn.clicked.connect(self.open_setting_window)
@@ -63,15 +71,41 @@ class MainWindow(QMainWindow):
 
     def start_test(self):
         self.testing = True
-        self.start_btn.setText("KẾT THÚC")
+        self._test_start_time = time.monotonic()
+        self._set_start_button_active(True)
+        self.update_app()
         for widget in self.client_widgets:
             widget.start_test()
 
     def stop_test(self):
         self.testing = False
+        self._set_start_button_active(False)
         self.start_btn.setText(self._start_button_text)
         for widget in self.client_widgets:
             widget.stop_test()
+
+    def update_app(self):
+        if not self.testing:
+            return
+
+        elapsed = int(time.monotonic() - self._test_start_time)
+        remaining = max(0, self._test_duration_seconds - elapsed)
+        self.start_btn.setText(f"KẾT THÚC ({remaining}s)")
+        if remaining <= 0:
+            self.stop_test()
+
+    def _read_test_duration_seconds(self):
+        time_edit = getattr(self.options, "time_edit", None)
+        if time_edit is not None:
+            try:
+                return max(1, int(time_edit.text()))
+            except (TypeError, ValueError):
+                pass
+        return 60
+
+    def _set_start_button_active(self, active):
+        if hasattr(self.start_btn, "setChecked"):
+            self.start_btn.setChecked(active)
 
     def open_setting_window(self):
         dialog = SettingWindow(p_num=self.p_num, parent=self)
