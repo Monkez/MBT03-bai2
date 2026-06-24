@@ -1,0 +1,914 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1851</width>
+    <height>1214</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">background-color: rgb(240, 240, 240);</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <property name="styleSheet">
+    <string notr="true"/>
+   </property>
+   <layout class="QGridLayout" name="gridLayout">
+    <property name="leftMargin">
+     <number>6</number>
+    </property>
+    <property name="topMargin">
+     <number>6</number>
+    </property>
+    <property name="rightMargin">
+     <number>6</number>
+    </property>
+    <property name="bottomMargin">
+     <number>6</number>
+    </property>
+    <item row="0" column="0">
+     <widget class="QFrame" name="frame_8">
+      <property name="frameShape">
+       <enum>QFrame::StyledPanel</enum>
+      </property>
+      <property name="frameShadow">
+       <enum>QFrame::Raised</enum>
+      </property>
+      <layout class="QHBoxLayout" name="horizontalLayout_12" stretch="9,0">
+       <property name="spacing">
+        <number>12</number>
+       </property>
+       <property name="leftMargin">
+        <number>2</number>
+       </property>
+       <property name="topMargin">
+        <number>2</number>
+       </property>
+       <property name="rightMargin">
+        <number>2</number>
+       </property>
+       <property name="bottomMargin">
+        <number>2</number>
+       </property>
+       <item>
+        <widget class="QFrame" name="frame_4">
+         <property name="minimumSize">
+          <size>
+           <width>400</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>400</width>
+           <height>16777215</height>
+          </size>
+         </property>
+         <property name="frameShape">
+          <enum>QFrame::Box</enum>
+         </property>
+         <property name="frameShadow">
+          <enum>QFrame::Raised</enum>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_5" stretch="0,0">
+          <property name="spacing">
+           <number>6</number>
+          </property>
+          <property name="leftMargin">
+           <number>4</number>
+          </property>
+          <property name="topMargin">
+           <number>4</number>
+          </property>
+          <property name="rightMargin">
+           <number>4</number>
+          </property>
+          <property name="bottomMargin">
+           <number>0</number>
+          </property>
+          <item>
+           <widget class="QFrame" name="frame_3">
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>10000</width>
+              <height>10000</height>
+             </size>
+            </property>
+            <property name="frameShape">
+             <enum>QFrame::NoFrame</enum>
+            </property>
+            <property name="frameShadow">
+             <enum>QFrame::Sunken</enum>
+            </property>
+            <layout class="QVBoxLayout" name="verticalLayout">
+             <property name="spacing">
+              <number>6</number>
+             </property>
+             <property name="leftMargin">
+              <number>2</number>
+             </property>
+             <property name="topMargin">
+              <number>2</number>
+             </property>
+             <property name="rightMargin">
+              <number>2</number>
+             </property>
+             <property name="bottomMargin">
+              <number>2</number>
+             </property>
+             <item>
+              <widget class="MonkezButton" name="prepare_btn">
+               <property name="minimumSize">
+                <size>
+                 <width>0</width>
+                 <height>40</height>
+                </size>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>16777215</width>
+                 <height>40</height>
+                </size>
+               </property>
+               <property name="font">
+                <font>
+                 <pointsize>16</pointsize>
+                 <bold>true</bold>
+                </font>
+               </property>
+               <property name="text">
+                <string>CHUẨN BỊ BÀI TẬP</string>
+               </property>
+               <property name="radius" stdset="0">
+                <number>8</number>
+               </property>
+               <property name="DeactiveColor" stdset="0">
+                <color>
+                 <red>255</red>
+                 <green>255</green>
+                 <blue>255</blue>
+                </color>
+               </property>
+               <property name="textColor" stdset="0">
+                <color>
+                 <red>0</red>
+                 <green>0</green>
+                 <blue>0</blue>
+                </color>
+               </property>
+               <property name="hoverTextColor" stdset="0">
+                <color>
+                 <red>8</red>
+                 <green>89</green>
+                 <blue>35</blue>
+                </color>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="MonkezButton" name="start_btn">
+               <property name="minimumSize">
+                <size>
+                 <width>0</width>
+                 <height>55</height>
+                </size>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>16777215</width>
+                 <height>55</height>
+                </size>
+               </property>
+               <property name="font">
+                <font>
+                 <pointsize>16</pointsize>
+                 <bold>true</bold>
+                </font>
+               </property>
+               <property name="text">
+                <string>BẮT ĐẦU</string>
+               </property>
+               <property name="radius" stdset="0">
+                <number>8</number>
+               </property>
+               <property name="DeactiveColor" stdset="0">
+                <color>
+                 <red>255</red>
+                 <green>255</green>
+                 <blue>255</blue>
+                </color>
+               </property>
+               <property name="textColor" stdset="0">
+                <color>
+                 <red>0</red>
+                 <green>0</green>
+                 <blue>0</blue>
+                </color>
+               </property>
+               <property name="hoverTextColor" stdset="0">
+                <color>
+                 <red>8</red>
+                 <green>89</green>
+                 <blue>35</blue>
+                </color>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <widget class="QWidget" name="widget_2" native="true">
+            <layout class="QVBoxLayout" name="verticalLayout_6">
+             <property name="spacing">
+              <number>0</number>
+             </property>
+             <property name="leftMargin">
+              <number>0</number>
+             </property>
+             <property name="topMargin">
+              <number>0</number>
+             </property>
+             <property name="rightMargin">
+              <number>0</number>
+             </property>
+             <property name="bottomMargin">
+              <number>0</number>
+             </property>
+             <item>
+              <widget class="QFrame" name="frame_14">
+               <property name="frameShape">
+                <enum>QFrame::NoFrame</enum>
+               </property>
+               <property name="frameShadow">
+                <enum>QFrame::Plain</enum>
+               </property>
+               <layout class="QVBoxLayout" name="verticalLayout_17">
+                <property name="spacing">
+                 <number>6</number>
+                </property>
+                <property name="leftMargin">
+                 <number>0</number>
+                </property>
+                <property name="topMargin">
+                 <number>0</number>
+                </property>
+                <property name="rightMargin">
+                 <number>0</number>
+                </property>
+                <property name="bottomMargin">
+                 <number>0</number>
+                </property>
+                <item>
+                 <widget class="QFrame" name="frame_18">
+                  <property name="frameShape">
+                   <enum>QFrame::NoFrame</enum>
+                  </property>
+                  <property name="frameShadow">
+                   <enum>QFrame::Sunken</enum>
+                  </property>
+                  <layout class="QVBoxLayout" name="verticalLayout_2">
+                   <property name="spacing">
+                    <number>6</number>
+                   </property>
+                   <property name="leftMargin">
+                    <number>0</number>
+                   </property>
+                   <property name="topMargin">
+                    <number>0</number>
+                   </property>
+                   <property name="rightMargin">
+                    <number>0</number>
+                   </property>
+                   <property name="bottomMargin">
+                    <number>0</number>
+                   </property>
+                   <item>
+                    <layout class="QHBoxLayout" name="horizontalLayout_2">
+                     <item>
+                      <widget class="MonkezButton" name="setting_btn">
+                       <property name="minimumSize">
+                        <size>
+                         <width>0</width>
+                         <height>35</height>
+                        </size>
+                       </property>
+                       <property name="maximumSize">
+                        <size>
+                         <width>16777215</width>
+                         <height>35</height>
+                        </size>
+                       </property>
+                       <property name="font">
+                        <font>
+                         <pointsize>11</pointsize>
+                         <bold>true</bold>
+                        </font>
+                       </property>
+                       <property name="text">
+                        <string>Cài đặt thiết bị</string>
+                       </property>
+                       <property name="radius" stdset="0">
+                        <number>8</number>
+                       </property>
+                       <property name="DeactiveColor" stdset="0">
+                        <color>
+                         <red>255</red>
+                         <green>255</green>
+                         <blue>255</blue>
+                        </color>
+                       </property>
+                       <property name="textColor" stdset="0">
+                        <color>
+                         <red>0</red>
+                         <green>0</green>
+                         <blue>0</blue>
+                        </color>
+                       </property>
+                       <property name="hoverTextColor" stdset="0">
+                        <color>
+                         <red>8</red>
+                         <green>89</green>
+                         <blue>35</blue>
+                        </color>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="MonkezButton" name="select_file_btn">
+                       <property name="minimumSize">
+                        <size>
+                         <width>0</width>
+                         <height>35</height>
+                        </size>
+                       </property>
+                       <property name="maximumSize">
+                        <size>
+                         <width>16777215</width>
+                         <height>35</height>
+                        </size>
+                       </property>
+                       <property name="font">
+                        <font>
+                         <pointsize>11</pointsize>
+                         <bold>true</bold>
+                        </font>
+                       </property>
+                       <property name="text">
+                        <string>Chọn danh sách bắn</string>
+                       </property>
+                       <property name="radius" stdset="0">
+                        <number>8</number>
+                       </property>
+                       <property name="DeactiveColor" stdset="0">
+                        <color>
+                         <red>255</red>
+                         <green>255</green>
+                         <blue>255</blue>
+                        </color>
+                       </property>
+                       <property name="textColor" stdset="0">
+                        <color>
+                         <red>0</red>
+                         <green>0</green>
+                         <blue>0</blue>
+                        </color>
+                       </property>
+                       <property name="hoverTextColor" stdset="0">
+                        <color>
+                         <red>8</red>
+                         <green>89</green>
+                         <blue>35</blue>
+                        </color>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
+                   </item>
+                   <item>
+                    <widget class="QLabel" name="label_17">
+                     <property name="minimumSize">
+                      <size>
+                       <width>0</width>
+                       <height>25</height>
+                      </size>
+                     </property>
+                     <property name="maximumSize">
+                      <size>
+                       <width>16777215</width>
+                       <height>25</height>
+                      </size>
+                     </property>
+                     <property name="font">
+                      <font>
+                       <family>Tahoma</family>
+                       <pointsize>12</pointsize>
+                       <bold>true</bold>
+                      </font>
+                     </property>
+                     <property name="styleSheet">
+                      <string notr="true">background-color: rgb(191, 127, 95);
+color: rgb(255, 255, 255);
+border-radius:10px;</string>
+                     </property>
+                     <property name="text">
+                      <string>Danh sách bắn</string>
+                     </property>
+                     <property name="alignment">
+                      <set>Qt::AlignCenter</set>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QScrollArea" name="scrollArea">
+                     <property name="minimumSize">
+                      <size>
+                       <width>300</width>
+                       <height>0</height>
+                      </size>
+                     </property>
+                     <property name="styleSheet">
+                      <string notr="true">/* ScrollArea background (optional) */
+QScrollArea {
+    border: none;
+    background: transparent;
+}
+
+/* Vertical Scrollbar */
+QScrollBar:vertical {
+    border: none;
+    background: #2b2b2b;
+    width: 10px;
+    margin: 15px 0 15px 0;
+    border-radius: 5px;
+}
+
+/* Handle (the draggable part) */
+QScrollBar::handle:vertical {
+    background: #5c5c5c;
+    min-height: 30px;
+    border-radius: 5px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background: #787878;
+}
+
+QScrollBar::handle:vertical:pressed {
+    background: #a0a0a0;
+}
+
+/* Top &amp; Bottom buttons */
+QScrollBar::sub-line:vertical,
+QScrollBar::add-line:vertical {
+    border: none;
+    background: none;
+    height: 15px;
+}
+
+/* Hide arrows */
+QScrollBar::up-arrow:vertical,
+QScrollBar::down-arrow:vertical {
+    background: none;
+}
+
+/* Add/Sub pages */
+QScrollBar::add-page:vertical,
+QScrollBar::sub-page:vertical {
+    background: none;
+}
+
+
+/* Horizontal Scrollbar */
+QScrollBar:horizontal {
+    border: none;
+    background: #2b2b2b;
+    height: 10px;
+    margin: 0 15px 0 15px;
+    border-radius: 5px;
+}
+
+QScrollBar::handle:horizontal {
+    background: #5c5c5c;
+    min-width: 30px;
+    border-radius: 5px;
+}
+
+QScrollBar::handle:horizontal:hover {
+    background: #787878;
+}
+
+QScrollBar::handle:horizontal:pressed {
+    background: #a0a0a0;
+}
+
+QScrollBar::sub-line:horizontal,
+QScrollBar::add-line:horizontal {
+    border: none;
+    background: none;
+    width: 15px;
+}
+
+QScrollBar::left-arrow:horizontal,
+QScrollBar::right-arrow:horizontal {
+    background: none;
+}
+
+QScrollBar::add-page:horizontal,
+QScrollBar::sub-page:horizontal {
+    background: none;
+}</string>
+                     </property>
+                     <property name="verticalScrollBarPolicy">
+                      <enum>Qt::ScrollBarAsNeeded</enum>
+                     </property>
+                     <property name="horizontalScrollBarPolicy">
+                      <enum>Qt::ScrollBarAlwaysOff</enum>
+                     </property>
+                     <property name="widgetResizable">
+                      <bool>true</bool>
+                     </property>
+                     <widget class="QWidget" name="scrollAreaWidgetContents">
+                      <property name="geometry">
+                       <rect>
+                        <x>0</x>
+                        <y>0</y>
+                        <width>388</width>
+                        <height>906</height>
+                       </rect>
+                      </property>
+                      <layout class="QVBoxLayout" name="verticalLayout_3" stretch="0">
+                       <property name="spacing">
+                        <number>2</number>
+                       </property>
+                       <property name="leftMargin">
+                        <number>2</number>
+                       </property>
+                       <property name="topMargin">
+                        <number>2</number>
+                       </property>
+                       <property name="rightMargin">
+                        <number>2</number>
+                       </property>
+                       <property name="bottomMargin">
+                        <number>2</number>
+                       </property>
+                       <item>
+                        <widget class="QFrame" name="frame_13">
+                         <property name="frameShape">
+                          <enum>QFrame::StyledPanel</enum>
+                         </property>
+                         <property name="frameShadow">
+                          <enum>QFrame::Raised</enum>
+                         </property>
+                         <layout class="QVBoxLayout" name="verticalLayout_21">
+                          <property name="spacing">
+                           <number>0</number>
+                          </property>
+                          <property name="leftMargin">
+                           <number>0</number>
+                          </property>
+                          <property name="topMargin">
+                           <number>0</number>
+                          </property>
+                          <property name="rightMargin">
+                           <number>0</number>
+                          </property>
+                          <property name="bottomMargin">
+                           <number>0</number>
+                          </property>
+                          <item>
+                           <layout class="QVBoxLayout" name="score_card_layout">
+                            <property name="spacing">
+                             <number>6</number>
+                            </property>
+                           </layout>
+                          </item>
+                         </layout>
+                        </widget>
+                       </item>
+                      </layout>
+                     </widget>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QFrame" name="frame">
+                     <property name="minimumSize">
+                      <size>
+                       <width>0</width>
+                       <height>50</height>
+                      </size>
+                     </property>
+                     <property name="frameShape">
+                      <enum>QFrame::StyledPanel</enum>
+                     </property>
+                     <property name="frameShadow">
+                      <enum>QFrame::Raised</enum>
+                     </property>
+                     <layout class="QHBoxLayout" name="horizontalLayout_3">
+                      <property name="leftMargin">
+                       <number>0</number>
+                      </property>
+                      <property name="topMargin">
+                       <number>0</number>
+                      </property>
+                      <property name="rightMargin">
+                       <number>0</number>
+                      </property>
+                      <property name="bottomMargin">
+                       <number>0</number>
+                      </property>
+                      <item>
+                       <widget class="MonkezButton" name="new_route_btn">
+                        <property name="minimumSize">
+                         <size>
+                          <width>0</width>
+                          <height>35</height>
+                         </size>
+                        </property>
+                        <property name="maximumSize">
+                         <size>
+                          <width>16777215</width>
+                          <height>35</height>
+                         </size>
+                        </property>
+                        <property name="font">
+                         <font>
+                          <pointsize>11</pointsize>
+                          <bold>true</bold>
+                         </font>
+                        </property>
+                        <property name="text">
+                         <string>Loạt bắn mới</string>
+                        </property>
+                        <property name="radius" stdset="0">
+                         <number>8</number>
+                        </property>
+                        <property name="DeactiveColor" stdset="0">
+                         <color>
+                          <red>255</red>
+                          <green>255</green>
+                          <blue>255</blue>
+                         </color>
+                        </property>
+                        <property name="textColor" stdset="0">
+                         <color>
+                          <red>0</red>
+                          <green>0</green>
+                          <blue>0</blue>
+                         </color>
+                        </property>
+                        <property name="hoverTextColor" stdset="0">
+                         <color>
+                          <red>8</red>
+                          <green>89</green>
+                          <blue>35</blue>
+                         </color>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
+                       <widget class="MonkezButton" name="save_result_btn">
+                        <property name="minimumSize">
+                         <size>
+                          <width>0</width>
+                          <height>35</height>
+                         </size>
+                        </property>
+                        <property name="maximumSize">
+                         <size>
+                          <width>16777215</width>
+                          <height>35</height>
+                         </size>
+                        </property>
+                        <property name="font">
+                         <font>
+                          <pointsize>11</pointsize>
+                          <bold>true</bold>
+                         </font>
+                        </property>
+                        <property name="text">
+                         <string>Lưu kết quả</string>
+                        </property>
+                        <property name="radius" stdset="0">
+                         <number>8</number>
+                        </property>
+                        <property name="DeactiveColor" stdset="0">
+                         <color>
+                          <red>255</red>
+                          <green>255</green>
+                          <blue>255</blue>
+                         </color>
+                        </property>
+                        <property name="textColor" stdset="0">
+                         <color>
+                          <red>0</red>
+                          <green>0</green>
+                          <blue>0</blue>
+                         </color>
+                        </property>
+                        <property name="hoverTextColor" stdset="0">
+                         <color>
+                          <red>8</red>
+                          <green>89</green>
+                          <blue>35</blue>
+                         </color>
+                        </property>
+                       </widget>
+                      </item>
+                     </layout>
+                    </widget>
+                   </item>
+                  </layout>
+                 </widget>
+                </item>
+               </layout>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QFrame" name="frame_10">
+         <property name="styleSheet">
+          <string notr="true"/>
+         </property>
+         <property name="frameShape">
+          <enum>QFrame::Box</enum>
+         </property>
+         <property name="frameShadow">
+          <enum>QFrame::Sunken</enum>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_4">
+          <property name="spacing">
+           <number>4</number>
+          </property>
+          <property name="leftMargin">
+           <number>4</number>
+          </property>
+          <property name="topMargin">
+           <number>4</number>
+          </property>
+          <property name="rightMargin">
+           <number>4</number>
+          </property>
+          <property name="bottomMargin">
+           <number>4</number>
+          </property>
+          <item>
+           <layout class="QGridLayout" name="client_grid_layout">
+            <property name="leftMargin">
+             <number>5</number>
+            </property>
+            <property name="topMargin">
+             <number>5</number>
+            </property>
+            <property name="rightMargin">
+             <number>5</number>
+            </property>
+            <property name="bottomMargin">
+             <number>5</number>
+            </property>
+            <property name="spacing">
+             <number>10</number>
+            </property>
+           </layout>
+          </item>
+         </layout>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item row="1" column="0">
+     <widget class="QLabel" name="label">
+      <property name="minimumSize">
+       <size>
+        <width>0</width>
+        <height>35</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>16777215</width>
+        <height>35</height>
+       </size>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>12</pointsize>
+        <bold>true</bold>
+       </font>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">background-color: rgb(0, 170, 0);
+color: rgb(255, 255, 255);</string>
+      </property>
+      <property name="text">
+       <string>HỌC VIỆN KỸ THUẬT QUÂN SỰ - THIẾT BỊ BẮN TẬP MBT-03 BÀI 2</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <action name="swap_trigger_option">
+   <property name="text">
+    <string>Đảo cò súng</string>
+   </property>
+  </action>
+  <action name="device_option">
+   <property name="text">
+    <string>Thiết bị</string>
+   </property>
+  </action>
+  <action name="actionB_n_t_do">
+   <property name="text">
+    <string>Bắn tự do</string>
+   </property>
+  </action>
+  <action name="Q0_option">
+   <property name="text">
+    <string>Nhập Q0</string>
+   </property>
+  </action>
+  <action name="camera_adjust_option">
+   <property name="text">
+    <string>Hiệu chỉnh camera</string>
+   </property>
+  </action>
+  <action name="actionCho_n_file">
+   <property name="text">
+    <string>Chọn file</string>
+   </property>
+  </action>
+  <action name="excel_file_option">
+   <property name="text">
+    <string>Nhập danh sách bắn</string>
+   </property>
+  </action>
+  <action name="help_option">
+   <property name="text">
+    <string>Trợ giúp</string>
+   </property>
+  </action>
+  <action name="camera_setting_option">
+   <property name="text">
+    <string>Hiệu chỉnh camera</string>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>10</pointsize>
+    </font>
+   </property>
+  </action>
+  <action name="Q0_edit_option">
+   <property name="text">
+    <string>Nhập Qui không</string>
+   </property>
+   <property name="iconText">
+    <string>Nhập Qui không</string>
+   </property>
+   <property name="toolTip">
+    <string>Nhập Qui không</string>
+   </property>
+  </action>
+  <action name="shoot_Q01_option">
+   <property name="text">
+    <string>Bắn Qui không bệ 1</string>
+   </property>
+  </action>
+  <action name="shoot_Q02_option">
+   <property name="text">
+    <string>Bắn Qui không bệ 2</string>
+   </property>
+  </action>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>MonkezButton</class>
+   <extends>QPushButton</extends>
+   <header>monkez_button</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>

@@ -1,0 +1,499 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Form</class>
+ <widget class="QWidget" name="Form">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>530</width>
+    <height>355</height>
+   </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>480</width>
+    <height>0</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>10000</width>
+    <height>784</height>
+   </size>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true"/>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <property name="spacing">
+    <number>0</number>
+   </property>
+   <property name="leftMargin">
+    <number>2</number>
+   </property>
+   <property name="topMargin">
+    <number>2</number>
+   </property>
+   <property name="rightMargin">
+    <number>2</number>
+   </property>
+   <property name="bottomMargin">
+    <number>2</number>
+   </property>
+   <item>
+    <widget class="QFrame" name="frame">
+     <property name="minimumSize">
+      <size>
+       <width>0</width>
+       <height>0</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>720</width>
+       <height>780</height>
+      </size>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">QFrame#frame{
+background-color: rgb(75, 111, 55);
+}</string>
+     </property>
+     <property name="frameShape">
+      <enum>QFrame::StyledPanel</enum>
+     </property>
+     <property name="frameShadow">
+      <enum>QFrame::Raised</enum>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_2">
+      <property name="spacing">
+       <number>0</number>
+      </property>
+      <property name="leftMargin">
+       <number>25</number>
+      </property>
+      <property name="topMargin">
+       <number>2</number>
+      </property>
+      <property name="rightMargin">
+       <number>25</number>
+      </property>
+      <property name="bottomMargin">
+       <number>2</number>
+      </property>
+      <item>
+       <widget class="QLabel" name="label_2">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>80</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>80</height>
+         </size>
+        </property>
+        <property name="font">
+         <font>
+          <family>Arial</family>
+          <pointsize>16</pointsize>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">background-color: rgba(0, 147, 0, 0);
+color: rgb(255, 255, 255);
+border-radius:10px;</string>
+        </property>
+        <property name="text">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;HỌC VIỆN KỸ THUẬT QUÂN SỰ&lt;/p&gt;&lt;p align=&quot;center&quot;&gt;THIẾT BỊ BẮN TẬP MBT-03 BÀI 2&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QGroupBox" name="groupBox">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>100</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>100</height>
+         </size>
+        </property>
+        <property name="font">
+         <font>
+          <family>Tahoma</family>
+          <pointsize>12</pointsize>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">QGroupBox::title {
+    subcontrol-origin: margin;
+    subcontrol-position: top center; /* căn giữa tiêu đề */
+    padding: 0 10px; /* khoảng cách nếu muốn */
+}
+QGroupBox{
+border: 1px solid rgb(54, 161, 0);
+margin-top: 10px;
+	color: rgb(255, 255, 255);
+	background-color: rgba(255, 255, 255, 0);
+}</string>
+        </property>
+        <property name="title">
+         <string>Số bệ bắn</string>
+        </property>
+        <property name="checkable">
+         <bool>false</bool>
+        </property>
+        <layout class="QHBoxLayout" name="horizontalLayout_2">
+         <property name="spacing">
+          <number>25</number>
+         </property>
+         <property name="leftMargin">
+          <number>25</number>
+         </property>
+         <property name="topMargin">
+          <number>4</number>
+         </property>
+         <property name="rightMargin">
+          <number>25</number>
+         </property>
+         <property name="bottomMargin">
+          <number>4</number>
+         </property>
+         <item>
+          <widget class="PushButton" name="p_num1_btn">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>45</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>45</height>
+            </size>
+           </property>
+           <property name="font">
+            <font>
+             <family>Tahoma</family>
+             <pointsize>12</pointsize>
+             <bold>true</bold>
+            </font>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">PushButton, ToolButton, ToggleButton, ToggleToolButton {
+    color: white;
+	background-color: rgb(0, 153, 0);
+    border: 1px solid rgba(0, 0, 0, 0.073);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.183);
+    border-radius: 5px;
+    /* font: 14px 'Segoe UI', 'Microsoft YaHei'; */
+    padding: 5px 12px 6px 12px;
+    outline: none;
+}
+
+PushButton:hover, ToolButton:hover, ToggleButton:hover, ToggleToolButton:hover {
+	background-color: rgb(0, 184, 0);
+}
+
+PushButton:pressed, ToolButton:pressed, ToggleButton:pressed, ToggleToolButton:pressed {
+    color: white;
+	background-color: rgb(52, 157, 0);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.073);
+}</string>
+           </property>
+           <property name="text">
+            <string>1 Bệ</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="PushButton" name="p_num2_btn">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>45</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>45</height>
+            </size>
+           </property>
+           <property name="font">
+            <font>
+             <family>Tahoma</family>
+             <pointsize>12</pointsize>
+             <bold>true</bold>
+            </font>
+           </property>
+           <property name="text">
+            <string>2 Bệ</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="PushButton" name="p_num3_btn">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>45</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>45</height>
+            </size>
+           </property>
+           <property name="font">
+            <font>
+             <family>Tahoma</family>
+             <pointsize>12</pointsize>
+             <bold>true</bold>
+            </font>
+           </property>
+           <property name="text">
+            <string>3 Bệ</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="PushButton" name="p_num4_btn">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>45</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>45</height>
+            </size>
+           </property>
+           <property name="font">
+            <font>
+             <family>Tahoma</family>
+             <pointsize>12</pointsize>
+             <bold>true</bold>
+            </font>
+           </property>
+           <property name="text">
+            <string>4 Bệ</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
+       <widget class="QFrame" name="frame_2">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>45</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>45</height>
+         </size>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">background-color: rgba(255, 255, 255, 0);</string>
+        </property>
+        <property name="frameShape">
+         <enum>QFrame::StyledPanel</enum>
+        </property>
+        <property name="frameShadow">
+         <enum>QFrame::Raised</enum>
+        </property>
+        <layout class="QHBoxLayout" name="horizontalLayout">
+         <property name="spacing">
+          <number>25</number>
+         </property>
+         <property name="leftMargin">
+          <number>25</number>
+         </property>
+         <property name="topMargin">
+          <number>0</number>
+         </property>
+         <property name="rightMargin">
+          <number>25</number>
+         </property>
+         <property name="bottomMargin">
+          <number>0</number>
+         </property>
+         <item>
+          <widget class="QLabel" name="label">
+           <property name="font">
+            <font>
+             <family>Tahoma</family>
+             <pointsize>11</pointsize>
+             <bold>true</bold>
+            </font>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">color: rgb(255, 255, 255);
+background-color: rgba(255, 255, 255, 0);</string>
+           </property>
+           <property name="text">
+            <string>Thời gian bắn mỗi bia (s):</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="LineEdit" name="time_edit">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>40</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>40</height>
+            </size>
+           </property>
+           <property name="font">
+            <font>
+             <pointsize>10</pointsize>
+            </font>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">LineEdit, TextEdit, PlainTextEdit {
+    color: black;
+    background-color: rgba(255, 255, 255);
+    border: 1px solid rgba(0, 0, 0, 13);
+    border-bottom: 1px solid rgba(0, 0, 0, 100);
+    border-radius: 0px;
+    /* font: 14px &quot;Segoe UI&quot;, &quot;Microsoft YaHei&quot;; */
+    padding: 0px 10px;
+    selection-background-color: rgb(255, 255, 255);
+}
+
+TextEdit,
+PlainTextEdit {
+    padding: 2px 3px 2px 8px;
+}
+
+LineEdit:hover, TextEdit:hover, PlainTextEdit:hover {
+    background-color: rgba(249, 249, 249, 0.5);
+    border: 1px solid rgba(0, 0, 0, 13);
+    border-bottom: 1px solid rgba(0, 0, 0, 100);
+}
+
+LineEdit:focus {
+    border-bottom: 1px solid rgba(0, 0, 0, 13);
+    background-color: white;
+}
+
+TextEdit:focus,
+PlainTextEdit:focus {
+    border-bottom: 1px solid #009faa;
+    background-color: white;
+}
+
+LineEdit:disabled, TextEdit:disabled,
+PlainTextEdit:disabled {
+    color: black;
+    background-color: rgba(249, 249, 249, 0.3);
+    border: 1px solid rgba(0, 0, 0, 13);
+    border-bottom: 1px solid rgba(0, 0, 0, 13);
+}
+
+#lineEditButton {
+    background-color: transparent;
+    border-radius: 4px;
+    margin: 0;
+}
+
+#lineEditButton:hover {
+    background-color: rgba(0, 0, 0, 9);
+}
+
+#lineEditButton:pressed {
+    background-color: rgba(0, 0, 0, 6);
+}
+</string>
+           </property>
+           <property name="text">
+            <string>60</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignCenter</set>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
+       <widget class="PushButton" name="start_btn">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>50</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>50</height>
+         </size>
+        </property>
+        <property name="font">
+         <font>
+          <family>Tahoma</family>
+          <pointsize>12</pointsize>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">background-color: rgb(255, 255, 255);</string>
+        </property>
+        <property name="text">
+         <string>CHẤP NHẬN</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>PushButton</class>
+   <extends>QPushButton</extends>
+   <header>qfluentwidgets</header>
+  </customwidget>
+  <customwidget>
+   <class>LineEdit</class>
+   <extends>QLineEdit</extends>
+   <header>qfluentwidgets</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>

@@ -1,0 +1,52 @@
+{
+    "show_mode": 1,
+    "Camera": [
+        "USB"
+    ],
+    "Camera_time_sleep": 0.015,
+    "Camera_fps": 30,
+    "Camera_zoom": 1,
+    "View_zoom": 1,
+    "CV_CAP": 2,
+    "s41001": 54.00925846556311,
+    "s41002": 53.342708237050566,
+    "s_tolerance": 0.18,
+    "Trigger": [
+        "USB Serial",
+        "Prolific",
+        "STM Serial"
+    ],
+    "TriggerCode": [
+        "a",
+        "c"
+    ],
+    "Trigger_time_sleep": 0.001,
+    "Accept_all_trigger": 1,
+    "Q0": [
+        [
+            0.434375,
+            0.5270833333333333
+        ],
+        [
+            0.4192708333333333,
+            0.5340277777777778
+        ]
+    ],
+    "Q0_bound": [
+        0.15,
+        0.17
+    ],
+    "Test1": [
+        15,
+        20,
+        24
+    ],
+    "Test2": [
+        45,
+        59,
+        72
+    ],
+    "keypoint_threshold": 0.001,
+    "log": 0,
+    "save_to_desktop": 0
+}

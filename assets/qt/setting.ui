@@ -1,0 +1,378 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Form</class>
+ <widget class="QWidget" name="Form">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>578</width>
+    <height>666</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <widget class="QLabel" name="pedestal1_name_label">
+     <property name="minimumSize">
+      <size>
+       <width>0</width>
+       <height>40</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>16777215</width>
+       <height>40</height>
+      </size>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>10</pointsize>
+       <weight>75</weight>
+       <bold>true</bold>
+      </font>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">background-color: rgb(191, 127, 95);
+color: rgb(255, 255, 255);
+border-radius:10px;</string>
+     </property>
+     <property name="text">
+      <string>CÀI ĐẶT</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="MonkezUSBCamera" name="monkezusbcamera"/>
+   </item>
+   <item>
+    <widget class="QFrame" name="frame">
+     <property name="minimumSize">
+      <size>
+       <width>0</width>
+       <height>42</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>16777215</width>
+       <height>42</height>
+      </size>
+     </property>
+     <property name="frameShape">
+      <enum>QFrame::StyledPanel</enum>
+     </property>
+     <property name="frameShadow">
+      <enum>QFrame::Raised</enum>
+     </property>
+     <layout class="QHBoxLayout" name="horizontalLayout">
+      <property name="leftMargin">
+       <number>0</number>
+      </property>
+      <property name="topMargin">
+       <number>0</number>
+      </property>
+      <property name="rightMargin">
+       <number>0</number>
+      </property>
+      <property name="bottomMargin">
+       <number>0</number>
+      </property>
+      <item>
+       <widget class="QLabel" name="label">
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>40</height>
+         </size>
+        </property>
+        <property name="font">
+         <font>
+          <pointsize>10</pointsize>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string>Chọn thiết bị:</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="MonkezComboBox" name="client_combo"/>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="MonkezButton" name="adjust_btn">
+     <property name="font">
+      <font>
+       <weight>75</weight>
+       <bold>true</bold>
+      </font>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">QPushButton {
+    border-radius: 15px;
+    background-color: rgba(255, 255, 255, 255);
+    color: #000000;
+    border: none;
+}</string>
+     </property>
+     <property name="text">
+      <string>HIỆU CHỈNH CAMERA</string>
+     </property>
+     <property name="isChecked" stdset="0">
+      <bool>false</bool>
+     </property>
+     <property name="filledButton">
+      <bool>true</bool>
+     </property>
+     <property name="outlinedButton">
+      <bool>false</bool>
+     </property>
+     <property name="DeactiveColor">
+      <color>
+       <red>255</red>
+       <green>255</green>
+       <blue>255</blue>
+      </color>
+     </property>
+     <property name="textColor">
+      <color>
+       <red>0</red>
+       <green>0</green>
+       <blue>0</blue>
+      </color>
+     </property>
+     <property name="hoverTextColor">
+      <color>
+       <red>68</red>
+       <green>68</green>
+       <blue>68</blue>
+      </color>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="MonkezButton" name="Q0_btn">
+     <property name="font">
+      <font>
+       <weight>75</weight>
+       <bold>true</bold>
+      </font>
+     </property>
+     <property name="text">
+      <string>BẮN QUY KHÔNG</string>
+     </property>
+     <property name="filledButton">
+      <bool>true</bool>
+     </property>
+     <property name="outlinedButton">
+      <bool>false</bool>
+     </property>
+     <property name="DeactiveColor">
+      <color>
+       <red>255</red>
+       <green>255</green>
+       <blue>255</blue>
+      </color>
+     </property>
+     <property name="textColor">
+      <color>
+       <red>0</red>
+       <green>0</green>
+       <blue>0</blue>
+      </color>
+     </property>
+     <property name="hoverTextColor">
+      <color>
+       <red>68</red>
+       <green>68</green>
+       <blue>68</blue>
+      </color>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QFrame" name="frame_2">
+     <property name="minimumSize">
+      <size>
+       <width>0</width>
+       <height>45</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>16777215</width>
+       <height>45</height>
+      </size>
+     </property>
+     <property name="frameShape">
+      <enum>QFrame::StyledPanel</enum>
+     </property>
+     <property name="frameShadow">
+      <enum>QFrame::Raised</enum>
+     </property>
+     <layout class="QHBoxLayout" name="horizontalLayout_2">
+      <property name="leftMargin">
+       <number>0</number>
+      </property>
+      <property name="topMargin">
+       <number>0</number>
+      </property>
+      <property name="rightMargin">
+       <number>0</number>
+      </property>
+      <property name="bottomMargin">
+       <number>0</number>
+      </property>
+      <item>
+       <widget class="MonkezButton" name="cancel_btn">
+        <property name="minimumSize">
+         <size>
+          <width>130</width>
+          <height>45</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>45</height>
+         </size>
+        </property>
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string>HỦY</string>
+        </property>
+        <property name="filledButton">
+         <bool>true</bool>
+        </property>
+        <property name="outlinedButton">
+         <bool>false</bool>
+        </property>
+        <property name="DeactiveColor">
+         <color>
+          <red>170</red>
+          <green>0</green>
+          <blue>0</blue>
+         </color>
+        </property>
+        <property name="textColor">
+         <color>
+          <red>255</red>
+          <green>255</green>
+          <blue>255</blue>
+         </color>
+        </property>
+        <property name="hoverTextColor">
+         <color>
+          <red>183</red>
+          <green>183</green>
+          <blue>183</blue>
+         </color>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="MonkezButton" name="confirm_btn">
+        <property name="minimumSize">
+         <size>
+          <width>130</width>
+          <height>45</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>45</height>
+         </size>
+        </property>
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">QPushButton {
+    border-radius: 15px;
+    background-color: rgba(0, 170, 0, 255);
+    color: #ffffff;
+    border: none;
+}</string>
+        </property>
+        <property name="text">
+         <string>CHẤP NHẬN</string>
+        </property>
+        <property name="filledButton">
+         <bool>true</bool>
+        </property>
+        <property name="outlinedButton">
+         <bool>false</bool>
+        </property>
+        <property name="DeactiveColor">
+         <color>
+          <red>0</red>
+          <green>170</green>
+          <blue>0</blue>
+         </color>
+        </property>
+        <property name="textColor">
+         <color>
+          <red>255</red>
+          <green>255</green>
+          <blue>255</blue>
+         </color>
+        </property>
+        <property name="hoverTextColor">
+         <color>
+          <red>183</red>
+          <green>183</green>
+          <blue>183</blue>
+         </color>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>MonkezButton</class>
+   <extends>QPushButton</extends>
+   <header>monkez_button</header>
+  </customwidget>
+  <customwidget>
+   <class>MonkezComboBox</class>
+   <extends>QComboBox</extends>
+   <header>monkez_combobox</header>
+  </customwidget>
+  <customwidget>
+   <class>MonkezImage</class>
+   <extends>QWidget</extends>
+   <header>monkez_image</header>
+  </customwidget>
+  <customwidget>
+   <class>MonkezUSBCamera</class>
+   <extends>MonkezImage</extends>
+   <header>monkez_usb_camera</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>

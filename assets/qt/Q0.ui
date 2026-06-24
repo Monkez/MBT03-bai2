@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Form</class>
+ <widget class="QWidget" name="Form">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>320</width>
+    <height>176</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <widget class="QLabel" name="label_13">
+     <property name="minimumSize">
+      <size>
+       <width>0</width>
+       <height>30</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>16777215</width>
+       <height>30</height>
+      </size>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>12</pointsize>
+       <bold>true</bold>
+      </font>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">background-color: rgb(191, 127, 95);
+color: rgb(255, 255, 255);
+border-radius:5px;</string>
+     </property>
+     <property name="text">
+      <string>Nhập qui không</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <property name="spacing">
+      <number>15</number>
+     </property>
+     <item>
+      <widget class="QLabel" name="label1">
+       <property name="font">
+        <font>
+         <pointsize>12</pointsize>
+         <bold>true</bold>
+        </font>
+       </property>
+       <property name="text">
+        <string>Súng 1:</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="LineEdit" name="x_edit">
+       <property name="text">
+        <string>320</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="LineEdit" name="y_edit">
+       <property name="text">
+        <string>240</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout_3">
+     <property name="spacing">
+      <number>15</number>
+     </property>
+     <item>
+      <widget class="QLabel" name="label2">
+       <property name="font">
+        <font>
+         <pointsize>12</pointsize>
+         <bold>true</bold>
+        </font>
+       </property>
+       <property name="text">
+        <string>Súng 2:</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="LineEdit" name="x2_edit">
+       <property name="text">
+        <string>320</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="LineEdit" name="y2_edit">
+       <property name="text">
+        <string>240</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="1,1,1">
+     <item>
+      <widget class="PushButton" name="write_btn">
+       <property name="maximumSize">
+        <size>
+         <width>10000</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="font">
+        <font>
+         <family>Segoe UI</family>
+         <pointsize>11</pointsize>
+         <bold>true</bold>
+        </font>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">PushButton, ToolButton, ToggleButton, ToggleToolButton {
+    color: black;
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(0, 0, 0, 0.073);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.183);
+    border-radius: 5px;
+    /* font: 14px 'Segoe UI', 'Microsoft YaHei'; */
+    padding: 5px 12px 6px 12px;
+    outline: none;
+}
+
+ToolButton {
+    padding: 5px 9px 6px 8px;
+}
+
+PushButton:hover, ToolButton:hover, ToggleButton:hover, ToggleToolButton:hover {
+    background: rgba(249, 249, 249, 0.5);
+}
+
+PushButton:pressed, ToolButton:pressed, ToggleButton:pressed, ToggleToolButton:pressed {
+    color: rgba(0, 0, 0, 0.63);
+    background: rgba(249, 249, 249, 0.3);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.073);
+}
+</string>
+       </property>
+       <property name="text">
+        <string>Ghi</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="PushButton" name="accept_btn">
+       <property name="maximumSize">
+        <size>
+         <width>10000</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="font">
+        <font>
+         <family>Segoe UI</family>
+         <pointsize>11</pointsize>
+         <bold>true</bold>
+        </font>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">PushButton, ToolButton, ToggleButton, ToggleToolButton {
+    color: black;
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(0, 0, 0, 0.073);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.183);
+    border-radius: 5px;
+    /* font: 14px 'Segoe UI', 'Microsoft YaHei'; */
+    padding: 5px 12px 6px 12px;
+    outline: none;
+}
+
+ToolButton {
+    padding: 5px 9px 6px 8px;
+}
+
+PushButton:hover, ToolButton:hover, ToggleButton:hover, ToggleToolButton:hover {
+    background: rgba(249, 249, 249, 0.5);
+}
+
+PushButton:pressed, ToolButton:pressed, ToggleButton:pressed, ToggleToolButton:pressed {
+    color: rgba(0, 0, 0, 0.63);
+    background: rgba(249, 249, 249, 0.3);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.073);
+}
+</string>
+       </property>
+       <property name="text">
+        <string>Chấp nhận</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="PushButton" name="cancel_btn">
+       <property name="maximumSize">
+        <size>
+         <width>10000</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="font">
+        <font>
+         <family>Segoe UI</family>
+         <pointsize>11</pointsize>
+         <bold>true</bold>
+        </font>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">PushButton, ToolButton, ToggleButton, ToggleToolButton {
+    color: black;
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(0, 0, 0, 0.073);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.183);
+    border-radius: 5px;
+    /* font: 14px 'Segoe UI', 'Microsoft YaHei'; */
+    padding: 5px 12px 6px 12px;
+    outline: none;
+}
+
+ToolButton {
+    padding: 5px 9px 6px 8px;
+}
+
+PushButton:hover, ToolButton:hover, ToggleButton:hover, ToggleToolButton:hover {
+    background: rgba(249, 249, 249, 0.5);
+}
+
+PushButton:pressed, ToolButton:pressed, ToggleButton:pressed, ToggleToolButton:pressed {
+    color: rgba(0, 0, 0, 0.63);
+    background: rgba(249, 249, 249, 0.3);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.073);
+}
+</string>
+       </property>
+       <property name="text">
+        <string>Hủy</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>PushButton</class>
+   <extends>QPushButton</extends>
+   <header>qfluentwidgets</header>
+  </customwidget>
+  <customwidget>
+   <class>LineEdit</class>
+   <extends>QLineEdit</extends>
+   <header>qfluentwidgets</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>

@@ -1,0 +1,266 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Form</class>
+ <widget class="QWidget" name="Form">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>358</width>
+    <height>48</height>
+   </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>0</width>
+    <height>48</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>600</width>
+    <height>48</height>
+   </size>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true"/>
+  </property>
+  <layout class="QHBoxLayout" name="horizontalLayout_3">
+   <property name="spacing">
+    <number>0</number>
+   </property>
+   <property name="leftMargin">
+    <number>0</number>
+   </property>
+   <property name="topMargin">
+    <number>0</number>
+   </property>
+   <property name="rightMargin">
+    <number>0</number>
+   </property>
+   <property name="bottomMargin">
+    <number>0</number>
+   </property>
+   <item>
+    <widget class="QFrame" name="frame">
+     <property name="styleSheet">
+      <string notr="true">background-color: rgb(255, 255, 255);
+border-radius: 5px;
+border: 1px solid rgb(0, 0, 0);
+</string>
+     </property>
+     <property name="frameShape">
+      <enum>QFrame::StyledPanel</enum>
+     </property>
+     <property name="frameShadow">
+      <enum>QFrame::Raised</enum>
+     </property>
+     <layout class="QHBoxLayout" name="horizontalLayout_2">
+      <property name="spacing">
+       <number>2</number>
+      </property>
+      <property name="leftMargin">
+       <number>5</number>
+      </property>
+      <property name="topMargin">
+       <number>2</number>
+      </property>
+      <property name="rightMargin">
+       <number>5</number>
+      </property>
+      <property name="bottomMargin">
+       <number>2</number>
+      </property>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout">
+        <property name="spacing">
+         <number>4</number>
+        </property>
+        <item>
+         <widget class="QLabel" name="stt_label">
+          <property name="minimumSize">
+           <size>
+            <width>25</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>25</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <property name="font">
+           <font>
+            <family>Tahoma</family>
+            <pointsize>9</pointsize>
+           </font>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">border: 0px solid rgb(0, 0, 0);</string>
+          </property>
+          <property name="text">
+           <string>11.</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="name_label">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="font">
+           <font>
+            <family>Tahoma</family>
+            <pointsize>9</pointsize>
+           </font>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">border: 0px solid rgb(0, 0, 0);</string>
+          </property>
+          <property name="text">
+           <string>Nguyễn Văn Quang Huy</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="PushButton" name="sum_score_label">
+          <property name="minimumSize">
+           <size>
+            <width>45</width>
+            <height>35</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>35</width>
+            <height>35</height>
+           </size>
+          </property>
+          <property name="font">
+           <font>
+            <family>Tahoma</family>
+            <pointsize>11</pointsize>
+            <bold>false</bold>
+            <underline>false</underline>
+           </font>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: rgb(211, 211, 211);
+border-radius: 5px;</string>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="PushButton" name="classify_label">
+          <property name="minimumSize">
+           <size>
+            <width>50</width>
+            <height>35</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>50</width>
+            <height>35</height>
+           </size>
+          </property>
+          <property name="font">
+           <font>
+            <family>Tahoma</family>
+            <pointsize>11</pointsize>
+            <bold>false</bold>
+            <underline>false</underline>
+           </font>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: rgb(211, 211, 211);
+border-radius: 5px;</string>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="PushButton" name="shoot_btn">
+          <property name="minimumSize">
+           <size>
+            <width>75</width>
+            <height>40</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>75</width>
+            <height>40</height>
+           </size>
+          </property>
+          <property name="font">
+           <font>
+            <family>Segoe UI</family>
+            <pointsize>9</pointsize>
+            <bold>true</bold>
+            <underline>false</underline>
+           </font>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">PushButton, ToolButton, ToggleButton, ToggleToolButton {
+    color: black;
+	
+	background-color: rgb(255, 255, 255);
+    border: 1px solid rgba(0, 0, 0, 0.073);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.183);
+    border-radius: 5px;
+    /* font: 14px 'Segoe UI', 'Microsoft YaHei'; */
+    padding: 5px 12px 6px 12px;
+    outline: none;
+}
+
+PushButton:hover, ToolButton:hover, ToggleButton:hover, ToggleToolButton:hover {
+	background-color: rgb(73, 220, 0);
+}
+
+PushButton:pressed, ToolButton:pressed, ToggleButton:pressed, ToggleToolButton:pressed {
+    color: rgba(0, 0, 0, 0.63);
+	background-color: rgb(52, 157, 0);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.073);
+}</string>
+          </property>
+          <property name="text">
+           <string>Vào bắn</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>PushButton</class>
+   <extends>QPushButton</extends>
+   <header>qfluentwidgets</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>
