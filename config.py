@@ -1,11 +1,182 @@
+import copy
+import json
 import os
 import sys
 
 
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(APP_DIR, "")
+CONFIG_PATH = os.path.join(DATA_DIR, "assets", "configurations", "config.json")
 CUSTOM_WIDGETS_DIR = os.path.join(DATA_DIR, "MonkezCustomWidgets")
 ASSETS_CUSTOM_WIDGETS_DIR = os.path.join(DATA_DIR, "assets", "MonkezCustomWidgets")
+
+DEFAULT_CONFIG = {
+    "save_raw_data": True,
+    "shooting": {
+        "start_uart_command": "0Q000\n",
+        "automatic_close_target": {
+            "default_single_pedestal": True,
+            "default_multiple_pedestals": False,
+            "commands_by_class": {
+                "0": {"command": "@222#", "description": "gap bia so 10"},
+                "1": {"command": "@112#", "description": "gap bia so 6"},
+                "2": {"command": "@332#", "description": "gap bia so 7b"},
+                "3": {"command": "@442#", "description": "an bia so 8"},
+            },
+        },
+        "lora_timeline": [
+            {"delay_seconds": 15, "command": "@111#", "description": "hien bia so 6"},
+            {"delay_seconds": 32, "command": "@221#", "description": "hien bia so 10"},
+            {"delay_seconds": 42, "command": "@331#", "description": "hien bia so 7b"},
+            {
+                "delay_seconds": 64,
+                "command": "@444#",
+                "description": "xe cho bia so 8c bat dau van dong",
+            },
+        ],
+    },
+    "scoring": {
+        "model_file": "assets/models/weights.onnx",
+        "confidence_threshold": 0.3,
+        "iou_threshold": 0.4,
+        "keypoint_confidence_threshold": 0.25,
+        "ransac_reprojection_ratio": 0.015,
+        "ransac_max_iterations": 3000,
+        "target_offsets_by_class": {
+            "0": [0.0, -0.02],
+            "1": [0.0, 0.0],
+            "2": [0.0, -0.04],
+            "3": [0.025, 0.0],
+        },
+    },
+    "review": {
+        "camera_zoom": 1.5,
+        "simulation_marker_scale": 1.45,
+        "selected_box_thickness": 2,
+        "other_box_thickness": 1,
+    },
+    "calibration": {
+        "uart_command": "0Q000\n",
+        "sample_count": 3,
+        "target_class_id": 1,
+        "reference_center": [0.48607595, 0.44050633],
+    },
+    "lora": {
+        "port_description": "USB Serial Port",
+        "baud_rate": 9600,
+        "ack_timeout_seconds": 1.0,
+        "max_attempts": 3,
+    },
+    "runtime": {
+        "main_status_refresh_ms": 1000,
+        "settings_frame_refresh_ms": 30,
+        "max_scoring_workers": 4,
+        "onnx_intra_op_threads": 1,
+    },
+    "connection": {
+        "heartbeat_interval_seconds": 1.0,
+        "heartbeat_min_interval_seconds": 0.5,
+        "heartbeat_max_interval_seconds": 1.5,
+        "degraded_after_seconds": 3.5,
+        "offline_after_seconds": 6.0,
+        "client_reconnect_after_seconds": 8.0,
+        "session_release_after_seconds": 15.0,
+        "recovery_ack_count": 2,
+        "rtt_good_ms": 100,
+        "rtt_warn_ms": 500,
+        "rtt_bad_ms": 1000,
+        "rtt_window_size": 5,
+    },
+    "media": {
+        "shoot_resolution": [640, 480],
+        "shoot_jpeg_quality": 65,
+        "stream_resolution": [400, 300],
+        "stream_jpeg_quality": 40,
+        "stream_fps_target": 25,
+    },
+    "wifi": {
+        "request_ack_timeout_seconds": 3.0,
+        "rollback_timeout_seconds": 90.0,
+    },
+}
+
+
+def _merge_known(defaults, overrides):
+    """Merge only documented keys so stale or misspelled options are ignored."""
+    if not isinstance(defaults, dict) or not isinstance(overrides, dict):
+        return copy.deepcopy(overrides if type(overrides) is type(defaults) else defaults)
+    merged = {}
+    for key, default_value in defaults.items():
+        override_value = overrides.get(key, default_value)
+        merged[key] = _merge_known(default_value, override_value)
+    return merged
+
+
+def load_app_config(path=CONFIG_PATH):
+    overrides = {}
+    try:
+        with open(path, "r", encoding="utf-8") as file:
+            overrides = json.load(file)
+        if not isinstance(overrides, dict):
+            raise ValueError("root config must be a JSON object")
+    except FileNotFoundError:
+        pass
+    except (OSError, ValueError, TypeError, json.JSONDecodeError) as exc:
+        print(f"[Config] Khong doc duoc {path}, dung gia tri mac dinh: {exc}")
+    return _merge_known(DEFAULT_CONFIG, overrides)
+
+
+APP_CONFIG = load_app_config()
+
+
+def get_setting(path, default=None):
+    value = APP_CONFIG
+    for key in path.split("."):
+        if not isinstance(value, dict) or key not in value:
+            return default
+        value = value[key]
+    return value
+
+
+def config_str(path, default):
+    value = get_setting(path, default)
+    return value if isinstance(value, str) else default
+
+
+def config_bool(path, default):
+    value = get_setting(path, default)
+    return value if isinstance(value, bool) else bool(default)
+
+
+def config_int(path, default, minimum=None, maximum=None):
+    value = get_setting(path, default)
+    if isinstance(value, bool):
+        value = default
+    try:
+        value = int(value)
+    except (TypeError, ValueError):
+        value = int(default)
+    if minimum is not None:
+        value = max(int(minimum), value)
+    if maximum is not None:
+        value = min(int(maximum), value)
+    return value
+
+
+def config_float(path, default, minimum=None, maximum=None):
+    value = get_setting(path, default)
+    if isinstance(value, bool):
+        value = default
+    try:
+        value = float(value)
+    except (TypeError, ValueError):
+        value = float(default)
+    if minimum is not None:
+        value = max(float(minimum), value)
+    if maximum is not None:
+        value = min(float(maximum), value)
+    return value
+
 
 for path in (CUSTOM_WIDGETS_DIR, ASSETS_CUSTOM_WIDGETS_DIR):
     if path not in sys.path:

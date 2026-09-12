@@ -12,9 +12,9 @@ from gui.styles import TARGET_GREEN, TARGET_RED
 
 
 TARGET_IMAGE_FILES = [
+    "biaso10_X7.png",
     "biaso6_X7.png",
     "biaso7b_X7.png",
-    "biaso10_X7.png",
     "biaso8_phai_X7.png",
 ]
 
@@ -36,6 +36,7 @@ TWO_PEDESTAL_TARGET_LAYOUT = {
 
 class ClientWidget(QFrame):
     score_speak_requested = pyqtSignal(int)
+    review_requested = pyqtSignal(int)
 
     def __init__(self, pedestal_id, parent=None, target_layout_mode="default"):
         super().__init__(parent)
@@ -49,6 +50,9 @@ class ClientWidget(QFrame):
         self.hit_targets = set()
         self.shots = []
         self.testing = False
+        self.connected = False
+        self.connection_info = ""
+        self._pedestal_default_style = self.pedestal_name_label.styleSheet()
 
         self.name_label.setTextFormat(Qt.RichText)
         self.result_label.setTextFormat(Qt.RichText)
@@ -57,12 +61,14 @@ class ClientWidget(QFrame):
         self._localize_text()
         self._configure_ui()
         self.reset_all()
+        self.set_connection_state(False)
 
     def _bind_ui_widgets(self):
         self.pedestal_name_label = self.findChild(QLabel, "pedestal_name_label")
         self.name_label = self.findChild(QLabel, "name_label")
         self.result_label = self.findChild(QLabel, "result_label") or self.findChild(QLabel, "sum_score_label")
         self.go_out_btn = self.findChild(QPushButton, "go_out_btn")
+        self.review_btn = self.findChild(QPushButton, "review_btn")
         self.score_speak_icon = self.findChild(QPushButton, "score_speak_icon")
         self.sign_image = self.findChild(QWidget, "sign_image")
 
@@ -73,6 +79,7 @@ class ClientWidget(QFrame):
                 "name_label",
                 "result_label",
                 "go_out_btn",
+                "review_btn",
                 "score_speak_icon",
                 "sign_image",
             )
@@ -98,7 +105,13 @@ class ClientWidget(QFrame):
     def _configure_ui(self):
         self._set_target_background_white()
         self.score_speak_icon.clicked.connect(lambda: self.score_speak_requested.emit(self.id))
+        self.review_btn.clicked.connect(lambda: self.review_requested.emit(self.id))
+        self.review_btn.setToolTip("Xem lại các phát bắn của phiên vừa kết thúc")
+        self.review_btn.setEnabled(False)
         self.go_out_btn.clicked.connect(self.reset_shooter)
+
+    def set_review_available(self, available):
+        self.review_btn.setEnabled(bool(available))
 
     def _set_target_background_white(self):
         if hasattr(self.sign_image, "set_background_color"):
@@ -122,6 +135,84 @@ class ClientWidget(QFrame):
             "</p></body></html>"
         )
         self.update_result_label()
+
+    def set_connection_state(self, connected, info=""):
+        """Update connection text while only changing color when connected."""
+        if connected is None:
+            self.connected = False
+            self.connection_info = str(info or "")
+            self.pedestal_name_label.setText(
+                f"B\u1ec6 S\u1ed0 {self.id}  \u2022  \u0110ANG X\u00c1C NH\u1eacN"
+            )
+            self.pedestal_name_label.setStyleSheet(self._pedestal_default_style)
+            self.pedestal_name_label.setToolTip(self.connection_info)
+            return
+
+        self.connected = bool(connected)
+        self.connection_info = str(info or "")
+        if self.connected:
+            self.pedestal_name_label.setText(
+                f"B\u1ec6 S\u1ed0 {self.id}  \u2022  \u0110\u00c3 K\u1ebeT N\u1ed0I"
+            )
+            self.pedestal_name_label.setStyleSheet(
+                "background-color: rgb(0, 153, 0);\n"
+                "color: rgb(255, 255, 255);"
+            )
+            self.pedestal_name_label.setToolTip(self.connection_info)
+        else:
+            self.pedestal_name_label.setText(
+                f"B\u1ec6 S\u1ed0 {self.id}  \u2022  CH\u01afA K\u1ebeT N\u1ed0I"
+            )
+            self.pedestal_name_label.setStyleSheet(self._pedestal_default_style)
+            self.pedestal_name_label.setToolTip("")
+
+    def set_connection_metrics(self, ping_ms=None, battery_percent=None):
+        if not self.connected:
+            return
+        details = []
+        if ping_ms is not None:
+            details.append(f"Ping {float(ping_ms):.0f}ms")
+        if battery_percent is not None:
+            details.append(f"Pin {float(battery_percent):.0f}%")
+        suffix = f"  ({' - '.join(details)})" if details else ""
+        self.pedestal_name_label.setText(
+            f"B\u1ec6 S\u1ed0 {self.id}  \u2022  \u0110\u00c3 K\u1ebeT N\u1ed0I{suffix}"
+        )
+
+    def set_connection_quality_state(
+        self, state, ping_ms=None, battery_percent=None
+    ):
+        """Show the multi-stage connection state reported by the new core."""
+        state = str(state or "healthy")
+        if state == "healthy":
+            # Always restore the complete healthy presentation.  A degraded
+            # state also keeps ``connected`` true, so checking only that flag
+            # would leave the previous amber background in place while the
+            # text and ping already say that the connection is healthy.
+            self.set_connection_state(True, self.connection_info)
+            self.set_connection_metrics(ping_ms, battery_percent)
+            return
+
+        details = []
+        if ping_ms is not None:
+            details.append(f"Ping {float(ping_ms):.0f}ms")
+        if battery_percent is not None:
+            details.append(f"Pin {float(battery_percent):.0f}%")
+        suffix = f"  ({' - '.join(details)})" if details else ""
+        if state == "degraded":
+            self.connected = True
+            label = "KẾT NỐI CHẬP CHỜN"
+            color = "rgb(217, 119, 6)"
+        else:
+            self.connected = False
+            label = "MẤT TÍN HIỆU"
+            color = "rgb(185, 28, 28)"
+        self.pedestal_name_label.setText(
+            f"BỆ SỐ {self.id}  •  {label}{suffix}"
+        )
+        self.pedestal_name_label.setStyleSheet(
+            f"background-color: {color};\ncolor: rgb(255, 255, 255);"
+        )
 
     def start_test(self):
         self.bullet_count = 0
@@ -148,6 +239,14 @@ class ClientWidget(QFrame):
         if hit:
             self.hit_targets.add(target_index)
 
+        self.update_result_label()
+        self.show_target_simulation()
+
+    def record_miss(self):
+        """Count a shot that cannot be associated with any detected target."""
+        if self.bullet_count >= self.bullet_limit:
+            return
+        self.bullet_count += 1
         self.update_result_label()
         self.show_target_simulation()
 
@@ -178,6 +277,7 @@ class ClientWidget(QFrame):
         layout = self._current_target_layout()
         canvas_w, canvas_h = self._current_canvas_size()
         canvas = np.full((canvas_h, canvas_w, 3), 255, dtype=np.uint8)
+        self._rendered_target_rects = {}
 
         for target_index in (0, 2, 1, 3):
             x, y, w, h = layout[target_index]
@@ -208,15 +308,19 @@ class ClientWidget(QFrame):
         ox = inner[0] + (inner[2] - iw) // 2
         oy = inner[1] + (inner[3] - ih) // 2
         canvas[oy:oy + ih, ox:ox + iw] = image
+        self._rendered_target_rects[target_index] = (ox, oy, iw, ih)
 
     def _draw_shot(self, canvas, target_index, px, py, hit):
         layout = self._current_target_layout()
         if target_index not in layout:
             return
-        x, y, w, h = layout[target_index]
-        inner_x, inner_y, inner_w, inner_h = x + 8, y + 8, w - 16, h - 16
-        cx = int(inner_x + px * inner_w)
-        cy = int(inner_y + py * inner_h)
+        rendered_rect = getattr(self, "_rendered_target_rects", {}).get(target_index)
+        if rendered_rect is None:
+            x, y, w, h = layout[target_index]
+            rendered_rect = (x + 8, y + 8, w - 16, h - 16)
+        image_x, image_y, image_w, image_h = rendered_rect
+        cx = int(image_x + px * image_w)
+        cy = int(image_y + py * image_h)
         color = (255, 0, 0) if hit else (0, 0, 255)
         cv2.drawMarker(
             canvas,

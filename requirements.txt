@@ -1,3 +1,10 @@
 PyQt5==5.15.11
 PyQt-Fluent-Widgets==1.11.2
 opencv-python==4.10.0.84
+numpy
+onnxruntime==1.20.1
+pyzmq
+zeroconf
+pyserial
+PyYAML==6.0.2
+paramiko

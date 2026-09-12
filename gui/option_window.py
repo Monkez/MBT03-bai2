@@ -33,6 +33,7 @@ class OptionWindow(QDialog):
         self.setWindowIcon(QtGui.QIcon(cf.DATA_DIR + "assets/images/icon.png"))
         self.start = False
         self.p_num = 1
+        self.automatic_close_target_enabled = False
 
         self.p_num_btns = [
             self.p_num1_btn,
@@ -43,6 +44,9 @@ class OptionWindow(QDialog):
         for index, btn in enumerate(self.p_num_btns, start=1):
             btn.clicked.connect(partial(self.p_num_btn_clicked, index))
 
+        self.automatic_close_target.clicked.connect(
+            self.automatic_close_target_clicked
+        )
         self.start_btn.clicked.connect(self.start_btn_clicked)
         self.p_num_btn_clicked(1)
 
@@ -50,6 +54,40 @@ class OptionWindow(QDialog):
         self.p_num = stt
         for index, btn in enumerate(self.p_num_btns, start=1):
             self._set_option_button_selected(btn, index == stt)
+        if stt == 1:
+            default_auto_close = cf.config_bool(
+                "shooting.automatic_close_target.default_single_pedestal",
+                True,
+            )
+        else:
+            default_auto_close = cf.config_bool(
+                "shooting.automatic_close_target.default_multiple_pedestals",
+                False,
+            )
+        self._set_automatic_close_target_enabled(default_auto_close)
+
+    def automatic_close_target_clicked(self):
+        self._set_automatic_close_target_enabled(
+            not self.automatic_close_target_enabled
+        )
+
+    def _set_automatic_close_target_enabled(self, enabled):
+        self.automatic_close_target_enabled = bool(enabled)
+        button = self.automatic_close_target
+        button.setCheckable(True)
+        button.setChecked(self.automatic_close_target_enabled)
+        if hasattr(button, "setActiveColor"):
+            button.setActiveColor(QtGui.QColor(22, 163, 74))
+            button.setDeactiveColor(QtGui.QColor(100, 116, 139))
+            button.setTextColor(QtGui.QColor("white"))
+        else:
+            button.setStyleSheet(
+                OPTION_ACTIVE_STYLE
+                if self.automatic_close_target_enabled
+                else OPTION_INACTIVE_STYLE
+            )
+        state = "BẬT" if self.automatic_close_target_enabled else "TẮT"
+        button.setText(f"Gập bia: {state}")
 
     def _set_option_button_selected(self, btn, selected):
         if hasattr(btn, "setCheckable"):

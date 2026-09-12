@@ -1,124 +1,110 @@
 # -*- coding: utf-8 -*-
-"""Quick integration test for server-client handshake (no GUI)."""
-import sys, os, time, threading
+"""Local integration check for the three-channel MBT03 transport."""
+
+import os
+import sys
+import tempfile
+import threading
+import time
+
+import cv2
+import numpy as np
+import zmq
+from PyQt5.QtCore import QCoreApplication, Qt
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from PyQt5.QtCore import QCoreApplication
-
-# Need QCoreApplication for signals
-app = QCoreApplication(sys.argv)
-
-from server_client.server_core import MBT03ServerCore
 from server_client.client_core import MBT03ClientCore
-from server_client.protocol import Protocol
+from server_client.server_core import MBT03ServerCore
 
-print("="*60)
-print("Integration Test: Server-Client Handshake")
-print("="*60)
 
-# Reduce search timeout for testing
-Protocol.PRIOR_SEARCH_TIMEOUT = 10.0  # 10s instead of 120s
+def wait_until(predicate, timeout=3.0):
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        QCoreApplication.processEvents()
+        if predicate():
+            return True
+        time.sleep(0.02)
+    return False
 
-# --- Start Server ---
-print("\n[1] Starting Server (port_id=1)...")
-server = MBT03ServerCore(port_id=1)
 
-server_events = []
-server.log_signal.connect(lambda msg: None)  # Suppress logs
-server.client_connected_signal.connect(lambda info: server_events.append(('connected', info)))
-server.client_disconnected_signal.connect(lambda: server_events.append(('disconnected',)))
+def main():
+    app = QCoreApplication.instance() or QCoreApplication(sys.argv)
+    server = MBT03ServerCore(port_id=1, system_id="integration-system")
+    client = None
+    heartbeat_thread = None
 
-server.start()
-time.sleep(1)  # Let Zeroconf register
-print("   Server started and registered on Zeroconf.")
+    with tempfile.TemporaryDirectory(prefix="mbt03-integration-") as config_dir:
+        try:
+            print("[1/5] Starting server...")
+            server.start()
 
-# --- Start Client ---
-print("\n[2] Starting Client (prior_port_id=1)...")
-client = MBT03ClientCore(prior_port_id=1, config_dir=os.path.join(os.path.dirname(__file__), 'test_config'))
+            print("[2/5] Connecting client directly...")
+            client = MBT03ClientCore(prior_port_id=1, config_dir=config_dir)
+            client.running = True
+            client.context = zmq.Context()
+            result = client._connect("127.0.0.1", server.port, 1)
+            if result != "accepted":
+                raise RuntimeError(f"handshake failed: {result}")
 
-client_events = []
-client.log_signal.connect(lambda msg: None)  # Suppress logs
-client.connected_signal.connect(lambda info: client_events.append(('connected', info)))
-client.disconnected_signal.connect(lambda: client_events.append(('disconnected',)))
+            if client.current_server_stream_port != server.stream_port:
+                raise RuntimeError("client received the wrong stream port")
 
-client.start()
+            heartbeat_thread = threading.Thread(
+                target=client._heartbeat_loop,
+                name="IntegrationHeartbeat",
+                daemon=True,
+            )
+            heartbeat_thread.start()
+            if not wait_until(lambda: server.is_connected):
+                raise RuntimeError("heartbeat did not establish a live session")
 
-# Wait for connection
-print("   Waiting for client to connect...")
-for i in range(30):
-    time.sleep(0.5)
-    if client.is_connected:
-        break
+            print("[3/5] Checking isolated stream channel...")
+            stream_frames = []
+            server.stream_frame_signal.connect(
+                stream_frames.append, type=Qt.DirectConnection
+            )
+            source = np.zeros((24, 32, 3), dtype=np.uint8)
+            ok, encoded = cv2.imencode(".jpg", source)
+            if not ok or not client._queue_stream_frame(encoded.tobytes()):
+                raise RuntimeError("could not queue stream frame")
+            if not wait_until(lambda: bool(stream_frames)):
+                raise RuntimeError("server did not receive the stream frame")
 
-if client.is_connected:
-    print(f"   ✅ Client connected to server!")
-    print(f"   Server info: {client.server_info}")
-    print(f"   Zeroconf registered: {server.registrar.is_registered}")
-    
-    if not server.registrar.is_registered:
-        print(f"   ✅ Server unregistered from Zeroconf (correct)")
-    else:
-        print(f"   ❌ Server still registered on Zeroconf (should be unregistered)")
-else:
-    print(f"   ❌ Client failed to connect!")
-    print(f"   Server events: {server_events}")
-    print(f"   Client events: {client_events}")
+            print("[4/5] Checking bidirectional data...")
+            server_data = []
+            client_logs = []
+            server.data_received_signal.connect(
+                server_data.append, type=Qt.DirectConnection
+            )
+            client.log_signal.connect(
+                client_logs.append, type=Qt.DirectConnection
+            )
+            if not client.send_data({"source": "client", "value": 42}):
+                raise RuntimeError("client-to-server send failed")
+            if not server.send_data_to_client({"source": "server", "value": 24}):
+                raise RuntimeError("server-to-client send failed")
+            if not wait_until(
+                lambda: bool(server_data)
+                and any("Data:" in message for message in client_logs)
+            ):
+                raise RuntimeError("bidirectional data was not received")
 
-# --- Test Heartbeat ---
-print("\n[3] Testing heartbeat (3 seconds)...")
-time.sleep(3)
-if client.is_connected:
-    print(f"   ✅ Connection maintained after 3s heartbeat")
-else:
-    print(f"   ❌ Connection lost during heartbeat test")
+            print("[5/5] PASS: control, stream and shoot-data transport is healthy.")
+            return 0
+        except Exception as exc:
+            print(f"FAIL: {exc}", file=sys.stderr)
+            return 1
+        finally:
+            if client is not None:
+                client.running = False
+                client.connected = False
+                if heartbeat_thread is not None:
+                    heartbeat_thread.join(timeout=2.0)
+                client.stop()
+            server.stop()
+            app.processEvents()
 
-# --- Test Send Data ---
-print("\n[4] Testing data exchange...")
-if client.is_connected:
-    success = client.send_data({'test': 'hello', 'value': 42})
-    print(f"   Client→Server send: {'✅ OK' if success else '❌ Failed'}")
-    time.sleep(0.5)
-    
-    success = server.send_data_to_client({'response': 'world', 'status': 'ok'})
-    print(f"   Server→Client send: {'✅ OK' if success else '❌ Failed'}")
-    time.sleep(0.5)
 
-# --- Test Disconnect/Reconnect ---
-print("\n[5] Testing disconnect/reconnect...")
-if client.is_connected:
-    print("   Simulating client disconnect...")
-    client.connected = False  # Force disconnect
-    time.sleep(3)
-    
-    # Check server detected disconnect
-    print(f"   Server has client: {server.is_connected}")
-    
-    # Wait for server to re-register and client to reconnect
-    print("   Waiting for reconnection...")
-    for i in range(20):
-        time.sleep(0.5)
-        if client.is_connected:
-            break
-    
-    if client.is_connected:
-        print(f"   ✅ Client reconnected!")
-    else:
-        print(f"   ⏳ Reconnection pending (may take longer)")
-
-# --- Cleanup ---
-print("\n[6] Cleanup...")
-client.stop()
-server.stop()
-print("   Done.")
-
-# Clean up test config
-import shutil
-test_config_dir = os.path.join(os.path.dirname(__file__), 'test_config')
-if os.path.exists(test_config_dir):
-    shutil.rmtree(test_config_dir)
-
-print("\n" + "="*60)
-print("Test Complete!")
-print("="*60)
-sys.exit(0)
+if __name__ == "__main__":
+    sys.exit(main())

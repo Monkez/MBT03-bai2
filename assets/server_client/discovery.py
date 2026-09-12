@@ -93,18 +93,29 @@ class ServerFinder(ServiceListener):
         self._new_server_event = threading.Event()
     
     def start(self):
+        if self.zeroconf is not None:
+            return
+        self._new_server_event.clear()
         self.zeroconf = Zeroconf()
         self.browser = ServiceBrowser(self.zeroconf, Protocol.SERVICE_TYPE, self)
         self.log("[Discovery] Started browsing for Hub...")
     
     def stop(self):
         self._new_server_event.set()
-        if self.zeroconf:
+        browser = self.browser
+        self.browser = None
+        if browser:
             try:
-                self.zeroconf.close()
+                browser.cancel()
             except Exception:
                 pass
+        if self.zeroconf:
+            zeroconf = self.zeroconf
             self.zeroconf = None
+            try:
+                zeroconf.close()
+            except Exception:
+                pass
     
     def cancel(self):
         self._new_server_event.set()
