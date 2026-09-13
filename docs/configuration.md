@@ -45,8 +45,8 @@ Nhóm `scoring`:
 
 Chỉ nên chỉnh các ngưỡng nhận diện từng bước nhỏ và kiểm tra lại bằng ảnh bắn thật.
 
-Offset tạm hiện tại: bia 10/class `0` là `[0, -0.02]`, bia 6/class `1` là `[0, 0]`, bia
-7B/class `2` là `[0, -0.04]`, bia 8/class `3` là `[0.025, 0]`. Điểm click/Q0 được dùng để
+Offset hiện tại đồng bộ với công cụ LAB: bia 10/class `0` là `[0, -0.06]`, bia 6/class `1`
+là `[0, 0]`, bia 7B/class `2` là `[0, -0.10]`, bia 8/class `3` là `[-0.40, 0]`. Điểm click/Q0 được dùng để
 chọn bia trước; offset của đúng class sau đó chỉ được áp dụng trong hệ tọa độ ảnh bia chuẩn,
 không chiếu điểm sau offset ngược về ảnh camera. Vì offset là tỷ lệ thay vì pixel cố định, giá
 trị vẫn co giãn theo kích thước từng ảnh bia. Hãy hiệu chỉnh từng giá trị bằng ảnh bắn thực tế

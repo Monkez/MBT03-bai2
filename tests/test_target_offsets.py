@@ -12,9 +12,9 @@ class TargetOffsetTests(unittest.TestCase):
         point = (250.0, 500.0)
 
         self.assertEqual(scoring.apply_target_offset(1, shape, point), point)
-        self.assertEqual(scoring.apply_target_offset(0, shape, point), (250.0, 480.0))
-        self.assertEqual(scoring.apply_target_offset(2, shape, point), (250.0, 460.0))
-        self.assertEqual(scoring.apply_target_offset(3, shape, point), (262.5, 500.0))
+        self.assertEqual(scoring.apply_target_offset(0, shape, point), (250.0, 440.0))
+        self.assertEqual(scoring.apply_target_offset(2, shape, point), (250.0, 400.0))
+        self.assertEqual(scoring.apply_target_offset(3, shape, point), (50.0, 500.0))
 
     def test_offset_rotation_is_disabled_by_default(self):
         shape = (1000, 400, 3)
@@ -26,7 +26,7 @@ class TargetOffsetTests(unittest.TestCase):
 
         adjusted = scoring.apply_target_offset(3, shape, point, matrix)
 
-        self.assertAlmostEqual(adjusted[0], 210.0)
+        self.assertAlmostEqual(adjusted[0], 40.0)
         self.assertAlmostEqual(adjusted[1], 500.0)
 
     def test_bia_8_horizontal_rotation_can_be_enabled_with_mirrored_angle(self):
@@ -85,13 +85,13 @@ class TargetOffsetTests(unittest.TestCase):
             )
 
         self.assertEqual(metadata["transformed_click_point"], (100.0, 50.0))
-        self.assertEqual(metadata["transformed_point"], (100.0, 48.0))
+        self.assertEqual(metadata["transformed_point"], (100.0, 44.0))
         self.assertNotIn("camera_impact_point", metadata)
-        self.assertEqual(metadata["target_offset"], (0.0, -0.02))
+        self.assertEqual(metadata["target_offset"], (0.0, -0.06))
         self.assertEqual(hit_area.call_count, 2)
         self.assertEqual(
             hit_area.call_args,
-            mock.call(0, reference.shape, (100.0, 48.0)),
+            mock.call(0, reference.shape, (100.0, 44.0)),
         )
 
 

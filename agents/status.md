@@ -46,6 +46,8 @@ Các thay đổi chính gồm cổng kết nối ổn định có fallback, hàn
 
 ## Kiểm tra gần nhất
 
+- Ngày 2026-09-13, cơ chế offset của project chính đã được đối chiếu với `LAB/scoring.py`: cùng áp dụng trong hệ tọa độ ảnh bia sau affine và trước kiểm tra vùng trúng. Bộ giá trị chạy thật đã đồng bộ thành bia 10 `[0, -0.06]`, bia 6 `[0, 0]`, bia 7B `[0, -0.10]`, bia 8 `[-0.40, 0]`.
+
 - Ngày 2026-09-13, `test.bat` đạt 114/114. Kiểm tra tích hợp localhost xác nhận ba kênh control/stream/shoot-data, handshake và dữ liệu hai chiều đều thành công.
 
 - Ngày 2026-09-12, `test.bat` đạt 97/97. Kiểm tra tích hợp localhost xác nhận bắt tay, heartbeat, nhận stream qua cổng riêng và dữ liệu hai chiều đều thành công; client báo ba cổng control/stream/data đúng theo ACK của server.
