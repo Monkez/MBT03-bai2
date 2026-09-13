@@ -9,6 +9,7 @@ import posixpath
 import shlex
 import sys
 import uuid
+import time
 
 import paramiko
 
@@ -24,6 +25,8 @@ if ASSETS_DIR not in sys.path:
 
 DEPLOY_FILES = {
     os.path.join(LOCAL_DIR, "r_client.py"): "r_client.py",
+    os.path.join(LOCAL_DIR, "connection_led.py"): "connection_led.py",
+    os.path.join(LOCAL_DIR, "wifi_defaults.json"): "wifi_defaults.json",
     os.path.join(LOCAL_DIR, "wifi_sync.py"): "wifi_sync.py",
     os.path.join(LOCAL_DIR, "wifi_manager.py"): "wifi_manager.py",
     os.path.join(COMMON_DIR, "__init__.py"): "server_client/__init__.py",
@@ -51,6 +54,42 @@ def _sha256(path):
         for block in iter(lambda: file.read(1024 * 1024), b""):
             digest.update(block)
     return digest.hexdigest()
+
+
+def _atomic_install(client, source, destination):
+    """Never truncate a live runtime file, including on a failed copy."""
+    script = (
+        "import os,shutil,tempfile; "
+        f"src={source!r}; dst={destination!r}; "
+        "parent=os.path.dirname(dst); "
+        "fd,tmp=tempfile.mkstemp(prefix='.mbt03-install-',dir=parent); "
+        "os.close(fd); shutil.copyfile(src,tmp); os.chmod(tmp,0o600); "
+        "f=open(tmp,'rb'); os.fsync(f.fileno()); f.close(); "
+        "os.replace(tmp,dst); "
+        "fd=os.open(parent,os.O_RDONLY); os.fsync(fd); os.close(fd)"
+    )
+    _run(client, f"python3 -c {shlex.quote(script)}")
+
+
+def _verify_service(client, duration=24):
+    """An instant is-active check also passes a rapidly crashing service."""
+    deadline = time.monotonic() + duration
+    initial_pid = None
+    while True:
+        output, _ = _run(client, "systemctl show mbt03-client "
+                         "-p ActiveState -p MainPID -p NRestarts")
+        state = dict(line.split('=', 1) for line in output.splitlines() if '=' in line)
+        pid = state.get('MainPID', '0')
+        if state.get('ActiveState') != 'active' or pid == '0':
+            raise RuntimeError(f"Client did not remain active: {state}")
+        identity = (pid, state.get('NRestarts'))
+        if initial_pid is None:
+            initial_pid = identity
+        elif identity != initial_pid:
+            raise RuntimeError(f"Client restarted during verification: {state}")
+        if time.monotonic() >= deadline:
+            return
+        time.sleep(2)
 
 
 def _connect(args):
@@ -135,6 +174,10 @@ def _restore_remote_files(client, stage_dir, targets):
 
 
 def deploy(args):
+    # Required, private local configuration; never silently deploy an image
+    # that lacks the requested startup fallback credentials.
+    from OrangePiZero2W.wifi_sync import _load_startup_defaults
+    _load_startup_defaults()
     stage_name = f"mbt03-deploy-{uuid.uuid4().hex[:10]}"
     stage_dir = f"/root/{stage_name}"
     live_dir = "/root/mbt03"
@@ -154,6 +197,8 @@ def deploy(args):
             for local_path, relative_remote in DEPLOY_FILES.items():
                 if not os.path.isfile(local_path):
                     raise FileNotFoundError(local_path)
+                if os.path.getsize(local_path) == 0 and relative_remote != 'server_client/__init__.py':
+                    raise ValueError(f"Refusing empty runtime file: {relative_remote}")
                 remote_path = posixpath.join(stage_dir, relative_remote)
                 sftp.put(local_path, remote_path)
 
@@ -174,7 +219,7 @@ def deploy(args):
 
         # Abort before stopping the live service when the board image is not
         # ready for the transactional Wi-Fi and shared ZMQ runtime.
-        dependency_check = "import yaml, zmq"
+        dependency_check = "import yaml, zmq, zeroconf, cv2, numpy, serial; from PyQt5.QtCore import QObject"
         _run(client, f"python3 -c {shlex.quote(dependency_check)}")
 
         _run(
@@ -195,7 +240,7 @@ def deploy(args):
             client,
             "install -d -m 700 /root/mbt03-backups && "
             "backup=/root/mbt03-backups/mbt03-before-plaintext-$(date +%Y%m%d-%H%M%S).tar.gz && "
-            "tar -czf \"$backup\" -C /root mbt03 && printf '%s' \"$backup\"",
+            f"tar -czf \"$backup\" -C /root mbt03 {shlex.quote(stage_name)}/rollback && printf '%s' \"$backup\"",
         )
         print(f"Persistent board backup: {backup_path}")
         _run(client, "systemctl stop mbt03-client")
@@ -205,10 +250,10 @@ def deploy(args):
         for relative in DEPLOY_FILES.values():
             source = posixpath.join(stage_dir, relative)
             destination = posixpath.join(live_dir, relative)
-            _run(
-                client,
-                f"install -m 600 {shlex.quote(source)} {shlex.quote(destination)}",
-            )
+            _atomic_install(client, source, destination)
+            output, _ = _run(client, f"sha256sum {shlex.quote(destination)}")
+            if output.split()[0].lower() != expected[relative].lower():
+                raise RuntimeError(f"Live hash mismatch: {relative}")
         _run(
             client,
             f"rm -f -- {live_dir}/security_config.json "
@@ -232,9 +277,10 @@ def deploy(args):
             "fi && systemctl daemon-reload",
         )
         _run(client, "systemctl start mbt03-client")
-        _run(client, "systemctl is-active --quiet mbt03-client")
+        print("Checking stable client process for 24 seconds...")
+        _verify_service(client)
         service_was_stopped = False
-        print("Done. Orange Pi client is active using plain ZeroMQ transport.")
+        print("Done. Live hashes verified; client process remained stable. Server pairing must be checked separately.")
     finally:
         if client is not None:
             if service_was_stopped:

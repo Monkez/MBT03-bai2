@@ -2,6 +2,8 @@
 __pycache__/
 *.py[cod]
 server.log
+server.log.*
+server-crash.log
 assets/temp/
 assets/current_shots/
 raw_camera_images/
@@ -9,3 +11,4 @@ LAB/
 
 # Per-installation identities and pairing secrets
 system_config.json
+wifi_defaults.json

@@ -244,6 +244,48 @@ class WifiSyncTests(unittest.TestCase):
             yaml.safe_dump(document, output, sort_keys=False)
         return path
 
+    def test_uart_missing_uses_supplied_default_credentials(self):
+        runner = FakeNetworkManagerRunner()
+        with patch.object(wifi_sync, '_load_startup_defaults', return_value=('MBT03-5G', 'testpass123')):
+            status = synchronize_wifi(None, runner=runner, log=lambda msg: None)
+        self.assertEqual(status, 'fallback_connected')
+        self.assertEqual(runner.active_ssid, 'MBT03-5G')
+        modify = next(call for call in runner.calls if '802-11-wireless-security.psk' in call)
+        self.assertEqual(modify[modify.index('802-11-wireless-security.psk') + 1], 'testpass123')
+
+    def test_uart_failed_uses_default_not_previous_profile(self):
+        runner = FakeNetworkManagerRunner()
+        with patch.object(wifi_sync, 'query_wifi_credentials', return_value=('MissingAP', 'badpass123')), \
+                patch.object(wifi_sync, 'apply_wifi_credentials', return_value='failed'), \
+                patch.object(wifi_sync, '_load_startup_defaults', return_value=('MBT03-5G', 'testpass123')):
+            self.assertEqual(synchronize_wifi(object(), runner=runner, log=lambda msg: None), 'fallback_connected')
+        self.assertEqual(runner.active_ssid, 'MBT03-5G')
+
+    def test_unreachable_default_disables_old_autoconnect_and_keeps_new_profile(self):
+        runner = FakeNetworkManagerRunner()
+        runner.activation_fails = True
+        transaction = stage_wifi_credentials('MBT03-5G', 'testpass123', runner=runner,
+                                             log=lambda msg: None, startup_fallback=True)
+        self.assertEqual(transaction['status'], 'fallback_pending')
+        self.assertIn(CANDIDATE_UUID, runner.profiles)
+        self.assertIn(['nmcli', 'connection', 'modify', 'uuid', OLD_UUID,
+                       'connection.autoconnect', 'no'], runner.calls)
+        self.assertIn(['nmcli', 'connection', 'down', 'uuid', OLD_UUID], runner.calls)
+        self.assertFalse(any('up' in call and OLD_UUID in call for call in runner.calls))
+        self.assertFalse(any('modify' in call and WIRED_UUID in call for call in runner.calls))
+
+    def test_netplan_unreachable_default_does_not_restore_old_wifi(self):
+        old_path = self._write_old_netplan()
+        runner = FakeNetplanRunner()
+        with patch.object(wifi_sync, '_wait_for_wifi', return_value=False):
+            transaction = stage_wifi_credentials('MBT03-5G', 'testpass123', runner=runner,
+                                                 log=lambda msg: None, startup_fallback=True)
+        self.assertEqual(transaction['status'], 'fallback_pending')
+        with open(old_path, encoding='utf-8') as source:
+            self.assertNotIn('wifis', yaml.safe_load(source)['network'])
+        with open(self.managed_path, encoding='utf-8') as source:
+            self.assertIn('MBT03-5G', yaml.safe_load(source)['network']['wifis']['wlan0']['access-points'])
+
     def test_parse_expected_response(self):
         self.assertEqual(
             parse_wifi_response("MBT03-5G#testpass123\r\n"),

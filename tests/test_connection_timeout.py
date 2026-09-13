@@ -591,7 +591,7 @@ class ConnectionCoreTimeoutTests(unittest.TestCase):
 
         client._connect.assert_called_once_with('10.207.242.205', 1711, 1)
         client._on_connect_success.assert_called_once_with(
-            '10.207.242.205', 1711, 1, 'subnet-scan'
+            '10.207.242.205', 1711, 1, None
         )
         client._heartbeat_loop.assert_called_once_with()
         client._cleanup_connection.assert_called_once_with()

@@ -40,6 +40,18 @@ def wait_until(predicate, timeout=2.0):
 
 
 class WiFiTransactionManagerTests(unittest.TestCase):
+    def test_startup_fallback_is_not_recovered_as_an_app_transaction(self):
+        core = FakeCore()
+        with tempfile.TemporaryDirectory() as directory:
+            path = os.path.join(directory, 'boot-default.json')
+            with open(path, 'w', encoding='utf-8') as file:
+                json.dump({'version': 1, 'transaction_id': 'boot-default',
+                           'ssid': 'DefaultNet', 'status': 'fallback_pending',
+                           'startup_fallback': True}, file)
+            manager = WiFiTransactionManager(core, transaction_dir=directory)
+            self.assertFalse(manager.recover())
+            self.assertIsNone(core.active_wifi_request_id)
+
     def test_recover_ignores_netplan_snapshot_and_allows_uart_sync(self):
         core = FakeCore()
         with tempfile.TemporaryDirectory() as directory:

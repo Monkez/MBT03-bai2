@@ -264,6 +264,10 @@ class WiFiTransactionManager:
             ):
                 self._log(f"Bỏ qua file trạng thái Wi-Fi không hợp lệ: {path}")
                 continue
+            # Boot defaults are not app transactions and must never roll back
+            # to an old credential or suppress the next boot's UART query.
+            if transaction.get('startup_fallback'):
+                continue
             if transaction.get("status") not in TERMINAL_STATUSES:
                 candidates.append(transaction)
         if not candidates:

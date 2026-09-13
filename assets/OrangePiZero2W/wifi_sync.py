@@ -16,7 +16,7 @@ import subprocess
 import tempfile
 import time
 import uuid
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 
 import yaml
 
@@ -130,6 +130,7 @@ def query_wifi_credentials(
     response_timeout=2.0,
     retry_delay=0.4,
     log=_default_log,
+    write_lock=None,
 ):
     """Ask the external board for credentials, ignoring boot/noise lines.
 
@@ -162,8 +163,9 @@ def query_wifi_credentials(
             pass
 
         try:
-            serial_port.write((UART_WIFI_QUERY + "\n").encode("ascii"))
-            serial_port.flush()
+            with write_lock if write_lock is not None else nullcontext():
+                serial_port.write((UART_WIFI_QUERY + "\n").encode("ascii"))
+                serial_port.flush()
             log(f"Đã gửi {UART_WIFI_QUERY}, lần {attempt}/{attempts}")
         except Exception as exc:
             log(f"Không gửi được lệnh hỏi Wi-Fi: {exc}")
@@ -549,6 +551,26 @@ def _rollback_failed_nm_stage(transaction, runner, log):
     return restored and removed
 
 
+def _disable_other_wifi_profiles(candidate_uuid, runner):
+    result = runner(['nmcli', '--terse', '--get-values', 'UUID,TYPE',
+                     'connection', 'show'], timeout=10)
+    if result.returncode != 0:
+        raise RuntimeError('Cannot enumerate WiFi profiles for startup fallback')
+    for line in result.stdout.splitlines():
+        profile_uuid, separator, kind = line.partition(':')
+        if not separator or kind not in _WIFI_CONNECTION_TYPES or profile_uuid == candidate_uuid:
+            continue
+        details = _nm_profile_details('uuid', profile_uuid, runner)
+        if details is None:
+            raise RuntimeError('Cannot validate previous WiFi profile')
+        if details['interface'] not in {'', WIFI_INTERFACE}:
+            continue
+        disabled = runner(['nmcli', 'connection', 'modify', 'uuid', profile_uuid,
+                           'connection.autoconnect', 'no'], timeout=10)
+        if disabled.returncode != 0:
+            raise RuntimeError('Cannot disable previous WiFi autoconnect')
+
+
 def _stage_network_manager(transaction, password, runner, log):
     try:
         previous = _nm_active_profile(runner)
@@ -607,6 +629,9 @@ def _stage_network_manager(transaction, password, runner, log):
         log(f"Không cấu hình được profile Wi-Fi ứng viên: {detail}")
         return "failed" if _rollback_failed_nm_stage(transaction, runner, log) else "rollback_failed"
 
+    if transaction.get('startup_fallback'):
+        _disable_other_wifi_profiles(details['uuid'], runner)
+
     result = runner(
         [
             "nmcli", "--wait", "25", "connection", "up",
@@ -615,6 +640,14 @@ def _stage_network_manager(transaction, password, runner, log):
         timeout=30,
     )
     if result.returncode != 0 or not _wait_for_wifi(transaction["ssid"], runner=runner):
+        if transaction.get('startup_fallback'):
+            # Keep the supplied fallback PSK, not the previous profile. NM can
+            # retry this autoconnect candidate when the AP becomes available.
+            previous_uuid = (previous or {}).get('uuid')
+            if previous_uuid:
+                runner(['nmcli', 'connection', 'down', 'uuid', previous_uuid], timeout=10)
+            log('WiFi mặc định chưa sẵn sàng; giữ profile mặc định, không khôi phục mạng cũ')
+            return 'fallback_pending'
         log("Không kết nối được Wi-Fi ứng viên; đang khôi phục profile cũ")
         return "failed" if _rollback_failed_nm_stage(transaction, runner, log) else "rollback_failed"
     return "staged"
@@ -697,6 +730,7 @@ def _remove_wifi_from_document(document):
 
 
 def _stage_netplan(transaction, password, runner, log):
+    applied_ok = False
     try:
         _snapshot_netplan(transaction)
         original_paths = list(transaction.get("netplan_original_paths", []))
@@ -738,11 +772,15 @@ def _stage_netplan(transaction, password, runner, log):
         applied = runner(["netplan", "apply"], timeout=35)
         if applied.returncode != 0:
             raise RuntimeError(_redact_secret(applied.stderr, password) or "netplan apply thất bại")
+        applied_ok = True
         if not _wait_for_wifi(transaction["ssid"], runner=runner):
             raise RuntimeError("wlan0 chưa vào đúng SSID hoặc chưa nhận được IPv4")
         return "staged"
     except Exception as exc:
         log(f"Không áp dụng được Wi-Fi mới bằng Netplan: {_redact_secret(exc, password)}")
+        if transaction.get('startup_fallback') and applied_ok:
+            log('Giữ cấu hình WiFi mặc định để chờ AP; không khôi phục mạng cũ')
+            return 'fallback_pending'
         if transaction.get("snapshot_path"):
             return "failed" if _restore_netplan_transaction(transaction, runner, log) else "rollback_failed"
         return "failed"
@@ -755,6 +793,7 @@ def stage_wifi_credentials(
     rollback_timeout=DEFAULT_ROLLBACK_TIMEOUT,
     runner=_run_command,
     log=_default_log,
+    startup_fallback=False,
 ):
     """Apply a candidate Wi-Fi while preserving a rollback transaction.
 
@@ -768,10 +807,12 @@ def stage_wifi_credentials(
         log(f"Giao dịch Wi-Fi {existing['transaction_id']} đã tồn tại: {existing['status']}")
         return existing
     transaction = _new_transaction(ssid, transaction_id, rollback_timeout)
+    if startup_fallback:
+        transaction['startup_fallback'] = True
     current_ssid = get_current_ssid(runner=runner)
     transaction["previous_ssid"] = current_ssid
 
-    if current_ssid == ssid and _has_ipv4(runner=runner):
+    if not startup_fallback and current_ssid == ssid and _has_ipv4(runner=runner):
         transaction["status"] = "already_connected"
         save_wifi_transaction(transaction)
         log(f"Đang kết nối đúng SSID {ssid} và đã có IPv4; không thay đổi cấu hình mạng")
@@ -1056,9 +1097,41 @@ def apply_wifi_credentials(ssid, password, runner=_run_command, log=_default_log
     return "failed"
 
 
-def synchronize_wifi(serial_port, runner=_run_command, log=_default_log):
+def _load_startup_defaults():
+    defaults_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'wifi_defaults.json')
+    with open(defaults_path, encoding='utf-8') as source:
+        defaults = json.load(source)
+    return parse_wifi_response(f"{defaults['ssid']}#{defaults['password']}")
+
+
+def synchronize_wifi(serial_port, runner=_run_command, log=_default_log, write_lock=None):
     """Synchronize Wi-Fi once at client startup and return a status string."""
-    credentials = query_wifi_credentials(serial_port, log=log)
-    if credentials is None:
-        return "no_credentials"
-    return apply_wifi_credentials(*credentials, runner=runner, log=log)
+    try:
+        credentials = query_wifi_credentials(serial_port, log=log, write_lock=write_lock) if serial_port is not None else None
+    except Exception as exc:
+        log(f'Không hỏi được WiFi qua UART: {type(exc).__name__}')
+        credentials = None
+    if credentials is not None:
+        try:
+            status = apply_wifi_credentials(*credentials, runner=runner, log=log)
+        except Exception as exc:
+            status = 'failed'
+            log(f'WiFi UART gặp lỗi: {type(exc).__name__}')
+        if status in {'changed', 'already_connected'}:
+            return status
+        log(f'WiFi UART không kết nối được ({status}); chuyển sang WiFi mặc định')
+    else:
+        log('Không có cấu hình WiFi UART; chuyển sang WiFi mặc định')
+
+    try:
+        ssid, password = _load_startup_defaults()
+    except (OSError, ValueError, KeyError, TypeError):
+        log('Thiếu hoặc sai wifi_defaults.json; không có thông tin WiFi mặc định hợp lệ')
+        return 'fallback_config_error'
+    log(f'Đang áp dụng WiFi mặc định: {ssid}')
+    transaction = stage_wifi_credentials(ssid, password, runner=runner, log=log,
+                                         startup_fallback=True)
+    if transaction['status'] == 'staged':
+        result = commit_wifi_transaction(transaction, runner=runner, log=log)
+        return 'fallback_connected' if result == 'committed' else 'fallback_commit_failed'
+    return transaction['status']

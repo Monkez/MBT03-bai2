@@ -17,5 +17,15 @@ Các tham số vận hành có thể chỉnh tại `assets/configurations/config
 deploy-board.bat DIA_CHI_IP
 ```
 
+Trước lần deploy đầu tiên, tạo file riêng
+`assets/OrangePiZero2W/wifi_defaults.json` với hai trường chuỗi `ssid` và
+`password`. File này chứa thông tin Wi-Fi dự phòng khi UART không trả về cấu hình
+hợp lệ, đã được loại khỏi Git và được cài lên board với quyền `0600`.
+
 Lần đầu xác nhận đúng board có thể thêm `--trust-new-host`. Script cài client ở
-chế độ tương thích chung; không tạo hoặc chuyển credential riêng theo dự án.
+chế độ tương thích chung; không tạo hoặc chuyển credential kết nối server riêng
+theo dự án. Sau khi khởi động service, script theo dõi PID và số lần restart trong
+24 giây trước khi báo thành công.
+
+Nếu PC có nhiều card mạng hoặc VPN và mDNS quảng bá sai IP, đặt biến môi trường
+`MBT03_BIND_IP` thành IPv4 LAN trước khi chạy ứng dụng.

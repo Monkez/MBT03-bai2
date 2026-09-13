@@ -10,6 +10,15 @@
 
 ## Đồng bộ từ MBT03-wireless
 
+Ngày 2026-09-13 đã đồng bộ cơ chế kết nối theo commit nguồn `424def1`:
+
+- Client dùng `device_id` và `instance_id` để server phân biệt đúng board và đúng tiến trình, tránh hai thiết bị trùng tên thay phiên của nhau.
+- Discovery có thể hủy ngay, không để mDNS cũ chặn subnet fallback; hỗ trợ `MBT03_BIND_IP` khi PC có nhiều card mạng hoặc VPN.
+- Ghi cấu hình client theo cơ chế file tạm, `fsync` và replace nguyên tử; các khoảng chờ reconnect có thể ngắt khi dừng.
+- Board có LED trạng thái riêng cho mất Wi-Fi/chờ server/đã nối server, khóa ghi UART và Wi-Fi dự phòng từ file riêng `wifi_defaults.json` nằm ngoài Git.
+- Deploy kiểm tra dependency, file rỗng, checksum tại runtime, cài file nguyên tử và theo dõi PID/restart của service trong 24 giây.
+- Server lưu chẩn đoán transport vào `server.log` xoay vòng; log ảnh bắn hỏng hoặc bị loại có lý do rõ ràng.
+
 Ngày 2026-09-12 đã đồng bộ server/client theo commit nguồn `0bbf79c`:
 
 - Runtime dùng ba kênh plain ZeroMQ: control, stream latest-only và shoot-data; cổng stream là control + 200, data là control + 100.
@@ -36,6 +45,8 @@ Ngày 2026-07-29 đã đồng bộ các tệp sau từ dự án `MBT03-wireless`
 Các thay đổi chính gồm cổng kết nối ổn định có fallback, hàng đợi gửi điều khiển ZMQ theo đúng thread sở hữu socket, cải thiện bắt tay/kết nối lại, dừng thread sạch hơn, heartbeat và gửi ảnh bắn ổn định hơn.
 
 ## Kiểm tra gần nhất
+
+- Ngày 2026-09-13, `test.bat` đạt 114/114. Kiểm tra tích hợp localhost xác nhận ba kênh control/stream/shoot-data, handshake và dữ liệu hai chiều đều thành công.
 
 - Ngày 2026-09-12, `test.bat` đạt 97/97. Kiểm tra tích hợp localhost xác nhận bắt tay, heartbeat, nhận stream qua cổng riêng và dữ liệu hai chiều đều thành công; client báo ba cổng control/stream/data đúng theo ACK của server.
 

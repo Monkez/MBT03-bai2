@@ -1,7 +1,8 @@
 import socket
+import ipaddress
+import os
 import threading
 import time
-import uuid
 from zeroconf import Zeroconf, ServiceInfo, ServiceBrowser, ServiceListener
 
 from .protocol import PortMapping, Protocol
@@ -9,6 +10,9 @@ from .protocol import PortMapping, Protocol
 
 def get_local_ip() -> str:
     """Get the local IP address of this machine on the LAN."""
+    configured = os.environ.get('MBT03_BIND_IP', '').strip()
+    if configured:
+        return str(ipaddress.IPv4Address(configured))
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
         s.connect(('10.255.255.255', 1))
@@ -35,6 +39,11 @@ class HubRegistrar:
         
     def update_available(self, available_dict: dict):
         local_ip = get_local_ip()
+        if (self._registered and self.service_info is not None
+                and self.service_info.parsed_addresses() == [local_ip]
+                and self.service_info.properties.get(b'available') ==
+                ','.join(f'{pid}:{port}' for pid, port in sorted(available_dict.items())).encode()):
+            return
         if self.zeroconf is None:
             self.zeroconf = Zeroconf()
             
@@ -91,17 +100,19 @@ class ServerFinder(ServiceListener):
         # Pseudo-servers parsed from Hub records
         self.available_servers = {}
         self._new_server_event = threading.Event()
+        self._cancel_event = threading.Event()
     
     def start(self):
         if self.zeroconf is not None:
             return
         self._new_server_event.clear()
+        self._cancel_event.clear()
         self.zeroconf = Zeroconf()
         self.browser = ServiceBrowser(self.zeroconf, Protocol.SERVICE_TYPE, self)
         self.log("[Discovery] Started browsing for Hub...")
     
     def stop(self):
-        self._new_server_event.set()
+        self.cancel()
         browser = self.browser
         self.browser = None
         if browser:
@@ -118,6 +129,7 @@ class ServerFinder(ServiceListener):
                 pass
     
     def cancel(self):
+        self._cancel_event.set()
         self._new_server_event.set()
     
     def add_service(self, zc, type_, name):
@@ -149,7 +161,9 @@ class ServerFinder(ServiceListener):
                 for pair in avail_str.split(','):
                     parts = pair.split(':')
                     if len(parts) == 2 and parts[0].isdigit() and parts[1].isdigit():
-                        avail_ports[int(parts[0])] = int(parts[1])
+                        port_id, port = int(parts[0]), int(parts[1])
+                        if port_id in PortMapping.MAP and 1 <= port <= 65535:
+                            avail_ports[port_id] = port
             
             with self._lock:
                 # Remove stale pseudo-servers for this Hub sys_id
@@ -192,10 +206,10 @@ class ServerFinder(ServiceListener):
                          prefer_system_id: str = None,
                          timeout: float = 30.0,
                          gather_time: float = 0.5) -> list:
-        deadline = time.time() + timeout
+        deadline = time.monotonic() + timeout
         first_found_time = None
         
-        while time.time() < deadline:
+        while time.monotonic() < deadline and not self._cancel_event.is_set():
             self._new_server_event.clear()
             
             with self._lock:
@@ -207,7 +221,7 @@ class ServerFinder(ServiceListener):
                 
                 if valid_servers:
                     if first_found_time is None:
-                        first_found_time = time.time()
+                        first_found_time = time.monotonic()
                     
                     def sort_key(s):
                         sys_match = 0 if (prefer_system_id and s[3] == prefer_system_id) else 1
@@ -216,11 +230,13 @@ class ServerFinder(ServiceListener):
                     valid_servers.sort(key=sort_key)
                     
                     # Wait the full gather_time so we see all ports from the Hub definitively
-                    if time.time() - first_found_time >= gather_time:
+                    if time.monotonic() - first_found_time >= gather_time:
                         return valid_servers
             
-            remaining = deadline - time.time()
+            remaining = deadline - time.monotonic()
             if remaining > 0:
+                if self._cancel_event.is_set():
+                    return []
                 self._new_server_event.wait(min(remaining, Protocol.SEARCH_RETRY_INTERVAL))
         
         return []

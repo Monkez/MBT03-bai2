@@ -1,5 +1,12 @@
 # Lịch sử thay đổi
 
+## 2026-09-13
+
+- Đồng bộ server/client và runtime Orange Pi từ `MBT03-wireless` commit `424def1`: định danh thiết bị/tiến trình chắc chắn hơn, hủy discovery và reconnect sạch, không để quảng bá mDNS cũ chặn subnet fallback.
+- Bổ sung LED trạng thái kết nối trên board, khóa ghi UART và cơ chế Wi-Fi dự phòng bằng `wifi_defaults.json` riêng ngoài Git.
+- Tăng an toàn deploy: từ chối file runtime rỗng, kiểm tra đủ dependency/checksum, cài nguyên tử, lưu rollback và theo dõi service ổn định 24 giây.
+- Lưu log transport server vào `server.log` xoay vòng và bổ sung test hồi quy cho định danh, discovery, cấu hình nguyên tử, Wi-Fi khởi động, LED và deploy.
+
 ## 2026-09-12
 
 - Đồng bộ server/client từ `MBT03-wireless` commit `0bbf79c`: tách video live sang kênh ZeroMQ latest-only riêng, không dùng chung hàng đợi control/heartbeat; bổ sung kiểm tra tích hợp ba kênh chạy trực tiếp trên localhost.

@@ -19,6 +19,7 @@ import zmq
 import threading
 import time
 import json
+import logging
 import struct
 import queue
 import numpy as np
@@ -228,6 +229,8 @@ class MBT03ServerCore(QObject):
     
     def _log(self, msg):
         full_msg = f"[Server P{self.port_id}] {msg}"
+        # Persist before GUI filtering; absence from the UI is not packet loss.
+        logging.getLogger('mbt03_server').info(full_msg)
         try:
             self.log_signal.emit(full_msg)
         except RuntimeError:
@@ -785,6 +788,8 @@ class MBT03ServerCore(QObject):
                 
                 frames = self.data_socket.recv_multipart()
                 if len(frames) < 2:
+                    self._log(
+                        f"Drop malformed data message: frames={len(frames)}")
                     continue
                 
                 msg_type = frames[0]
@@ -794,12 +799,27 @@ class MBT03ServerCore(QObject):
                     with self._lock:
                         if not self._session_allows_operation_locked():
                             data_generation = None
+                            if self.connected_client_identity is None:
+                                reject_reason = "no connected client"
+                            elif self.last_client_heartbeat <= 0:
+                                reject_reason = "heartbeat not established"
+                            else:
+                                heartbeat_age = (
+                                    time.monotonic() - self.last_client_heartbeat
+                                )
+                                reject_reason = (
+                                    f"state={self._connection_state}, "
+                                    f"heartbeat_age={heartbeat_age:.2f}s"
+                                )
                         else:
                             data_generation = self._session_generation
                             # Valid data traffic proves socket activity but
                             # never replaces heartbeat/ping freshness.
                             self.last_client_activity = time.monotonic()
                     if data_generation is None:
+                        self._log(
+                            "Drop shoot image before decode: "
+                            f"bytes={len(payload)}, reason={reject_reason}")
                         continue
 
                     with self._decode_lock:
@@ -838,13 +858,16 @@ class MBT03ServerCore(QObject):
                 if q0_meta:
                     try:
                         q0_data = Protocol.decode_payload(q0_meta)
-                    except Exception:
-                        pass
+                    except Exception as exc:
+                        self._log(f"Shoot image Q0 metadata decode failed: {exc}")
                 
                 q0_str = ""
                 if q0_data.get('q0'):
                     q0 = q0_data['q0']
                     q0_str = f" Q0=({q0[0]:.4f},{q0[1]:.4f})"
+                sent_at = q0_data.get('ts')
+                if isinstance(sent_at, (int, float)):
+                    q0_str += f" transfer={(time.time() - sent_at) * 1000:.0f}ms"
                 
                 with self._lock:
                     if not self._session_allows_operation_locked(
@@ -857,7 +880,7 @@ class MBT03ServerCore(QObject):
                     self._log(f"\U0001f4f8 Shoot image: {frame.shape[1]}x{frame.shape[0]} ({len(data)}B){q0_str}")
                     self.shoot_image_signal.emit(frame, q0_data)
             else:
-                self._log("Shoot image decode failed")
+                self._log(f"Shoot image decode failed: bytes={len(data)}")
         except Exception as e:
             self._log(f"Shoot decode error: {e}")
         finally:
@@ -875,6 +898,18 @@ class MBT03ServerCore(QObject):
             ], zmq.NOBLOCK)
         except Exception:
             pass
+
+    def _same_client_process(self, incoming):
+        existing = self.connected_client_info or {}
+        device_id = incoming.get('device_id')
+        if device_id or existing.get('device_id'):
+            return bool(
+                device_id and device_id == existing.get('device_id')
+                and incoming.get('instance_id')
+                and incoming.get('instance_id') == existing.get('instance_id')
+            )
+        return bool(incoming.get('client_name')
+                    and incoming['client_name'] == self.connected_client_name)
 
     def _handle_connect_request(self, identity, payload_data):
         if not self._accepting_connections:
@@ -896,6 +931,11 @@ class MBT03ServerCore(QObject):
             return
         
         incoming_name = client_info.get('client_name', '')
+        for field in ('device_id', 'instance_id'):
+            value = client_info.get(field)
+            if value is not None and (not isinstance(value, str) or not value or len(value) > 128):
+                self._reject_connect(identity, 'invalid_identity')
+                return
         reconnect_same_device = False
         cleared_stale_client = False
         replaced_pending_client = False
@@ -934,7 +974,7 @@ class MBT03ServerCore(QObject):
                 now = time.monotonic()
                 pending_age = now - self.last_client_activity
                 same_pending_client = (
-                    (incoming_name and incoming_name == self.connected_client_name)
+                    self._same_client_process(client_info)
                     or identity == self.connected_client_identity
                 )
                 can_replace_pending = (
@@ -960,9 +1000,9 @@ class MBT03ServerCore(QObject):
 
             if self.connected_client_identity is not None:
                 # --- Decide: same device reconnect vs different device competing ---
-                if incoming_name and incoming_name == self.connected_client_name:
-                    # Same client_name = same physical device/process reconnecting
-                    # (ZMQ identity changes each reconnect, but client_name is stable)
+                if self._same_client_process(client_info):
+                    # Full device/process IDs distinguish modern clients;
+                    # name-only matching is retained only between legacy peers.
                     # Silently swap socket — do NOT emit disconnect/connect to UI
                     self._log(
                         f"Same device reconnecting: {incoming_name} "

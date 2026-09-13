@@ -11,8 +11,9 @@ import numpy as np
 import serial # Use standard serial for Orange Pi Hardware UART
 from PyQt5.QtCore import Qt
 
-from wifi_sync import synchronize_wifi
+from wifi_sync import synchronize_wifi, get_current_ssid
 from wifi_manager import WiFiTransactionManager
+from connection_led import ConnectionLED
 
 cv2.setUseOptimized(True)
 try:
@@ -46,7 +47,10 @@ class MBT03HardwareClient:
         self.running = True
         self._frame_buffer = []
         self._frame_lock = threading.Lock()
-        self._last_led_cmd = None
+        self._uart_write_lock = threading.Lock()
+        self._led_stop = threading.Event()
+        self._led_thread = None
+        self._connection_led = ConnectionLED(self.send_uart_cmd)
         self._last_battery_percent = None
         self._camera_device = None
         self._camera_mode = None
@@ -71,25 +75,30 @@ class MBT03HardwareClient:
 
     def _init_uart(self):
         try:
-            self.serial_port = serial.Serial(self.serial_port_path, 9600, timeout=0.1)
+            self.serial_port = serial.Serial(self.serial_port_path, 9600, timeout=0.1, write_timeout=1.0)
             print(f"[Client] Opened Hardware UART: {self.serial_port_path}")
             return True
         except Exception as e:
             print(f"[Client] UART Error: {e}")
             return False
 
-    def _send_led_state(self, cmd, label):
-        if self._last_led_cmd == cmd:
-            return
-        print(f"[LED] {label} -> Sending {cmd}")
-        self._last_led_cmd = cmd
-        self.send_uart_cmd(cmd)
-
     def _on_connected(self, server_info):
-        self._send_led_state("0LG00", "Server connected")
+        self._connection_led.update(server_connected=True)
 
     def _on_disconnected(self):
-        self._send_led_state("0LG01", "Server disconnected")
+        self._connection_led.update(server_connected=False)
+
+    def _refresh_wifi_led(self):
+        # SSID association, not a leftover DHCP address, determines WiFi state.
+        self._connection_led.update(wifi_connected=bool(get_current_ssid()))
+
+    def _connection_led_loop(self):
+        while self.running and not self._led_stop.is_set():
+            try:
+                self._refresh_wifi_led()
+            except Exception as exc:
+                print(f"[LED] WiFi state check failed: {exc}")
+            self._led_stop.wait(1.0)
 
     def _handle_remote_command(self, cmd_str):
         """Forward hardware commands; legacy password-bearing commands are blocked."""
@@ -99,25 +108,32 @@ class MBT03HardwareClient:
         self.send_uart_cmd(cmd_str)
 
     def start(self):
+        started_at = time.monotonic()
+        print("[Boot] Starting camera and UART WiFi initialization")
+        # Camera initialization does not consume UART; overlap it with WiFi
+        # negotiation, but keep a single UART reader until sync finishes.
+        threading.Thread(target=self._camera_read_loop, daemon=True).start()
+        threading.Thread(target=self._prewarm_capture, daemon=True).start()
         uart_ready = self._init_uart()
-        recovered_transaction = self.wifi_manager.recover()
         if uart_ready:
-            uart_sync_enabled = os.environ.get(
-                "MBT03_UART_WIFI_SYNC", "1"
-            ).strip().lower() in {"1", "true", "yes", "on"}
-            if recovered_transaction:
-                print("[Client] Pending WiFi transaction recovered; UART sync skipped")
-            elif uart_sync_enabled:
-                try:
-                    status = synchronize_wifi(self.serial_port)
-                    print(f"[Client] WiFi sync status: {status}")
-                except Exception as e:
-                    # Wi-Fi synchronization must never prevent the shooting
-                    # client from starting with its existing network.
-                    print(f"[Client] WiFi sync unexpected error: {e}")
-            else:
-                print("[Client] UART WiFi sync disabled (MBT03_UART_WIFI_SYNC=0)")
+            # WiFi observation runs off the startup/heartbeat paths.
+            self._led_thread = threading.Thread(
+                target=self._connection_led_loop, daemon=True, name='ConnectionLED')
+            self._led_thread.start()
+        recovered_transaction = self.wifi_manager.recover()
+        uart_sync_enabled = os.environ.get(
+            "MBT03_UART_WIFI_SYNC", "1"
+        ).strip().lower() in {"1", "true", "yes", "on"}
+        if recovered_transaction:
+            print("[Client] Pending WiFi transaction recovered; UART sync skipped")
+        elif uart_sync_enabled:
+            status = synchronize_wifi(self.serial_port if uart_ready else None,
+                                      write_lock=self._uart_write_lock)
+            print(f"[Client] WiFi sync status: {status}")
+        else:
+            print("[Client] UART WiFi sync disabled (MBT03_UART_WIFI_SYNC=0)")
 
+        if uart_ready:
             # Drop a late/duplicate Wi-Fi reply before the normal event parser
             # begins handling shot, battery and error messages.
             try:
@@ -125,14 +141,12 @@ class MBT03HardwareClient:
             except Exception:
                 pass
 
-            self._send_led_state("0LR01", "WiFi ready")
-            time.sleep(0.2)
-            self._send_led_state("0LG01", "Client started")
+            # Only WiFi sync reads UART until this point. LED writes use the
+            # same write lock as queries and never consume incoming bytes.
         self.core.start()
-        threading.Thread(target=self._prewarm_capture, daemon=True).start()
+        print(f"[Boot] Network client started after {time.monotonic() - started_at:.2f}s")
         
         # Start loops
-        threading.Thread(target=self._camera_read_loop, daemon=True).start()
         threading.Thread(target=self._uart_listen_loop, daemon=True).start()
         
         print("[System] Orange Pi Hardware Client Running...")
@@ -144,6 +158,9 @@ class MBT03HardwareClient:
 
     def stop(self):
         self.running = False
+        self._led_stop.set()
+        if self._led_thread:
+            self._led_thread.join(timeout=12)
         self.wifi_manager.stop()
         self.core.stop()
         if self.serial_port:
@@ -151,8 +168,8 @@ class MBT03HardwareClient:
 
     def _prewarm_capture(self):
         try:
-            deadline = time.time() + 5.0
-            while self.running and self.core._shared_frame is None and time.time() < deadline:
+            deadline = time.monotonic() + 5.0
+            while self.running and self.core._shared_frame is None and time.monotonic() < deadline:
                 time.sleep(0.1)
             if self.core._shared_frame is None:
                 print("[System] Capture/JPEG pre-warm skipped: camera not ready")
@@ -342,10 +359,17 @@ class MBT03HardwareClient:
             cmd_str += '\n'
         if self.serial_port and self.serial_port.is_open:
             try:
-                self.serial_port.write(cmd_str.encode('utf-8'))
+                payload = cmd_str.encode('utf-8')
+                with self._uart_write_lock:
+                    written = self.serial_port.write(payload)
+                if written != len(payload):
+                    print("[UART] Incomplete command write")
+                    return False
                 print(f"[UART] Sent: {repr(cmd_str.strip())}")
+                return True
             except Exception as e:
                 print(f"[UART] Send error: {e}")
+        return False
 
     def _uart_listen_loop(self):
         print("[UART] Listening for commands...")

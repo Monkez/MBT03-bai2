@@ -29,6 +29,7 @@ import queue
 import socket
 import struct
 import subprocess
+import tempfile
 import threading
 import time
 import uuid
@@ -89,12 +90,17 @@ class MBT03ClientCore(QObject):
         
         self.config_dir = config_dir
         self.config_file = os.path.join(config_dir, Protocol.CLIENT_CONFIG_FILE)
+        self._config_lock = threading.Lock()
+        self._stop_event = threading.Event()
+        self._connected_system_id = None
         
         self.prior_port_id = (
             prior_port_id if prior_port_id in PortMapping.MAP else self._load_prior_port_id()
         )
         
         self.client_name = self._get_stable_name()
+        self.device_id = self._get_device_id()
+        self.instance_id = uuid.uuid4().hex
         
         # ZMQ — independent control, live-stream and shoot-image channels.
         self.context = None  # Created fresh each connection cycle
@@ -194,6 +200,21 @@ class MBT03ClientCore(QObject):
         return f"Client-{uuid.uuid4().hex[:6]}"
     
     # ======================== CONFIG ========================
+
+    @staticmethod
+    def _get_device_id():
+        """Prefer SoC serial, then full interface MAC, over a shortened name."""
+        for path in ('/sys/firmware/devicetree/base/serial-number',
+                     '/sys/class/net/wlan0/address', '/sys/class/net/eth0/address'):
+            try:
+                with open(path, encoding='ascii') as file:
+                    value = file.read().strip().strip('\x00').lower()
+                compact = value.replace(':', '')
+                if compact and set(compact) != {'0'}:
+                    return ('serial:' if path.endswith('serial-number') else 'mac:') + value
+            except (OSError, UnicodeError):
+                continue
+        return 'runtime:' + uuid.uuid4().hex
     
     def _log(self, msg):
         full_msg = f"[Client {self.client_name}] {msg}"
@@ -387,6 +408,11 @@ class MBT03ClientCore(QObject):
         return {'q0': [0.5, 0.5], 'size': 0}
     
     def _save_config(self):
+        with self._config_lock:
+            self._save_config_locked()
+
+    def _save_config_locked(self):
+        temporary_path = None
         try:
             os.makedirs(self.config_dir, exist_ok=True)
             config = {
@@ -407,14 +433,35 @@ class MBT03ClientCore(QObject):
                             return
                 except Exception:
                     pass
-            with open(self.config_file, 'w') as f:
+            descriptor, temporary_path = tempfile.mkstemp(
+                prefix='.mbt03-config-', dir=self.config_dir)
+            with os.fdopen(descriptor, 'w', encoding='utf-8') as f:
                 json.dump(config, f)
+                f.flush()
+                os.fsync(f.fileno())
+            os.replace(temporary_path, self.config_file)
+            temporary_path = None
+            if os.name == 'posix':
+                directory_fd = os.open(self.config_dir, os.O_RDONLY)
+                try:
+                    os.fsync(directory_fd)
+                finally:
+                    os.close(directory_fd)
         except Exception as e:
             self._log(f"Failed to save config: {e}")
+        finally:
+            if temporary_path is not None:
+                try:
+                    os.unlink(temporary_path)
+                except OSError:
+                    pass
     
     # ======================== LIFECYCLE ========================
     
     def start(self):
+        if self._main_thread and self._main_thread.is_alive():
+            return
+        self._stop_event.clear()
         self.running = True
         self._main_thread = threading.Thread(
             target=self._main_loop, daemon=True, name="ClientMainLoop"
@@ -463,6 +510,7 @@ class MBT03ClientCore(QObject):
     
     def stop(self):
         self.running = False
+        self._stop_event.set()
         with self._lock:
             self.connected = False
             self._connection_generation += 1
@@ -484,7 +532,7 @@ class MBT03ClientCore(QObject):
             pass
 
         if self._main_thread and self._main_thread is not threading.current_thread():
-            self._main_thread.join(timeout=4.0)
+            self._main_thread.join()
             self._main_thread = None
         
         self._close_transport_sockets()
@@ -540,7 +588,7 @@ class MBT03ClientCore(QObject):
                 self._main_loop_step(is_first_boot)
             except Exception as e:
                 self._log(f"Main loop step error: {e}")
-                time.sleep(1.0)
+                self._stop_event.wait(1.0)
             is_first_boot = False
 
     def _main_loop_step(self, is_first_boot):
@@ -606,7 +654,7 @@ class MBT03ClientCore(QObject):
             )
         except OSError as e:
             self._log(f"Zeroconf network error (WiFi down?): {e}")
-            time.sleep(2.0)  # Back off when network is unreachable
+            self._stop_event.wait(2.0)  # Interruptible network backoff
         except Exception as e:
             self._log(f"Zeroconf error: {e}")
             if self.finder:
@@ -619,10 +667,12 @@ class MBT03ClientCore(QObject):
         # Some access points allow client-to-client unicast but suppress mDNS
         # multicast. In that case a stale cached IP used to leave the board in
         # discovery forever even though the PC's stable ports were reachable.
+        scanned_subnet = False
         if not servers and self.running:
+            scanned_subnet = True
             stable_servers = self._scan_local_stable_servers()
             if stable_servers:
-                system_id = self._last_system_id or 'subnet-scan'
+                system_id = None
                 servers = [
                     (ip, port, port_id, system_id)
                     for ip, port, port_id in stable_servers
@@ -634,10 +684,15 @@ class MBT03ClientCore(QObject):
         connected_successfully = False
         if servers:
             # Prioritize configured port_id so client pairs with correct target (e.g. board 3 to bệ 3)
-            servers.sort(key=lambda s: 0 if s[2] == self.prior_port_id else 1)
+            servers.sort(key=lambda s: (
+                bool(self._last_system_id and s[3] != self._last_system_id),
+                s[2] != self.prior_port_id,
+            ))
             for s in servers:
+                if not self.running:
+                    return
                 ip, port, port_id, system_id = s
-                self._log(f"Trying discovered server: {ip}:{port} (P{port_id}, sys={system_id[:8]})")
+                self._log(f"Trying discovered server: {ip}:{port} (P{port_id}, sys={(system_id or 'unknown')[:8]})")
                 
                 rc = self._connect(ip, port, port_id)
                 if rc == 'accepted':
@@ -651,12 +706,27 @@ class MBT03ClientCore(QObject):
         
         if connected_successfully:
             return
+
+        # Cached mDNS advertisements can survive an IP change. Reachability,
+        # not merely a nonempty discovery list, determines fallback eligibility.
+        if self.running and not scanned_subnet:
+            attempted = {(s[0], s[1]) for s in servers}
+            for ip, port, port_id in self._scan_local_stable_servers():
+                if not self.running:
+                    return
+                if (ip, port) in attempted:
+                    continue
+                if self._connect(ip, port, port_id) == 'accepted':
+                    self._on_connect_success(ip, port, port_id, None)
+                    self._heartbeat_loop()
+                    self._cleanup_connection()
+                    return
         
         # === Phase 4: No server found → backoff ===
         if self.running:
             self._log(f"No server. Retry in {self._reconnect_delay:.1f}s...")
             self.status_signal.emit("Không tìm thấy server...")
-            time.sleep(self._reconnect_delay)
+            self._stop_event.wait(self._reconnect_delay)
             self._reconnect_delay = min(
                 self._reconnect_delay * 1.5, Protocol.RECONNECT_MAX_DELAY)
     
@@ -762,6 +832,8 @@ class MBT03ClientCore(QObject):
             futures = [executor.submit(probe, item) for item in candidates]
             for future in as_completed(futures):
                 if not self.running:
+                    for pending in futures:
+                        pending.cancel()
                     break
                 try:
                     candidate = future.result()
@@ -804,7 +876,7 @@ class MBT03ClientCore(QObject):
         """Update state after successful connection."""
         self._last_server_ip = ip
         self._last_port = port  # Save actual port for quick reconnect
-        self._last_system_id = system_id
+        self._last_system_id = self._connected_system_id or system_id
         if port_id != self.prior_port_id:
             self._log(f"Port ID: {self.prior_port_id} → {port_id}")
             self.port_id_changed_signal.emit(port_id)
@@ -890,6 +962,7 @@ class MBT03ClientCore(QObject):
         Returns: 'accepted', 'rejected', or 'timeout'.
         """
         self.status_signal.emit(f"Kết nối P{port_id} ({ip})...")
+        self._connected_system_id = None
         
         # Every attempt starts without sockets from the previous endpoint.
         self._close_transport_sockets()
@@ -915,6 +988,8 @@ class MBT03ClientCore(QObject):
         
         connect_info = {
             'client_name': self.client_name,
+            'device_id': getattr(self, 'device_id', None),
+            'instance_id': getattr(self, 'instance_id', None),
             'prior_port_id': self.prior_port_id,
             'client_ip': local_ip,
             'q0_value': self.q0_value,
@@ -969,6 +1044,15 @@ class MBT03ClientCore(QObject):
                 frames = self.socket.recv_multipart()
                 if frames[0] == Protocol.MSG_CONNECT_ACK:
                     server_info = Protocol.decode_payload(frames[1]) if len(frames) > 1 else {}
+                    if not isinstance(server_info, dict):
+                        raise ValueError('CONNECT_ACK must be an object')
+                    actual_system = server_info.get('system_id')
+                    if actual_system is not None and (
+                        not isinstance(actual_system, str)
+                        or not actual_system or len(actual_system) > 128
+                    ):
+                        raise ValueError('Invalid server system_id')
+                    self._connected_system_id = actual_system
                     connection_settings = server_info.get('connection')
                     if connection_settings is not None:
                         try:
@@ -1303,8 +1387,9 @@ class MBT03ClientCore(QObject):
 
     def _handle_wifi_config_decision(self, msg_type, payload_data):
         try:
-            payload = self._decode_authenticated_wifi_payload(payload_data)
-        except Exception:
+            payload = self._decode_wifi_payload(payload_data)
+        except (ValueError, TypeError, UnicodeError) as exc:
+            self._log(f"Invalid Wi-Fi decision: {exc}")
             return
         with self._lock:
             if payload["request_id"] != self._active_wifi_request_id:
