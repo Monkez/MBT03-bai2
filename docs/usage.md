@@ -29,6 +29,12 @@ Sau khi kết thúc bài bắn, nhấn `Xem lại` tại từng bệ để duy�
 
 Khi `save_raw_data` trong `assets/configurations/config.json` là `true`, mọi ảnh chụp gốc nhận từ súng được lưu tự động vào `raw_camera_images`. Tên ảnh chứa thời gian chụp và số bệ để phục vụ thu thập, phân loại dữ liệu. Đặt khóa này thành `false` và mở lại ứng dụng nếu không muốn lưu ảnh.
 
+Để thử riêng một client có camera trên PC với đúng cơ chế server/client hiện tại,
+chạy `python client_demo.py [so_be]`. Có thể chọn camera bằng đối số thứ hai hoặc
+`--camera-index=N`, và chọn backend bằng
+`--camera-backend=auto|dshow|msmf|default`. Demo dùng trực tiếp lõi ba kênh trong
+`assets/server_client`, không duy trì một bản giao thức riêng.
+
 Điểm chạm dùng để tính trúng/trượt có offset riêng theo từng loại bia vì cự ly và chuyển động
 khác nhau. Bia 6 là mốc không offset; các giá trị tạm của bia 10, 7B và 8 có thể chỉnh trong
 `scoring.target_offsets_by_class`. Trên ảnh camera, công cụ `LAB/score_test.py` chỉ đánh dấu

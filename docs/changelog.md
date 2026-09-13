@@ -2,6 +2,7 @@
 
 ## 2026-09-13
 
+- Thêm entry point `client_demo.py` tại thư mục gốc, sử dụng trực tiếp GUI demo và `MBT03ClientCore` hiện hành trong `assets/server_client`; cập nhật hướng dẫn dòng lệnh và test smoke cho chế độ trợ giúp.
 - Xác nhận project chính đã áp dụng offset sau phép chiếu affine và trước khi kiểm tra vùng trúng, giống cơ chế trong `LAB/scoring.py`.
 - Đồng bộ bộ offset vận hành từ LAB: bia 10 `[0, -0.06]`, bia 6 `[0, 0]`, bia 7B `[0, -0.10]`, bia 8 `[-0.40, 0]`.
 - Đồng bộ server/client và runtime Orange Pi từ `MBT03-wireless` commit `424def1`: định danh thiết bị/tiến trình chắc chắn hơn, hủy discovery và reconnect sạch, không để quảng bá mDNS cũ chặn subnet fallback.

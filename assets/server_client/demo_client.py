@@ -3,7 +3,7 @@
 Demo Client GUI - PyQt5 application with Camera support.
 
 Usage:
-    python demo_client.py [prior_port_id]
+    python client_demo.py [prior_port_id]
     
     prior_port_id: 1, 2, 3, or 4 (default: loads from config or 1)
 """
@@ -456,8 +456,8 @@ def main():
         elif arg.startswith("--camera-backend="):
             camera_backend = arg.split("=", 1)[1]
         elif arg in ("--help", "-h"):
-            print("Usage: python demo_client.py [prior_port_id] [camera_index]")
-            print("       python demo_client.py [prior_port_id] --camera-index=N --camera-backend=auto|dshow|msmf|default")
+            print("Usage: python client_demo.py [prior_port_id] [camera_index]")
+            print("       python client_demo.py [prior_port_id] --camera-index=N --camera-backend=auto|dshow|msmf|default")
             return
 
     if len(positional_args) >= 1:

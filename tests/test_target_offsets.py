@@ -6,15 +6,24 @@ import numpy as np
 import scoring
 
 
+LAB_TARGET_OFFSETS = {
+    0: (0.0, -0.06),
+    1: (0.0, 0.0),
+    2: (0.0, -0.10),
+    3: (-0.40, 0.0),
+}
+
+
 class TargetOffsetTests(unittest.TestCase):
     def test_provisional_offsets_are_relative_to_reference_size(self):
         shape = (1000, 500, 3)
         point = (250.0, 500.0)
 
-        self.assertEqual(scoring.apply_target_offset(1, shape, point), point)
-        self.assertEqual(scoring.apply_target_offset(0, shape, point), (250.0, 440.0))
-        self.assertEqual(scoring.apply_target_offset(2, shape, point), (250.0, 400.0))
-        self.assertEqual(scoring.apply_target_offset(3, shape, point), (50.0, 500.0))
+        with mock.patch.dict(scoring.TARGET_OFFSETS, LAB_TARGET_OFFSETS, clear=True):
+            self.assertEqual(scoring.apply_target_offset(1, shape, point), point)
+            self.assertEqual(scoring.apply_target_offset(0, shape, point), (250.0, 440.0))
+            self.assertEqual(scoring.apply_target_offset(2, shape, point), (250.0, 400.0))
+            self.assertEqual(scoring.apply_target_offset(3, shape, point), (50.0, 500.0))
 
     def test_offset_rotation_is_disabled_by_default(self):
         shape = (1000, 400, 3)
@@ -24,7 +33,8 @@ class TargetOffsetTests(unittest.TestCase):
             dtype=np.float64,
         )
 
-        adjusted = scoring.apply_target_offset(3, shape, point, matrix)
+        with mock.patch.dict(scoring.TARGET_OFFSETS, LAB_TARGET_OFFSETS, clear=True):
+            adjusted = scoring.apply_target_offset(3, shape, point, matrix)
 
         self.assertAlmostEqual(adjusted[0], 40.0)
         self.assertAlmostEqual(adjusted[1], 500.0)
@@ -73,6 +83,7 @@ class TargetOffsetTests(unittest.TestCase):
         identity = np.asarray([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]], dtype=np.float64)
 
         with (
+            mock.patch.dict(scoring.TARGET_OFFSETS, LAB_TARGET_OFFSETS, clear=True),
             mock.patch.object(scoring, "inference", return_value=[detection]),
             mock.patch.object(scoring, "estimate_target_transform", return_value=(identity, 4)),
             mock.patch.object(scoring, "point_in_hit_area", return_value=True) as hit_area,
