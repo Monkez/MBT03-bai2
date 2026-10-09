@@ -524,14 +524,20 @@ class MainWindow(QMainWindow):
         metadata = result.get("metadata") or {}
         target_index = metadata.get("class_id")
         target_point = None
+        target_point_before_offset = None
         mapped = metadata.get("transformed_point")
+        mapped_click = metadata.get("transformed_click_point")
         reference = self._reference_images.get(target_index)
-        if mapped is not None and reference is not None:
+        if reference is not None:
             ref_h, ref_w = reference.shape[:2]
-            target_point = (
-                max(0.0, min(1.0, float(mapped[0]) / ref_w)),
-                max(0.0, min(1.0, float(mapped[1]) / ref_h)),
-            )
+            # Preserve out-of-target coordinates so review shows the actual
+            # displacement instead of moving a miss onto the image border.
+            if mapped is not None:
+                target_point = (float(mapped[0]) / ref_w, float(mapped[1]) / ref_h)
+            if mapped_click is not None:
+                target_point_before_offset = (
+                    float(mapped_click[0]) / ref_w, float(mapped_click[1]) / ref_h
+                )
 
         shot = {
             "shot_number": int(result.get("shot_number", 0)),
@@ -540,6 +546,7 @@ class MainWindow(QMainWindow):
             "target_index": target_index,
             "target_name": metadata.get("target_name"),
             "target_point": target_point,
+            "target_point_before_offset": target_point_before_offset,
             "hit": metadata.get("hit"),
             "status": metadata.get("status") or result.get("error"),
             "detections": [

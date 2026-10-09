@@ -1,5 +1,11 @@
 # Lịch sử thay đổi
 
+## 2026-10-09
+
+- Đồng bộ offset vận hành và mặc định theo LAB: bia 10 `[0, -0.15]`, bia 6 `[0, 0]`, bia 7B `[0, -0.30]`, bia 8 `[-0.60, 0]`. Kết quả trúng/trượt dùng điểm sau offset.
+- Thu gọn màn hình xem lại, thêm danh sách chọn nhanh phát bắn và chú thích tại mỗi ảnh. Hiển thị dấu thập xanh dương trước offset, dấu thập đỏ sau offset; giữ nguyên tọa độ ngoài ảnh bia trên vùng nền mở rộng.
+- Bổ sung kiểm thử đồng bộ cấu hình, kết quả chấm qua biên vùng trúng, lưu hai tọa độ và điều hướng xem lại.
+
 ## 2026-09-13
 
 - Thêm `client_demo.bat` để chạy demo từ mọi thư mục, tự ưu tiên Python trong `.venv` và chuyển tiếp đầy đủ tham số dòng lệnh.

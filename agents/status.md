@@ -46,6 +46,10 @@ Các thay đổi chính gồm cổng kết nối ổn định có fallback, hàn
 
 ## Kiểm tra gần nhất
 
+- Ngày 2026-10-09: offset vận hành và mặc định đã khớp `LAB/scoring.py`: class 0 `[0, -0.15]`, class 1 `[0, 0]`, class 2 `[0, -0.30]`, class 3 `[-0.60, 0]`; thay thế bộ giá trị ngày 2026-09-13. Vẫn tắt xoay offset. `scoring()` xét vùng trúng bằng điểm sau offset, GUI ghi nhận trực tiếp kết quả đó.
+- Review lưu `target_point_before_offset` và `target_point` chuẩn hóa theo ảnh bia, không clamp vào `[0, 1]` và không tính lại từ cấu hình. Màn hình có bộ chọn phát, dấu thập xanh dương trước offset, dấu thập đỏ sau offset và vùng nền mở rộng cho điểm ngoài bia. Marker đơn giản, không viền hay mũi tên; nếu hai điểm trùng tâm, dấu xanh dài hơn một chút.
+- Kiểm chứng ngày 2026-10-09: `test.bat` đạt 122/122; đã render cửa sổ Qt trên Windows, kiểm tra bố cục tối thiểu 920×600 và scaling 150%, chọn phát bằng chuột/phím, điểm trùng nhau/ngoài bia và trạng thái rỗng. Dữ liệu UI là fixture; chưa thử phiên bắn mới trên thiết bị thật.
+
 - `client_demo.py` là entry point chạy demo client từ thư mục gốc; phần GUI vẫn nằm ở `assets/server_client/demo_client.py` và dùng trực tiếp lõi server/client chung để không lệch giao thức.
 
 - Ngày 2026-09-13, cơ chế offset của project chính đã được đối chiếu với `LAB/scoring.py`: cùng áp dụng trong hệ tọa độ ảnh bia sau affine và trước kiểm tra vùng trúng. Bộ giá trị chạy thật đã đồng bộ thành bia 10 `[0, -0.06]`, bia 6 `[0, 0]`, bia 7B `[0, -0.10]`, bia 8 `[-0.40, 0]`.

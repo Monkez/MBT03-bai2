@@ -43,10 +43,10 @@ DEFAULT_CONFIG = {
         "ransac_reprojection_ratio": 0.015,
         "ransac_max_iterations": 3000,
         "target_offsets_by_class": {
-            "0": [0.0, -0.06],
+            "0": [0.0, -0.15],
             "1": [0.0, 0.0],
-            "2": [0.0, -0.10],
-            "3": [-0.40, 0.0],
+            "2": [0.0, -0.30],
+            "3": [-0.60, 0.0],
         },
     },
     "review": {

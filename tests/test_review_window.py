@@ -1,5 +1,7 @@
 import os
 import unittest
+from types import SimpleNamespace
+from unittest.mock import MagicMock
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
@@ -115,6 +117,74 @@ class ReviewWindowTests(unittest.TestCase):
         red_pixels = np.all(center == np.array([0, 0, 255]), axis=2)
 
         self.assertGreater(np.count_nonzero(red_pixels), 100)
+
+    def test_review_stores_both_points_without_clamping_or_recalculation(self):
+        window = SimpleNamespace(
+            _review_sessions={1: {1: []}}, _previous_review_session_id=None,
+            _reference_images={3: np.zeros((100, 200, 3), dtype=np.uint8)},
+        )
+        MainWindow._store_review_shot(window, {
+            "session_id": 1, "port_id": 1, "shot_number": 1,
+            "metadata": {"class_id": 3, "transformed_click_point": (100, 50),
+                         "transformed_point": (-20, 50), "hit": False},
+        })
+        shot = window._review_sessions[1][1][0]
+        self.assertEqual(shot["target_point_before_offset"], (0.5, 0.5))
+        self.assertEqual(shot["target_point"], (-0.1, 0.5))
+        self.assertIs(shot["hit"], False)
+
+    def test_simulation_shows_separate_overlapping_and_outside_points(self):
+        reference = np.full((300, 400, 3), 255, dtype=np.uint8)
+        dialog = ShotReviewDialog.__new__(ShotReviewDialog)
+        dialog._reference_images = {1: reference}
+        for before, after in (
+            ((0.5, 0.5), (0.5, 0.2)),
+            ((0.5, 0.5), (0.5, 0.5)),
+            ((0.5, 0.5), (-0.1, 0.5)),
+        ):
+            with self.subTest(before=before, after=after):
+                preview = dialog._simulation_preview({
+                    "target_index": 1, "target_point_before_offset": before,
+                    "target_point": after, "hit": False,
+                })
+                self.assertTrue(np.any(np.all(preview == [255, 0, 0], axis=2)))
+                self.assertTrue(np.any(np.all(preview == [0, 0, 255], axis=2)))
+                if after[0] < 0:
+                    self.assertGreater(preview.shape[1], reference.shape[1])
+                    # The red point must be in the expanded background, not
+                    # clamped to the original target's left border.
+                    red_x = np.where(np.all(preview == [0, 0, 255], axis=2))[1]
+                    border_x = np.where(np.all(preview == [40, 40, 220], axis=2))[1]
+                    self.assertLess(red_x.max(), border_x.min())
+        np.testing.assert_array_equal(reference, 255)
+
+    def test_scoring_result_reaches_hit_counter_with_offset_coordinates(self):
+        widget = MagicMock()
+        window = SimpleNamespace(
+            _store_review_shot=MagicMock(), testing=True, _active_review_session_id=1,
+            client_widgets=[widget], _reference_images={0: np.zeros((100, 200, 3))},
+            _maybe_close_hit_target=MagicMock(),
+        )
+        MainWindow._on_scoring_done(window, {
+            "ok": True, "session_id": 1, "port_id": 1,
+            "metadata": {"class_id": 0, "transformed_point": (100, 35),
+                         "transformed_click_point": (100, 50), "hit": True},
+        })
+        widget.record_shot.assert_called_once_with(0, 0.5, 0.35, True)
+
+    def test_shot_picker_and_navigation_stay_in_sync(self):
+        dialog = ShotReviewDialog(1, [{"shot_number": n} for n in (1, 2, 3)])
+        try:
+            dialog.shot_selector.setCurrentIndex(2)
+            self.assertEqual(dialog.current_index, 2)
+            self.assertFalse(dialog.next_btn.isEnabled())
+            dialog.previous_btn.click()
+            self.assertEqual(dialog.shot_selector.currentIndex(), 1)
+            dialog.show_first()
+            self.assertEqual(dialog.shot_selector.currentIndex(), 0)
+            self.assertFalse(dialog.previous_btn.isEnabled())
+        finally:
+            dialog.close()
 
     def test_overlapping_boxes_do_not_favor_larger_box_by_pixel_depth(self):
         large_wrong_box = {

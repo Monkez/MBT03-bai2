@@ -3,8 +3,9 @@ import os
 import cv2
 import numpy as np
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QImage, QKeySequence, QPixmap
+from PyQt5.QtGui import QFont, QImage, QKeySequence, QPixmap
 from PyQt5.QtWidgets import (
+    QComboBox,
     QDialog,
     QFrame,
     QHBoxLayout,
@@ -34,7 +35,7 @@ OTHER_BOX_THICKNESS = cf.config_int(
 
 
 def draw_impact_marker(image, point, color=(0, 0, 255), scale_factor=1.0):
-    """Draw a high-contrast marker that remains visible after scaling."""
+    """Draw a simple cross at the impact point."""
     if image is None or point is None:
         return
     height, width = image.shape[:2]
@@ -42,17 +43,9 @@ def draw_impact_marker(image, point, color=(0, 0, 255), scale_factor=1.0):
     y = max(0, min(height - 1, int(round(point[1]))))
     base = max(height, width)
     scale_factor = max(0.5, float(scale_factor))
-    size = max(18, int(round(base * 0.055 * scale_factor)))
-    thickness = max(2, int(round(base * 0.004 * scale_factor)))
-    radius = max(4, size // 7)
-
-    cv2.drawMarker(image, (x, y), (0, 0, 0), cv2.MARKER_CROSS, size, thickness + 4)
-    cv2.drawMarker(image, (x, y), (255, 255, 255), cv2.MARKER_CROSS, size, thickness + 2)
+    size = max(18, int(round(base * 0.04 * scale_factor)))
+    thickness = max(2, int(round(base * 0.0025 * scale_factor)))
     cv2.drawMarker(image, (x, y), color, cv2.MARKER_CROSS, size, thickness)
-    cv2.circle(image, (x, y), radius + 4, (0, 0, 0), -1)
-    cv2.circle(image, (x, y), radius + 2, (0, 255, 255), -1)
-    cv2.circle(image, (x, y), radius, color, -1)
-    cv2.circle(image, (x, y), max(1, radius // 3), (255, 255, 255), -1)
 
 
 class AspectImageLabel(QLabel):
@@ -60,8 +53,8 @@ class AspectImageLabel(QLabel):
         super().__init__(placeholder, parent)
         self._source_pixmap = None
         self.setAlignment(Qt.AlignCenter)
-        self.setMinimumSize(420, 360)
-        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.setMinimumSize(280, 240)
+        self.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
         self.setStyleSheet(
             "QLabel {"
             "background: #111827;"
@@ -116,9 +109,10 @@ class ShotReviewDialog(QDialog):
         self.current_index = 0
         self._reference_images = self._load_reference_images()
 
+        self.setFont(QFont("Segoe UI", 10))
         self.setWindowTitle(f"Xem lại phát bắn - Bệ {pedestal_id}")
-        self.setMinimumSize(1080, 680)
-        self.resize(1280, 780)
+        self.setMinimumSize(920, 600)
+        self.resize(1180, 740)
         self.setModal(True)
         self._build_ui()
         self._bind_shortcuts()
@@ -131,7 +125,10 @@ class ShotReviewDialog(QDialog):
             "QLabel#dialogSubtitle { color: #64748b; font-size: 13px; }"
             "QLabel#panelTitle { color: #334155; font-size: 13px; font-weight: 700; }"
             "QLabel#shotStatus { color: #0f172a; font-size: 15px; font-weight: 600; }"
-            "QLabel#shotDetails { color: #64748b; font-size: 13px; }"
+            "QLabel#shotDetails { color: #475569; font-size: 13px; }"
+            "QComboBox { background: white; color: #0f172a; border: 1px solid #94a3b8;"
+            "border-radius: 6px; min-height: 36px; padding: 0 10px; font-size: 13px; }"
+            "QComboBox:focus, QPushButton:focus { border: 2px solid #2563eb; }"
             "QPushButton {"
             "min-height: 38px; padding: 0 18px; border-radius: 7px;"
             "background: white; color: #1e293b; border: 1px solid #cbd5e1;"
@@ -144,67 +141,82 @@ class ShotReviewDialog(QDialog):
         )
 
         root = QVBoxLayout(self)
-        root.setContentsMargins(24, 20, 24, 20)
-        root.setSpacing(14)
+        root.setContentsMargins(16, 14, 16, 14)
+        root.setSpacing(10)
 
-        title = QLabel(f"XEM LẠI PHÁT BẮN · BỆ {self.pedestal_id}")
+        header = QHBoxLayout()
+        title = QLabel(f"Xem lại phát bắn · Bệ {self.pedestal_id}")
         title.setObjectName("dialogTitle")
-        subtitle = QLabel("Phiên bắn vừa kết thúc")
-        subtitle.setObjectName("dialogSubtitle")
-        root.addWidget(title)
-        root.addWidget(subtitle)
+        close_btn = QPushButton("Đóng")
+        close_btn.setToolTip("Đóng cửa sổ (Esc)")
+        close_btn.clicked.connect(self.accept)
+        header.addWidget(title)
+        header.addStretch()
+        header.addWidget(close_btn)
+        root.addLayout(header)
 
-        panels = QHBoxLayout()
-        panels.setSpacing(16)
-        self.camera_view = self._create_panel(panels, "ẢNH CHỤP TỪ SÚNG", "Không có ảnh camera")
-        self.simulation_view = self._create_panel(panels, "MÔ PHỎNG ĐIỂM CHẠM", "Không có ảnh mô phỏng")
-        root.addLayout(panels, 1)
-
-        info_frame = QFrame()
-        info_frame.setObjectName("infoFrame")
-        info_frame.setStyleSheet(
-            "QFrame#infoFrame {"
-            "background: white; border: 1px solid #dbe3ec; border-radius: 9px;"
-            "}"
-        )
-        info_layout = QVBoxLayout(info_frame)
-        info_layout.setContentsMargins(16, 10, 16, 10)
-        info_layout.setSpacing(3)
+        summary = QHBoxLayout()
         self.status_label = QLabel()
         self.status_label.setObjectName("shotStatus")
+        self.status_label.setTextFormat(Qt.PlainText)
+        self.status_label.setWordWrap(True)
+        self.counter_label = QLabel()
+        self.counter_label.setStyleSheet("color: #475569; font-size: 13px;")
+        summary.addWidget(self.status_label, 1)
+        summary.addWidget(self.counter_label)
+        root.addLayout(summary)
+
+        panels = QHBoxLayout()
+        panels.setSpacing(12)
+        self.camera_view = self._create_panel(
+            panels, "ẢNH CAMERA", "Không có ảnh camera",
+            f"Zoom {REVIEW_CAMERA_ZOOM:g}× · Khung vàng: bia được chọn · Khung xanh: bia khác",
+        )
+        self.simulation_view = self._create_panel(
+            panels, "ĐIỂM CHẠM TRÊN BIA", "Không có ảnh mô phỏng",
+            '<span style="color:#0000ff">+ Trước offset</span> &nbsp; '
+            '<span style="color:#b91c1c">+ Sau offset · dùng chấm điểm</span>',
+        )
+        root.addLayout(panels, 1)
+
         self.details_label = QLabel()
         self.details_label.setObjectName("shotDetails")
-        info_layout.addWidget(self.status_label)
-        info_layout.addWidget(self.details_label)
-        root.addWidget(info_frame)
+        self.details_label.setWordWrap(True)
+        self.details_label.setTextFormat(Qt.PlainText)
+        root.addWidget(self.details_label)
 
         controls = QHBoxLayout()
-        controls.setSpacing(9)
+        controls.setSpacing(8)
         self.previous_btn = QPushButton("◀  Phát trước")
-        self.counter_label = QLabel()
-        self.counter_label.setAlignment(Qt.AlignCenter)
-        self.counter_label.setMinimumWidth(130)
-        self.counter_label.setStyleSheet(
-            "color: #0f172a; font-size: 15px; font-weight: 700; padding: 8px;"
-        )
+        self.previous_btn.setToolTip("Phát trước (←)")
         self.next_btn = QPushButton("Phát sau  ▶")
-        close_btn = QPushButton("Đóng")
-        close_btn.setObjectName("primaryButton")
-
+        self.next_btn.setToolTip("Phát sau (→)")
+        self.shot_selector = QComboBox()
+        self.shot_selector.setAccessibleName("Chọn phát bắn")
+        self.shot_selector.setMinimumWidth(250)
+        self.shot_selector.setSizeAdjustPolicy(QComboBox.AdjustToMinimumContentsLengthWithIcon)
+        for shot in self.shots:
+            hit = shot.get("hit")
+            result = "Trúng" if hit is True else "Trượt" if hit is False else "Chưa xác định"
+            self.shot_selector.addItem(
+                f"Phát {shot.get('shot_number', 0)} · {shot.get('target_name') or 'Không rõ bia'} · {result}"
+            )
+        self.shot_selector.currentIndexChanged.connect(self._set_index)
+        self.shot_selector.setEnabled(bool(self.shots))
         self.previous_btn.clicked.connect(self.show_previous)
         self.next_btn.clicked.connect(self.show_next)
-        close_btn.clicked.connect(self.accept)
-
+        for button in (self.previous_btn, self.next_btn, close_btn):
+            button.setAutoDefault(False)
         controls.addWidget(self.previous_btn)
-        controls.addStretch()
-        controls.addWidget(self.counter_label)
-        controls.addStretch()
+        controls.addWidget(self.shot_selector, 1)
         controls.addWidget(self.next_btn)
-        controls.addSpacing(12)
-        controls.addWidget(close_btn)
+        hint = QLabel("← → Duyệt phát · Home / End Đầu / Cuối")
+        hint.setObjectName("dialogSubtitle")
+        controls.addSpacing(8)
+        controls.addWidget(hint)
         root.addLayout(controls)
 
-    def _create_panel(self, panels, title_text, placeholder):
+    def _create_panel(self, panels, title_text, placeholder, legend):
         frame = QFrame()
         frame.setObjectName("reviewPanel")
         frame.setStyleSheet(
@@ -213,13 +225,18 @@ class ShotReviewDialog(QDialog):
             "}"
         )
         layout = QVBoxLayout(frame)
-        layout.setContentsMargins(12, 12, 12, 12)
+        layout.setContentsMargins(10, 10, 10, 10)
         layout.setSpacing(8)
         title = QLabel(title_text)
         title.setObjectName("panelTitle")
         view = AspectImageLabel(placeholder)
         layout.addWidget(title)
         layout.addWidget(view, 1)
+        caption = QLabel(legend)
+        caption.setObjectName("shotDetails")
+        caption.setWordWrap(True)
+        caption.setMinimumHeight(36)
+        layout.addWidget(caption)
         panels.addWidget(frame, 1)
         return view
 
@@ -271,13 +288,27 @@ class ShotReviewDialog(QDialog):
         self.status_label.setText(
             f"Phát {shot_number} · {target_name} · {result_text}"
         )
+        status_color = "#166534" if hit is True else "#b91c1c" if hit is False else "#475569"
+        self.status_label.setStyleSheet(f"color: {status_color};")
         detection_count = len(shot.get("detections", []))
+        before = shot.get("target_point_before_offset")
+        after = shot.get("target_point")
+        if before is None or after is None:
+            offset_note = "Chưa đủ dữ liệu để so sánh hai điểm."
+        elif np.allclose(before, after, rtol=0, atol=1e-9):
+            offset_note = "Offset bằng 0: hai điểm trùng nhau."
+        else:
+            offset_note = "Chấm điểm tại dấu thập đỏ (sau offset)."
+        if any(point is not None and any(value < 0 or value > 1 for value in point)
+               for point in (before, after)):
+            offset_note += " Điểm ngoài ảnh bia được hiển thị trên vùng nền mở rộng."
         self.details_label.setText(
-            f"{status} · Phát hiện {detection_count} bia · "
-            "Ảnh camera zoom 1.5x · "
-            "Khung vàng: bia được chọn; khung xanh: detection khác"
+            f"{status} · Phát hiện {detection_count} bia. {offset_note}"
         )
-        self.counter_label.setText(f"{self.current_index + 1} / {len(self.shots)}")
+        self.counter_label.setText(f"{self.current_index + 1} / {len(self.shots)} phát")
+        self.shot_selector.blockSignals(True)
+        self.shot_selector.setCurrentIndex(self.current_index)
+        self.shot_selector.blockSignals(False)
 
         at_start = self.current_index == 0
         at_end = self.current_index == len(self.shots) - 1
@@ -410,15 +441,46 @@ class ShotReviewDialog(QDialog):
             border_color,
             thickness,
         )
-        normalized = shot.get("target_point")
-        if normalized is not None:
-            height, width = preview.shape[:2]
-            point = (normalized[0] * width, normalized[1] * height)
-            # Always use bright red for the impact itself.  Reusing the green
-            # "hit" border made the marker disappear into dark-green targets.
+        height, width = preview.shape[:2]
+        points = []
+        for key in ("target_point_before_offset", "target_point"):
+            normalized = shot.get(key)
+            points.append(
+                (float(normalized[0]) * width, float(normalized[1]) * height)
+                if normalized is not None and np.all(np.isfinite(normalized)) else None
+            )
+        present = [point for point in points if point is not None]
+        if present:
+            # Fit the complete displacement, including misses outside the image.
+            # Bound the rendered canvas instead of allocating huge padding for
+            # an unusually large configured offset.
+            margin = max(height, width) * 0.07 * SIMULATION_MARKER_SCALE
+            left = min(0.0, min(point[0] for point in present) - margin)
+            top = min(0.0, min(point[1] for point in present) - margin)
+            right = max(float(width), max(point[0] for point in present) + margin)
+            bottom = max(float(height), max(point[1] for point in present) + margin)
+            scale = min(1.0, 1600 / max(right - left, bottom - top))
+            transform = np.asarray([[scale, 0, -left * scale], [0, scale, -top * scale]])
+            preview = cv2.warpAffine(
+                preview, transform,
+                (int(np.ceil((right - left) * scale)), int(np.ceil((bottom - top) * scale))),
+                borderValue=(235, 239, 244),
+            )
+            points = [
+                ((point[0] - left) * scale, (point[1] - top) * scale)
+                if point is not None else None for point in points
+            ]
+        before, after = points
+        if before is not None:
+            coincident = after is not None and np.allclose(before, after, rtol=0, atol=1e-9)
+            draw_impact_marker(
+                preview, before, color=(255, 0, 0),
+                scale_factor=SIMULATION_MARKER_SCALE * (1.35 if coincident else 1.0),
+            )
+        if after is not None:
             draw_impact_marker(
                 preview,
-                point,
+                after,
                 color=(0, 0, 255),
                 scale_factor=SIMULATION_MARKER_SCALE,
             )

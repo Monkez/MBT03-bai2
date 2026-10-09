@@ -1,29 +1,48 @@
+import ast
+from pathlib import Path
 import unittest
 from unittest import mock
 
 import numpy as np
 
 import scoring
+import config as cf
 
 
 LAB_TARGET_OFFSETS = {
-    0: (0.0, -0.06),
+    0: (0.0, -0.15),
     1: (0.0, 0.0),
-    2: (0.0, -0.10),
-    3: (-0.40, 0.0),
+    2: (0.0, -0.30),
+    3: (-0.60, 0.0),
 }
 
 
 class TargetOffsetTests(unittest.TestCase):
+    def test_defaults_and_shipped_config_match_lab_calibration(self):
+        root = Path(__file__).resolve().parents[1]
+        lab = ast.parse((root / "LAB" / "scoring.py").read_text(encoding="utf-8"))
+        lab_offsets = next(
+            ast.literal_eval(node.value) for node in lab.body
+            if isinstance(node, ast.Assign)
+            and any(isinstance(target, ast.Name) and target.id == "TARGET_OFFSETS"
+                    for target in node.targets)
+        )
+        self.assertEqual(LAB_TARGET_OFFSETS, lab_offsets)
+        self.assertEqual(scoring.DEFAULT_TARGET_OFFSETS, lab_offsets)
+        for config in (cf.DEFAULT_CONFIG, cf.load_app_config()):
+            actual = {int(key): tuple(value) for key, value in
+                      config["scoring"]["target_offsets_by_class"].items()}
+            self.assertEqual(actual, lab_offsets)
+
     def test_provisional_offsets_are_relative_to_reference_size(self):
         shape = (1000, 500, 3)
         point = (250.0, 500.0)
 
         with mock.patch.dict(scoring.TARGET_OFFSETS, LAB_TARGET_OFFSETS, clear=True):
             self.assertEqual(scoring.apply_target_offset(1, shape, point), point)
-            self.assertEqual(scoring.apply_target_offset(0, shape, point), (250.0, 440.0))
-            self.assertEqual(scoring.apply_target_offset(2, shape, point), (250.0, 400.0))
-            self.assertEqual(scoring.apply_target_offset(3, shape, point), (50.0, 500.0))
+            self.assertEqual(scoring.apply_target_offset(0, shape, point), (250.0, 350.0))
+            self.assertEqual(scoring.apply_target_offset(2, shape, point), (250.0, 200.0))
+            self.assertEqual(scoring.apply_target_offset(3, shape, point), (-50.0, 500.0))
 
     def test_offset_rotation_is_disabled_by_default(self):
         shape = (1000, 400, 3)
@@ -36,7 +55,7 @@ class TargetOffsetTests(unittest.TestCase):
         with mock.patch.dict(scoring.TARGET_OFFSETS, LAB_TARGET_OFFSETS, clear=True):
             adjusted = scoring.apply_target_offset(3, shape, point, matrix)
 
-        self.assertAlmostEqual(adjusted[0], 40.0)
+        self.assertAlmostEqual(adjusted[0], -40.0)
         self.assertAlmostEqual(adjusted[1], 500.0)
 
     def test_bia_8_horizontal_rotation_can_be_enabled_with_mirrored_angle(self):
@@ -96,14 +115,38 @@ class TargetOffsetTests(unittest.TestCase):
             )
 
         self.assertEqual(metadata["transformed_click_point"], (100.0, 50.0))
-        self.assertEqual(metadata["transformed_point"], (100.0, 44.0))
+        self.assertEqual(metadata["transformed_point"], (100.0, 35.0))
         self.assertNotIn("camera_impact_point", metadata)
-        self.assertEqual(metadata["target_offset"], (0.0, -0.06))
+        self.assertEqual(metadata["target_offset"], (0.0, -0.15))
         self.assertEqual(hit_area.call_count, 2)
         self.assertEqual(
             hit_area.call_args,
-            mock.call(0, reference.shape, (100.0, 44.0)),
+            mock.call(0, reference.shape, (100.0, 35.0)),
         )
+
+    def test_real_hit_area_uses_offset_to_change_hit_result(self):
+        image = np.zeros((100, 200, 3), dtype=np.uint8)
+        identity = np.asarray([[1.0, 0, 0], [0, 1.0, 0]])
+        for class_id, polygon, expected_hit in (
+            (0, [(0, 0), (1, 0), (1, 0.4), (0, 0.4)], True),
+            (2, [(0, 0), (1, 0), (1, 0.4), (0, 0.4)], True),
+            (3, [(0, 0), (1, 0), (1, 1), (0, 1)], False),
+        ):
+            detection = {"bbox": [0, 0, 199, 99], "conf": 0.9,
+                         "class_id": class_id, "keypoints": []}
+            template = {**scoring.TARGET_TEMPLATES[class_id], "area_keypoints": polygon}
+            with (
+                self.subTest(class_id=class_id),
+                mock.patch.object(scoring, "inference", return_value=[detection]),
+                mock.patch.object(scoring, "estimate_target_transform", return_value=(identity, 4)),
+                mock.patch.dict(scoring.TARGET_TEMPLATES, {class_id: template}),
+            ):
+                _, metadata = scoring.scoring(image, (0.5, 0.5), {class_id: image}, object())
+                self.assertIs(metadata["hit"], expected_hit)
+                self.assertIs(
+                    scoring.point_in_hit_area(class_id, image.shape, metadata["transformed_click_point"]),
+                    not expected_hit,
+                )
 
 
 if __name__ == "__main__":

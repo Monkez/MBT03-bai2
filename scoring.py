@@ -49,10 +49,10 @@ RANSAC_MAX_ITERATIONS = cf.config_int(
     "scoring.ransac_max_iterations", 3000, minimum=100, maximum=100000
 )
 DEFAULT_TARGET_OFFSETS = {
-    0: (0.0, -0.06),
+    0: (0.0, -0.15),
     1: (0.0, 0.0),
-    2: (0.0, -0.10),
-    3: (-0.40, 0.0),
+    2: (0.0, -0.30),
+    3: (-0.60, 0.0),
 }
 
 
