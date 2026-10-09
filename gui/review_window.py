@@ -44,7 +44,7 @@ def draw_impact_marker(image, point, color=(0, 0, 255), scale_factor=1.0):
     base = max(height, width)
     scale_factor = max(0.5, float(scale_factor))
     size = max(18, int(round(base * 0.04 * scale_factor)))
-    thickness = max(4, int(round(base * 0.005 * scale_factor)))
+    thickness = max(6, int(round(base * 0.008 * scale_factor)))
     cv2.drawMarker(image, (x, y), color, cv2.MARKER_CROSS, size, thickness)
 
 
