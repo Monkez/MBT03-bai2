@@ -46,6 +46,8 @@ Các thay đổi chính gồm cổng kết nối ổn định có fallback, hàn
 
 ## Kiểm tra gần nhất
 
+- Kiểm tra riêng PC ngày 2026-10-10: bộ đếm chỉ tăng khi chấm xong; nhánh lỗi inference trước đây bỏ qua đạn, còn server bỏ ảnh khi đủ 8 tác vụ decode. Đã sửa đợi chỗ trống trên luồng data trước khi nhận ảnh và cộng đạn không có điểm chạm khi chấm lỗi trong phiên đang chạy. `test.bat` đạt 139/139; test ép quá tải/ép lỗi tái hiện được, nhưng `server.log` hiện tại không có bằng chứng xác nhận hai tình huống này trong phiên thực tế. Không sửa hoặc deploy thêm phía board trong lần kiểm tra này.
+
 - Ngày 2026-10-10: tái hiện 3 tín hiệu UART trong một lần đọc chỉ tạo 1 lượt gửi ảnh. Đã sửa parser xử lý mọi tín hiệu, giữ đuôi chưa đủ và bỏ debounce 15 ms cho tín hiệu phần cứng; giữ debounce thao tác demo. Server bỏ loại thông báo theo thời điểm nhận vì mạng có thể dồn nhiều thông báo. `test.bat` đạt 134/134, bao phủ burst, tín hiệu bị chia đoạn, pin/lỗi xen kẽ và hai client ZeroMQ gửi burst riêng. Chưa deploy/kiểm chứng trên board thật; phải cập nhật runtime Orange Pi cùng phần mềm PC.
 
 - Ngày 2026-10-10: chỉ cửa sổ xem lại vẽ cả hai điểm offset, thêm đường thẳng vàng nối hai điểm bên dưới marker. Bia mô phỏng màn hình chính tiếp tục chỉ nhận `transformed_point` (sau offset) cho mỗi phát.

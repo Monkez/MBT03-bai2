@@ -475,7 +475,6 @@ class MainWindow(QMainWindow):
         self._store_review_shot(result)
         if not result.get("ok"):
             print(f"[Main] Cham bia loi tai be {result.get('port_id')}: {result.get('error')}")
-            return
         if (
             not self.testing
             or result.get("session_id") != self._active_review_session_id
@@ -483,6 +482,11 @@ class MainWindow(QMainWindow):
             return
         port_id = result["port_id"]
         if not (1 <= port_id <= len(self.client_widgets)):
+            return
+        if not result.get("ok"):
+            # A received shot still consumes ammunition if inference fails.
+            # Keep the error in review without inventing an impact or a hit.
+            self.client_widgets[port_id - 1].record_miss()
             return
         metadata = result["metadata"]
         class_id = metadata.get("class_id")

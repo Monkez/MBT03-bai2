@@ -784,6 +784,14 @@ class MBT03ServerCore(QObject):
                 socks = dict(poller.poll(200))
                 if self.data_socket not in socks:
                     continue
+
+                # Leave images in the transport queue until a decoder is free.
+                # Unlike live preview frames, each shoot image must be counted.
+                with self._decode_lock:
+                    decode_full = self._decode_inflight >= self._decode_max_inflight
+                if decode_full:
+                    time.sleep(0.01)
+                    continue
                 
                 frames = self.data_socket.recv_multipart()
                 if len(frames) < 2:
@@ -822,12 +830,6 @@ class MBT03ServerCore(QObject):
                         continue
 
                     with self._decode_lock:
-                        if self._decode_inflight >= self._decode_max_inflight:
-                            self._log(
-                                f"Drop shoot image decode: inflight={self._decode_inflight} "
-                                f"max={self._decode_max_inflight}"
-                            )
-                            continue
                         self._decode_inflight += 1
                     try:
                         self._decode_pool.submit(
