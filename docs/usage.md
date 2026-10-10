@@ -1,5 +1,27 @@
 # Sử dụng
 
+## Kiểm tra UART và đổi Wi-Fi (Ctrl + S)
+
+Tại màn hình chính, nhấn **Ctrl + S** để mở `UART Debug`, tương tự MBT03-wireless.
+Cửa sổ không chặn màn hình chính; nhấn lại phím tắt để mở lại cùng cửa sổ.
+
+- Chọn một bệ hoặc **Tất cả bệ online**, nhập lệnh rồi bấm **Gửi UART** hoặc Enter
+  trong ô lệnh. Phần mềm tự thêm ký tự xuống dòng và báo bệ gửi thành công/thất bại.
+- Ba nút **Đỏ nhấp nháy / Xanh nhấp nháy / Xanh sáng** điền lần lượt `0LR01`,
+  `0LG01`, `0LG00`; bấm Gửi UART để thực hiện.
+- Đổi Wi-Fi: chọn **một bệ**, nhập SSID/mật khẩu, bấm **Đổi Wi-Fi an toàn** và xác
+  nhận đúng bệ. Ứng dụng dùng giao thức `WIFI_CFG` hiện có, không gửi mật khẩu bằng
+  lệnh UART `Wifi#`. Mật khẩu bị xóa khỏi ô sau khi gửi hoặc đóng cửa sổ.
+- Board thử mạng mới, ứng dụng xác nhận khi board kết nối khỏe trở lại. Nếu không
+  được xác nhận trong thời hạn, board tự khôi phục mạng cũ. Giao diện phân biệt
+  đang thử, đã lưu, đang/đã khôi phục và hết thời gian chưa rõ kết quả.
+- Đóng cửa sổ vẫn tiếp tục theo dõi yêu cầu đang chạy. Nếu thoát ứng dụng giữa lúc
+  đổi mạng, cơ chế khôi phục trên board vẫn áp dụng. Cần client hỗ trợ `WIFI_CFG`.
+- Các nút gửi bị khóa trong bài bắn; cần chờ thao tác thiết bị hoàn tất mới bắt đầu
+  bài mới. Không thay đổi cấu hình mạng thật trong kiểm thử tự động.
+
+## Bài bắn
+
 Khi mở ứng dụng, chọn số bệ bắn rồi bấm `CHẤP NHẬN`.
 
 Màn hình chính hiện các bệ đã chọn. Mỗi bệ có 4 bia được ghép bằng OpenCV. Khi chọn 2 bệ, bố cục bia chuyển sang dạng dọc để mỗi bệ dễ quan sát hơn. Viền đỏ là mục tiêu chưa trúng, viền xanh lá là mục tiêu đã trúng. Nhãn kết quả hiển thị số đạn đã bắn trên 16 viên, số mục tiêu đã trúng trên 4 mục tiêu và xếp loại.

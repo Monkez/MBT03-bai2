@@ -1,5 +1,12 @@
 # Trạng thái dự án
 
+## Build và UART Debug (2026-10-10)
+
+- `build.bat` gọi `scripts/build_release.py`, dùng `.venv` và `requirements-build.txt`. Output onedir/windowed trong `dist/`, phiên bản lưu sau build thành công ở `build_state.json`; đọc `docs/build.md` khi đổi cách đóng gói.
+- `gui/uart_debug_dialog.py` là cửa sổ Ctrl + S, được MainWindow giữ lại khi ẩn để tiếp tục theo dõi giao dịch Wi-Fi. I/O chạy trên executor riêng; không lưu mật khẩu trong trạng thái. Khi thoát app phải gọi `shutdown()` trước khi dừng server.
+- Wi-Fi dùng API sẵn có của `MBT03ServerCore`: request → ACK/status → commit khi khỏe. Hết deadline không khẳng định đã rollback nếu chưa nhận trạng thái. Không thay đổi protocol/board cho tính năng này.
+- `test.bat` đạt 177 test. Đã build `MBT03-Bai2-V2-101026`, kiểm tra DLL ONNX/Qt Multimedia và dựng ảnh cửa sổ UART ở 620/520 px. Kiểm tra giao diện EXE trên desktop bị người dùng dừng bằng Esc; chưa xác nhận vận hành trên phần cứng hoặc máy sạch.
+
 ## Quy tắc bài bắn (2026-10-10)
 
 - `gui/shooting_session.py` giới hạn 75 giây, thứ tự class `(1, 0, 2, 3)` và cửa sổ 7 giây theo thời điểm PC gửi lệnh dựng; lệnh gập vì trúng đóng cửa sổ sớm. Chưa có phản hồi vị trí bia thực từ phần cứng.

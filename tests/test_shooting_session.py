@@ -6,7 +6,7 @@ import numpy as np
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from PyQt5.QtTest import QTest
+from PyQt5.QtTest import QSignalSpy
 from PyQt5.QtWidgets import QApplication
 
 import config as cf
@@ -196,8 +196,9 @@ class ShootingFlowTests(unittest.TestCase):
         self.window._schedule_lora_script()
         self.window.timer.stop()
         self.clock.return_value = 175
+        timeout = QSignalSpy(self.window._test_timeout_timer.timeout)
         self.window._test_timeout_timer.start(1)
-        QTest.qWait(30)
+        self.assertTrue(timeout.wait(1000), "Exercise timeout signal was not delivered")
         self.assertFalse(self.window.testing)
         self.assertEqual(self.window._lora_schedule_timers, [])
         self.assertFalse(self.window.client_widgets[0].testing)

@@ -2,6 +2,9 @@
 
 ## 2026-10-10
 
+- Thêm `build.bat`, PyInstaller và bộ đóng gói portable tự tăng tên `MBT03-Bai2-V<version>-<ddmmyy>`; hỗ trợ `--dry-run`, kiểm tra output, chỉ ghi phiên bản sau build thành công, không đóng gói dữ liệu ghép nối/Wi-Fi riêng.
+- Thêm Ctrl + S mở UART Debug: chọn bệ/all online, ba lệnh đèn, gửi UART nền và đổi Wi-Fi qua giao thức hiện có; theo dõi ACK, tự xác nhận khi board kết nối lại và hiển thị trạng thái khôi phục. Khóa gửi trong bài bắn và chặn bắt đầu khi thao tác thiết bị còn chờ.
+
 - Tự kết thúc bài ở giây 75; kiểm tra bia theo thứ tự 6 → 10 → 7B → 8 và cửa sổ 7 giây, đóng sớm khi gửi lệnh gập vì trúng. Sai bia/ngoài cửa sổ chỉ tính đạn, lưu lý do trong xem lại. Giữ kết quả các phát đã nhận trước khi dừng dù xử lý xong muộn.
 - Phát tiếng nổ `TN.mp3` qua Qt cho mỗi ảnh bắn trong bài và Q0; khóa cài đặt khi đang bắn và bỏ phím `D` ghi điểm ngẫu nhiên. Chỉ cần khởi động lại ứng dụng PC.
 

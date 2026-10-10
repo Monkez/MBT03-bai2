@@ -11,7 +11,7 @@ import cv2
 import numpy as np
 from PyQt5 import QtGui, uic
 from PyQt5.QtCore import QTimer, Qt, pyqtSignal
-from PyQt5.QtWidgets import QMainWindow
+from PyQt5.QtWidgets import QMainWindow, QMessageBox, QShortcut
 
 import config as cf
 import scoring
@@ -24,6 +24,7 @@ from gui.option_window import OptionWindow
 from gui.review_window import ShotReviewDialog
 from gui.setting_window import SettingWindow
 from gui.shot_sound import ShotSound
+from gui.uart_debug_dialog import UartDebugDialog
 from gui.shooting_session import (
     MAX_DURATION_SECONDS, TARGET_CLASS_SEQUENCE, TARGET_VISIBLE_SECONDS, ShootingSession,
 )
@@ -137,6 +138,7 @@ class MainWindow(QMainWindow):
         self._confirmed_ports = set()
         self._q0_calibrated = {}
         self._setting_window = None
+        self._uart_debug_dialog = None
         self._review_sessions = {}
         self._review_shot_counters = {}
         self._review_session_counter = 0
@@ -186,6 +188,16 @@ class MainWindow(QMainWindow):
     def _configure_main_ui(self):
         self.setting_btn.clicked.connect(self.open_setting_window)
         self.start_btn.clicked.connect(self.start_btn_clicked)
+        self._uart_debug_shortcut = QShortcut(QtGui.QKeySequence("Ctrl+S"), self)
+        self._uart_debug_shortcut.activated.connect(self._open_uart_debug_dialog)
+
+    def _open_uart_debug_dialog(self):
+        if self._uart_debug_dialog is None:
+            self._uart_debug_dialog = UartDebugDialog(self.servers, self)
+        self._uart_debug_dialog.refresh()
+        self._uart_debug_dialog.show()
+        self._uart_debug_dialog.raise_()
+        self._uart_debug_dialog.activateWindow()
 
     def _create_client_widgets(self):
         positions = self._client_positions(self.p_num)
@@ -674,6 +686,12 @@ class MainWindow(QMainWindow):
     def start_test(self):
         if self.testing:
             return
+        if self._uart_debug_dialog is not None and self._uart_debug_dialog.has_pending_operations():
+            QMessageBox.information(
+                self, "Đang xử lý thiết bị",
+                "Chờ gửi lệnh hoặc đổi Wi-Fi hoàn tất trước khi bắt đầu bài bắn.",
+            )
+            return
         self._play_start_announcement()
         self._begin_review_session()
         self._auto_closed_target_classes.clear()
@@ -803,6 +821,8 @@ class MainWindow(QMainWindow):
             event.accept()
             return
         self._closing = True
+        if self._uart_debug_dialog is not None:
+            self._uart_debug_dialog.shutdown()
         self._test_timeout_timer.stop()
         self._shot_sound.stop()
         for server in self.servers:
