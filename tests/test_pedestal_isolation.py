@@ -84,6 +84,7 @@ class PedestalIsolationTests(unittest.TestCase):
     def test_two_real_clients_keep_shoot_images_and_q0_on_their_own_channels(self):
         servers, clients, heartbeat_threads = [], [], []
         received = {1: [], 2: []}
+        notifications = {1: [], 2: []}
 
         def wait_until(predicate):
             deadline = time.monotonic() + 5
@@ -108,6 +109,10 @@ class PedestalIsolationTests(unittest.TestCase):
                         lambda frame, meta, pid=port: received[pid].append((frame, meta)),
                         type=Qt.DirectConnection,
                     )
+                    server.shoot_notify_signal.connect(
+                        lambda timestamp, pid=port: notifications[pid].append(timestamp),
+                        type=Qt.DirectConnection,
+                    )
                     server.start()
                     client = MBT03ClientCore(prior_port_id=port, config_dir=os.path.join(directory, str(port)))
                     clients.append(client)
@@ -129,6 +134,18 @@ class PedestalIsolationTests(unittest.TestCase):
                     expected_counts[port] += 1
                     self.assertTrue(wait_until(lambda: len(received[port]) == expected_counts[port]))
                     self.assertEqual({pid: len(items) for pid, items in received.items()}, expected_counts)
+                # Hardware triggers already represent individual shots. Deliver
+                # bursts on both channels without waiting for earlier images.
+                for port in (2, 1):
+                    for _ in range(3):
+                        clients[port - 1]._shoot_frame = np.full((48, 64, 3), 60 * port, dtype=np.uint8)
+                        self.assertTrue(clients[port - 1].shoot(debounce=False))
+                        expected_counts[port] += 1
+                self.assertTrue(wait_until(lambda: all(
+                    len(received[pid]) == expected_counts[pid]
+                    and len(notifications[pid]) == expected_counts[pid]
+                    for pid in (1, 2)
+                )))
                 for port, items in received.items():
                     for frame, metadata in items:
                         self.assertAlmostEqual(float(frame.mean()), 60 * port, delta=2)

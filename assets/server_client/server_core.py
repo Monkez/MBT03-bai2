@@ -204,9 +204,8 @@ class MBT03ServerCore(QObject):
         self._stream_fps_count = 0
         self._stream_fps_timer = time.time()
         
-        # Shoot debounce: last accepted shoot time (server-side rate-limit)
+        # Last accepted notification time, used only for arrival-gap diagnostics.
         self._last_accepted_shoot_time = 0
-        self.SHOOT_DEBOUNCE_MS = 15  # ~15ms minimum between accepted shots
         # A pending handshake remains valid through the client's reconnect
         # threshold; deriving this avoids two independently tuned 8s values.
         self.CONNECT_GRACE_TIMEOUT = Protocol.CLIENT_RECONNECT_TIMEOUT
@@ -1264,17 +1263,8 @@ class MBT03ServerCore(QObject):
                 if self._last_accepted_shoot_time > 0 else 99999
             )
         
-        # === Debounce check ===
-        if elapsed_since_last < self.SHOOT_DEBOUNCE_MS:
-            self._log(
-                f"\u26a1 SHOOT REJECTED (debounce) | "
-                f"server={now_str}.{now_ms:03d} client={client_str}.{client_ms:03d} "
-                f"latency={latency:.0f}ms gap={elapsed_since_last:.0f}ms "
-                f"(min={self.SHOOT_DEBOUNCE_MS}ms)"
-            )
-            return
-        
-        # === Accepted ===
+        # Distinct triggers can arrive together after network buffering. Arrival
+        # spacing must not discard shots; interactive debounce belongs to client.
         self._log(
             f"\u26a1 SHOOT ACCEPTED | "
             f"server={now_str}.{now_ms:03d} client={client_str}.{client_ms:03d} "

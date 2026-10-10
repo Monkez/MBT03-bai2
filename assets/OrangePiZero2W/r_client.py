@@ -380,34 +380,28 @@ class MBT03HardwareClient:
                     data = self.serial_port.read(64)
                     if data:
                         buf += data
-                        text = buf.decode('utf-8', 'ignore')
-                        matches = re.findall(r'BAT-(\d{1,3})', text)
-                        battery_keep_from = None
-                        if matches:
-                            battery = max(0, min(100, int(matches[-1])))
-                            if self.core.set_battery_percent(battery):
-                                if battery != self._last_battery_percent:
-                                    print(f"[UART] Battery: {battery}%")
-                                    self._last_battery_percent = battery
-                            last_match = text.rfind(f"BAT-{matches[-1]}")
-                            battery_keep_from = last_match + len(f"BAT-{matches[-1]}")
-
-                        if b'0S' in buf:
-                            print("[UART] >>> SHOOT TRIGGERED <<<")
-                            self.shoot()
-                            buf = b''
-                        elif b'0E100' in buf:
-                            print("[UART] >>> ERROR E1 FROM HARDWARE <<<")
-                            self.core.send_data({"UART_RX_DEBUG": "E1"})
-                            buf = b''
-                        elif b'0E200' in buf:
-                            print("[UART] >>> ERROR E2 FROM HARDWARE <<<")
-                            self.core.send_data({"UART_RX_DEBUG": "E2"})
-                            buf = b''
-                        elif battery_keep_from is not None:
-                            buf = text[battery_keep_from:].encode('utf-8', 'ignore')
-                        if len(buf) > 20: buf = buf[-20:]
-                except Exception:
+                        # Serial reads are chunks, not individual events: a
+                        # burst can contain several shots and a partial tail.
+                        consumed = 0
+                        for match in re.finditer(rb'0S|0E[12]00|BAT-(\d{1,3})', buf):
+                            token = match.group(0)
+                            if token == b'0S':
+                                print("[UART] >>> SHOOT TRIGGERED <<<")
+                                self.shoot()
+                            elif token.startswith(b'0E'):
+                                error = "E1" if token == b'0E100' else "E2"
+                                print(f"[UART] >>> ERROR {error} FROM HARDWARE <<<")
+                                self.core.send_data({"UART_RX_DEBUG": error})
+                            else:
+                                battery = max(0, min(100, int(match.group(1))))
+                                if self.core.set_battery_percent(battery):
+                                    if battery != self._last_battery_percent:
+                                        print(f"[UART] Battery: {battery}%")
+                                        self._last_battery_percent = battery
+                            consumed = match.end()
+                        buf = buf[consumed:][-20:]
+                except Exception as exc:
+                    print(f"[UART] Receive error: {exc}")
                     time.sleep(0.1)
             else:
                 time.sleep(1.0)
@@ -416,7 +410,10 @@ class MBT03HardwareClient:
         with self._frame_lock:
             if len(self._frame_buffer) > 0:
                 self.core._shoot_frame = self._frame_buffer[0]
-        self.core.shoot()
+        # Every parsed UART trigger is a distinct shot, even when the OS
+        # delivers several triggers together in one read.
+        if not self.core.shoot(debounce=False):
+            print("[UART] Shoot not queued: client disconnected or control queue unavailable")
 
 if __name__ == "__main__":
     client = MBT03HardwareClient()

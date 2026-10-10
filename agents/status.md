@@ -46,6 +46,8 @@ Các thay đổi chính gồm cổng kết nối ổn định có fallback, hàn
 
 ## Kiểm tra gần nhất
 
+- Ngày 2026-10-10: tái hiện 3 tín hiệu UART trong một lần đọc chỉ tạo 1 lượt gửi ảnh. Đã sửa parser xử lý mọi tín hiệu, giữ đuôi chưa đủ và bỏ debounce 15 ms cho tín hiệu phần cứng; giữ debounce thao tác demo. Server bỏ loại thông báo theo thời điểm nhận vì mạng có thể dồn nhiều thông báo. `test.bat` đạt 134/134, bao phủ burst, tín hiệu bị chia đoạn, pin/lỗi xen kẽ và hai client ZeroMQ gửi burst riêng. Chưa deploy/kiểm chứng trên board thật; phải cập nhật runtime Orange Pi cùng phần mềm PC.
+
 - Ngày 2026-10-10: chỉ cửa sổ xem lại vẽ cả hai điểm offset, thêm đường thẳng vàng nối hai điểm bên dưới marker. Bia mô phỏng màn hình chính tiếp tục chỉ nhận `transformed_point` (sau offset) cho mỗi phát.
 
 - Kiểm tra hai bệ ngày 2026-10-10: chưa tái hiện lẫn dữ liệu giữa hai bệ. Test `test_pedestal_isolation.py` bao phủ tín hiệu gắn đúng `port_id`, kết quả chấm trả về khác thứ tự, bộ đếm/marker/review riêng và ảnh/Q0 qua hai client ZeroMQ thực trên cổng localhost tạm. Màn hình chính dùng xanh=trúng, đỏ=trượt; màn hình xem lại dùng xanh=trước offset, đỏ=sau offset. Log phiên 10:21–10:23 và ảnh lưu của từng bệ phù hợp với sự phân tách này; phép chấm lại dùng Q0 làm tròn từ log, không thay thế kiểm chứng thiết bị thật.

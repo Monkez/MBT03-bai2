@@ -1650,8 +1650,8 @@ class MBT03ClientCore(QObject):
     
     # ======================== SHOOT ========================
     
-    def shoot(self) -> bool:
-        """Two-phase shoot: instant notify (control) + image (data channel)."""
+    def shoot(self, *, debounce=True) -> bool:
+        """Send one shot; parsed hardware events bypass interactive debounce."""
         with self._lock:
             can_shoot = self._control_send_allowed_locked()
             shoot_generation = self._connection_generation
@@ -1660,8 +1660,8 @@ class MBT03ClientCore(QObject):
             return False
         
         now = time.time()
-        # Keep client and server debounce aligned for three-round bursts.
-        if now - self._last_shoot_time < 0.015:
+        # UART batching changes delivery intervals, not the number of shots.
+        if debounce and now - self._last_shoot_time < 0.015:
             return False
         self._last_shoot_time = now
         
