@@ -2,7 +2,7 @@
 
 ## 2026-10-10
 
-- Mở cài đặt gửi LoRa `@111#` dựng bia 6, đóng gửi `@112#` gập bia (Chấp nhận, Hủy, Esc, X); dọn trạng thái và gửi gập cả khi vòng lặp dialog báo lỗi.
+- Mở cài đặt gửi LoRa `@114#` dựng bia 6, đóng gửi `@112#` gập bia (Chấp nhận, Hủy, Esc, X); dọn trạng thái và gửi gập cả khi vòng lặp dialog báo lỗi. Lịch bài bắn vẫn dùng `@111#`.
 - Đổi lệnh bắt đầu bài bắn thành `0F016\n`; chế độ Q0 vẫn dùng `0Q000\n`. Thêm cấu hình lệnh dựng/gập cho cửa sổ cài đặt.
 
 ## 2026-10-09

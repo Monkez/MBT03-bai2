@@ -62,9 +62,9 @@ class ShootingScriptTests(unittest.TestCase):
                     with patch("gui.main_window.SettingWindow", return_value=dialog):
                         QTimer.singleShot(0, close_dialog)
                         MainWindow.open_setting_window(window)
-                    self.assertEqual(calls_while_open, [call("@111#")])
+                    self.assertEqual(calls_while_open, [call("@114#")])
                     self.assertEqual(window.lora.send_command.call_args_list,
-                                     [call("@111#"), call("@112#")])
+                                     [call("@114#"), call("@112#")])
                     self.assertIsNone(window._setting_window)
                 finally:
                     dialog._frame_timer.stop()
@@ -78,7 +78,7 @@ class ShootingScriptTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "dialog failure"):
                 MainWindow.open_setting_window(window)
         self.assertEqual(window.lora.send_command.call_args_list,
-                         [call("@111#"), call("@112#")])
+                         [call("@114#"), call("@112#")])
         self.assertIsNone(window._setting_window)
 
     def test_q0_still_sends_its_own_uart_command(self):

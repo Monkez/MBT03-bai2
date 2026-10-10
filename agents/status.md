@@ -46,7 +46,7 @@ Các thay đổi chính gồm cổng kết nối ổn định có fallback, hàn
 
 ## Kiểm tra gần nhất
 
-- Ngày 2026-10-10: bắt đầu bài bắn dùng `0F016\n` thay cho lệnh Q0 tạm thời. Mở setting gửi `calibration.target_raise_command` (`@111#`), thoát vòng lặp dialog luôn gửi `calibration.target_lower_command` (`@112#`) và xóa `_setting_window` trong `finally`. Nút Q0 vẫn gửi `0Q000\n`; dựng/gập trong setting không phụ thuộc tùy chọn gập bia tự động.
+- Ngày 2026-10-10: bắt đầu bài bắn dùng `0F016\n` thay cho lệnh Q0 tạm thời. Mở setting gửi `calibration.target_raise_command` (`@114#`), thoát vòng lặp dialog luôn gửi `calibration.target_lower_command` (`@112#`) và xóa `_setting_window` trong `finally`. Nút Q0 vẫn gửi `0Q000\n`; dựng/gập trong setting không phụ thuộc tùy chọn gập bia tự động. Lịch bài bắn vẫn dựng bia 6 bằng `@111#`.
 - `test.bat` ngày 2026-10-10 đạt 125/125; kiểm tra vòng lặp dialog Qt và bốn đường đóng với LoRa giả lập. Chưa kiểm tra chuyển động bia hoặc lệnh UART trên thiết bị thật.
 
 - Ngày 2026-10-09: offset vận hành và mặc định đã khớp `LAB/scoring.py`: class 0 `[0, -0.15]`, class 1 `[0, 0]`, class 2 `[0, -0.30]`, class 3 `[-0.60, 0]`; thay thế bộ giá trị ngày 2026-09-13. Vẫn tắt xoay offset. `scoring()` xét vùng trúng bằng điểm sau offset, GUI ghi nhận trực tiếp kết quả đó.

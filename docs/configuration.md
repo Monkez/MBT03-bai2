@@ -77,7 +77,7 @@ Nhóm `calibration`:
 | Khóa | Ý nghĩa |
 | --- | --- |
 | `uart_command` | Lệnh UART chuyển súng sang chế độ quy không. |
-| `target_raise_command` | Lệnh LoRa khi mở cửa sổ cài đặt, mặc định `@111#` dựng bia 6. |
+| `target_raise_command` | Lệnh LoRa khi mở cửa sổ cài đặt, mặc định `@114#` dựng bia 6. |
 | `target_lower_command` | Lệnh LoRa khi đóng cửa sổ cài đặt, mặc định `@112#` gập bia 6. |
 | `sample_count` | Số phát dùng để lấy trung bình quy không. |
 | `target_class_id` | Class bia dùng làm chuẩn quy không. |

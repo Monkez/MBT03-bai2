@@ -69,7 +69,7 @@
     },
     "calibration": {
         "uart_command": "0Q000\n",
-        "target_raise_command": "@111#",
+        "target_raise_command": "@114#",
         "target_lower_command": "@112#",
         "sample_count": 3,
         "target_class_id": 1,

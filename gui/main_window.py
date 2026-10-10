@@ -668,7 +668,7 @@ class MainWindow(QMainWindow):
             parent=self,
         )
         try:
-            self.lora.send_command(cf.config_str("calibration.target_raise_command", "@111#"))
+            self.lora.send_command(cf.config_str("calibration.target_raise_command", "@114#"))
             self._setting_window.exec_()
         finally:
             self._setting_window = None
