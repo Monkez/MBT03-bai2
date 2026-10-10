@@ -4,6 +4,9 @@ Chạy `setup.bat` để tạo môi trường Python 3.11 trong thư mục `.ven
 
 Sau khi cài xong, chạy ứng dụng bằng `run.bat`.
 
+Để tạo bản EXE portable có phiên bản tự tăng, dùng `build.bat`; cài công cụ build
+một lần theo [hướng dẫn build](build.md). Dùng `build.bat --dry-run` để xem trước.
+
 Để mở riêng công cụ thử điểm chạm và offset, chạy `run-score-test.bat`. Công cụ tự dùng model
 và ảnh bia trong `LAB/assets`, không cần mở thêm terminal phụ.
 

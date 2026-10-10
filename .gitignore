@@ -1,4 +1,7 @@
 .venv/
+build/
+dist/
+build_state.json.tmp
 __pycache__/
 *.py[cod]
 server.log
