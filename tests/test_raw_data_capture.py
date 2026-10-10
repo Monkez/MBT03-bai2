@@ -35,11 +35,13 @@ class RawDataCaptureTests(unittest.TestCase):
         window = SimpleNamespace(
             _queue_raw_camera_image=queue_raw,
             _setting_window=SimpleNamespace(Q0=True),
+            _shot_sound=MagicMock(),
         )
 
         MainWindow._on_shoot_image(window, 2, frame, {})
 
         queue_raw.assert_called_once_with(2, frame)
+        window._shot_sound.play.assert_called_once_with()
 
     def test_disabled_capture_does_not_queue_a_write(self):
         pool = MagicMock()

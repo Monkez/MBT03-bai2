@@ -15,6 +15,7 @@ from PyQt5.QtWidgets import QApplication
 
 from gui.client_widget import ClientWidget
 from gui.main_window import MainWindow
+from gui.shooting_session import TargetExposure
 from server_client.client_core import MBT03ClientCore
 from server_client.server_core import MBT03ServerCore
 
@@ -64,6 +65,7 @@ class PedestalIsolationTests(unittest.TestCase):
             ):
                 MainWindow._on_scoring_done(window, {
                     "ok": True, "session_id": 1, "port_id": port, "shot_number": number,
+                    "received_at": 33.0, "exposure": TargetExposure(0, 32.0, 39.0),
                     "metadata": {"class_id": 0, "transformed_point": point,
                                  "transformed_click_point": (point[0], point[1] + 15), "hit": hit},
                 })

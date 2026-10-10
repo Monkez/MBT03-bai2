@@ -1,5 +1,5 @@
-import random
 import json
+import math
 import os
 import threading
 import time
@@ -23,6 +23,10 @@ from gui.lora_controller import LoraController
 from gui.option_window import OptionWindow
 from gui.review_window import ShotReviewDialog
 from gui.setting_window import SettingWindow
+from gui.shot_sound import ShotSound
+from gui.shooting_session import (
+    MAX_DURATION_SECONDS, TARGET_CLASS_SEQUENCE, TARGET_VISIBLE_SECONDS, ShootingSession,
+)
 
 
 class StartupCancelled(Exception):
@@ -63,7 +67,7 @@ def _configured_lora_script():
             if not isinstance(command, str) or not command:
                 continue
             try:
-                delay_seconds = max(0.0, float(item.get("delay_seconds", 0)))
+                delay_seconds = float(item.get("delay_seconds", 0))
             except (TypeError, ValueError):
                 continue
             script.append(
@@ -73,6 +77,19 @@ def _configured_lora_script():
                     str(item.get("description") or command),
                 )
             )
+    # Never shift target identities after a malformed entry or overlap windows.
+    if (len(script) != len(TARGET_CLASS_SEQUENCE)
+            or not isinstance(configured, list) or len(configured) != len(script)
+            or any(not math.isfinite(item[0]) or item[0] < 0
+                   or item[0] + TARGET_VISIBLE_SECONDS > MAX_DURATION_SECONDS
+                   for item in script)
+            or any(right[0] < left[0] + TARGET_VISIBLE_SECONDS
+                   for left, right in zip(script, script[1:]))):
+        print("[Config] Lich bia khong hop le, dung lich mac dinh 6 -> 10 -> 7 -> 8")
+        script = [
+            (item["delay_seconds"], item["command"], item["description"])
+            for item in cf.DEFAULT_CONFIG["shooting"]["lora_timeline"]
+        ]
     return tuple(script)
 
 
@@ -105,6 +122,12 @@ class MainWindow(QMainWindow):
         self.client_widgets = []
         self._start_button_text = self.start_btn.text()
         self._test_start_time = 0.0
+        self._shooting_session = None
+        self._shot_sound = ShotSound(self)
+        self._test_timeout_timer = QTimer(self)
+        self._test_timeout_timer.setSingleShot(True)
+        self._test_timeout_timer.setTimerType(Qt.PreciseTimer)
+        self._test_timeout_timer.timeout.connect(self.stop_test)
         self._lora_schedule_timers = []
         self._closing = False
         self.servers = []
@@ -324,6 +347,7 @@ class MainWindow(QMainWindow):
         """Queue scoring for an image received from a physical pedestal."""
         self._queue_raw_camera_image(port_id, frame)
         if self._setting_window is not None and self._setting_window.Q0:
+            self._shot_sound.play()
             return
         q0 = (q0_data or {}).get("q0", [0.5, 0.5])
         try:
@@ -375,6 +399,12 @@ class MainWindow(QMainWindow):
         session_id = self._active_review_session_id
         if session_id is None:
             return False
+        received_at = time.monotonic()
+        if self._shooting_session.expired(received_at):
+            self.stop_test()
+            return False
+        exposure = self._shooting_session.active_target(received_at)
+        self._shot_sound.play()
         shot_number = self._next_review_shot_number(session_id, port_id)
         self._scoring_pool.submit(
             self._score_shot_worker,
@@ -383,6 +413,8 @@ class MainWindow(QMainWindow):
             port_id,
             frame.copy(),
             (float(bullet_point[0]), float(bullet_point[1])),
+            received_at,
+            exposure,
         )
         return True
 
@@ -420,7 +452,8 @@ class MainWindow(QMainWindow):
         self._scoring_local.session = session
         return session
 
-    def _score_shot_worker(self, session_id, shot_number, port_id, frame, bullet_point):
+    def _score_shot_worker(self, session_id, shot_number, port_id, frame, bullet_point,
+                           received_at, exposure):
         try:
             _, metadata = scoring.scoring(
                 frame,
@@ -436,6 +469,8 @@ class MainWindow(QMainWindow):
                 "metadata": metadata,
                 "bullet_point": bullet_point,
                 "frame": frame,
+                "received_at": received_at,
+                "exposure": exposure,
             })
         except Exception as exc:
             self.scoring_done_signal.emit({
@@ -446,6 +481,8 @@ class MainWindow(QMainWindow):
                 "error": str(exc),
                 "bullet_point": bullet_point,
                 "frame": frame,
+                "received_at": received_at,
+                "exposure": exposure,
             })
 
     def _q0_worker(self, port_id, frame):
@@ -472,13 +509,32 @@ class MainWindow(QMainWindow):
             })
 
     def _on_scoring_done(self, result):
+        # Validate the receipt time, not the (possibly much later) inference time.
+        # Exposure objects retain early closure times for jobs already queued.
+        metadata = result.get("metadata")
+        if result.get("ok") and metadata is not None:
+            exposure = result.get("exposure")
+            received_at = result.get("received_at")
+            eligible = (
+                exposure is not None and received_at is not None
+                and exposure.contains(received_at)
+                and metadata.get("class_id") == exposure.class_id
+            )
+            if not eligible:
+                metadata = dict(metadata)
+                metadata["hit"] = False
+                metadata["status"] = (
+                    "Không tính trúng: bia không trong thời gian được hiện"
+                    if exposure is None or received_at is None or not exposure.contains(received_at)
+                    else "Không tính trúng: nhận diện khác bia đang được hiện"
+                )
+                result = dict(result, metadata=metadata)
         self._store_review_shot(result)
         if not result.get("ok"):
             print(f"[Main] Cham bia loi tai be {result.get('port_id')}: {result.get('error')}")
-        if (
-            not self.testing
-            or result.get("session_id") != self._active_review_session_id
-        ):
+        session_id = (self._active_review_session_id if self.testing
+                      else self._previous_review_session_id)
+        if session_id is None or result.get("session_id") != session_id:
             return
         port_id = result["port_id"]
         if not (1 <= port_id <= len(self.client_widgets)):
@@ -515,7 +571,7 @@ class MainWindow(QMainWindow):
         self._maybe_close_hit_target(class_id, hit)
         print(
             f"[Main] Be {port_id}: class={class_id}, "
-            f"hit={hit}, status={metadata.get('status')}"
+            f"hit={hit}, status={metadata.get('status')!a}"
         )
 
     def _store_review_shot(self, result):
@@ -616,11 +672,16 @@ class MainWindow(QMainWindow):
             self.start_test()
 
     def start_test(self):
+        if self.testing:
+            return
         self._play_start_announcement()
         self._begin_review_session()
         self._auto_closed_target_classes.clear()
         self.testing = True
         self._test_start_time = time.monotonic()
+        self._shooting_session = ShootingSession(self._test_start_time)
+        self._test_timeout_timer.start(MAX_DURATION_SECONDS * 1000)
+        self.setting_btn.setEnabled(False)
         self._send_start_uart_command()
         self._schedule_lora_script()
         self._set_start_button_active(True)
@@ -638,6 +699,8 @@ class MainWindow(QMainWindow):
         command_info = self.AUTO_CLOSE_TARGET_COMMANDS.get(class_id)
         if command_info is None or class_id in self._auto_closed_target_classes:
             return False
+        if not self._shooting_session.close_target(class_id, time.monotonic()):
+            return False
         command, description = command_info
         self._auto_closed_target_classes.add(class_id)
         print(f"[LoRa] Gui {command}: {description}")
@@ -645,7 +708,11 @@ class MainWindow(QMainWindow):
         return True
 
     def stop_test(self):
+        if not self.testing:
+            return
         self.testing = False
+        self._test_timeout_timer.stop()
+        self.setting_btn.setEnabled(True)
         self._finish_review_session()
         self._cancel_lora_script()
         self._set_start_button_active(False)
@@ -658,6 +725,9 @@ class MainWindow(QMainWindow):
             return
 
         elapsed = int(time.monotonic() - self._test_start_time)
+        if elapsed >= MAX_DURATION_SECONDS:
+            self.stop_test()
+            return
         self.start_btn.setText(f"KẾT THÚC ({elapsed}s)")
 
     def _set_start_button_active(self, active):
@@ -665,6 +735,8 @@ class MainWindow(QMainWindow):
             self.start_btn.setChecked(active)
 
     def open_setting_window(self):
+        if self.testing:
+            return
         self._setting_window = SettingWindow(
             p_num=self.p_num,
             servers=self.servers,
@@ -687,12 +759,13 @@ class MainWindow(QMainWindow):
 
     def _schedule_lora_script(self):
         self._cancel_lora_script()
-        for seconds, command, description in self.LORA_SCRIPT:
+        for class_id, (seconds, command, description) in zip(TARGET_CLASS_SEQUENCE, self.LORA_SCRIPT):
             timer = QTimer(self)
             timer.setSingleShot(True)
             timer.setTimerType(Qt.PreciseTimer)
             timer.timeout.connect(
-                lambda cmd=command, desc=description: self._send_lora_script_command(cmd, desc)
+                lambda cmd=command, desc=description, target=class_id:
+                    self._send_lora_script_command(cmd, desc, target)
             )
             timer.start(int(round(seconds * 1000)))
             self._lora_schedule_timers.append(timer)
@@ -703,8 +776,14 @@ class MainWindow(QMainWindow):
             timer.deleteLater()
         self._lora_schedule_timers.clear()
 
-    def _send_lora_script_command(self, command, description):
+    def _send_lora_script_command(self, command, description, class_id):
         if not self.testing:
+            return
+        now = time.monotonic()
+        if self._shooting_session.expired(now):
+            self.stop_test()
+            return
+        if not self._shooting_session.open_target(class_id, now):
             return
         print(f"[LoRa] Gui {command}: {description}")
         self.lora.send_command(command)
@@ -719,20 +798,13 @@ class MainWindow(QMainWindow):
         else:
             print(f"[LoRa] {command} khong co phan hoi hop le sau {attempts} lan gui")
 
-    def keyPressEvent(self, event):
-        if event.key() == Qt.Key_D and self.client_widgets:
-            widget = self.client_widgets[0]
-            target = random.randrange(4)
-            widget.record_shot(target, random.uniform(0.25, 0.75), random.uniform(0.25, 0.75), True)
-            event.accept()
-            return
-        super().keyPressEvent(event)
-
     def closeEvent(self, event):
         if self._closing:
             event.accept()
             return
         self._closing = True
+        self._test_timeout_timer.stop()
+        self._shot_sound.stop()
         for server in self.servers:
             try:
                 server.stop()

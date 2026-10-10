@@ -1,5 +1,12 @@
 # Trạng thái dự án
 
+## Quy tắc bài bắn (2026-10-10)
+
+- `gui/shooting_session.py` giới hạn 75 giây, thứ tự class `(1, 0, 2, 3)` và cửa sổ 7 giây theo thời điểm PC gửi lệnh dựng; lệnh gập vì trúng đóng cửa sổ sớm. Chưa có phản hồi vị trí bia thực từ phần cứng.
+- Mỗi job chấm mang thời điểm nhận ảnh và cửa sổ bia; kết quả phải qua kiểm tra trước khi cập nhật điểm, review hoặc gửi gập. Job nhận trước khi dừng được cập nhật vào phiên vừa kết thúc; bắt đầu phiên mới loại job cũ.
+- `gui/shot_sound.py` dùng Qt Multimedia phát `assets/sounds/TN.mp3`, không thêm dependency. Khóa cài đặt trong bài, bỏ phím `D` ghi điểm ngẫu nhiên.
+- Kiểm chứng: `test.bat` đạt 155 test; Qt Multimedia giải mã/phát thử 3 tiếng nổ liên tiếp ở âm lượng 0, không lỗi. Chưa kiểm tra cơ cấu bia thật hoặc nghe qua loa.
+
 ## Kiến trúc hiện tại
 
 - Ứng dụng PC khởi động từ `main.py`.

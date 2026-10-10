@@ -9,6 +9,7 @@ import numpy as np
 from PyQt5.QtWidgets import QApplication
 
 import scoring
+from gui.shooting_session import TargetExposure
 from gui.main_window import MainWindow
 from gui.review_window import REVIEW_CAMERA_ZOOM, ShotReviewDialog, draw_impact_marker
 
@@ -167,6 +168,8 @@ class ReviewWindowTests(unittest.TestCase):
         )
         MainWindow._on_scoring_done(window, {
             "ok": True, "session_id": 1, "port_id": 1,
+            "received_at": 33.0,
+            "exposure": TargetExposure(0, 32.0, 39.0),
             "metadata": {"class_id": 0, "transformed_point": (100, 35),
                          "transformed_click_point": (100, 50), "hit": True},
         })

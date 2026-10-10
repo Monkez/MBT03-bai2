@@ -1,5 +1,6 @@
 import os
 import threading
+import time
 import unittest
 from collections import deque
 from types import SimpleNamespace
@@ -15,6 +16,7 @@ from PyQt5.QtWidgets import QApplication
 
 from gui.client_widget import ClientWidget
 from gui.main_window import MainWindow
+from gui.shooting_session import ShootingSession
 from server_client.protocol import Protocol
 from test_connection_timeout import _DeferredExecutor, _make_server_harness
 
@@ -82,7 +84,11 @@ class PcBurstCountingTests(unittest.TestCase):
             _scoring_pool=_DeferredExecutor(), _get_scoring_session=lambda: None,
             _maybe_close_hit_target=MagicMock(), scoring_done_signal=MagicMock(),
             _setting_window=None, _queue_raw_camera_image=MagicMock(),
+            _shot_sound=MagicMock(), _shooting_session=ShootingSession(time.monotonic()),
         )
+        now = time.monotonic()
+        window._shooting_session.open_target(1, now)
+        window._shooting_session.open_target(0, now)
         window._store_review_shot = lambda result: MainWindow._store_review_shot(window, result)
         window._next_review_shot_number = lambda sid, pid: MainWindow._next_review_shot_number(window, sid, pid)
         window._score_shot_worker = lambda *args: MainWindow._score_shot_worker(window, *args)

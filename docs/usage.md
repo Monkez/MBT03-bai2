@@ -27,6 +27,20 @@ Trải nghiệm Quy không được đồng bộ với `MBT03-wireless`: các ch
 
 Khi nhấn `BẮT ĐẦU`, ứng dụng gửi lệnh UART `0F016` (kèm ký tự xuống dòng) đến súng ở mỗi bệ trước khi thực hiện lịch điều khiển bia của bài bắn. Riêng nút bắn Q0 trong cửa sổ cài đặt vẫn gửi `0Q000`.
 
+Bài bắn tự kết thúc sau **75 giây**; vẫn có thể kết thúc sớm bằng nút trên màn hình.
+Bia hiện theo thứ tự **6 → 10 → 7B → 8**, mặc định tại giây **15 / 32 / 42 / 64**.
+Mỗi bia có cửa sổ tính điểm **7 giây**, kết thúc sớm khi có lệnh gập do bắn trúng
+và đang bật `Gập bia`. Chỉ tính trúng khi bia nhận diện đúng với bia được phép hiện
+tại thời điểm PC nhận ảnh phát bắn. Nhận nhầm bia, bắn trước khi dựng hoặc sau khi
+cụp vẫn tính đạn nhưng không tính trúng; `Xem lại` ghi lý do loại kết quả.
+Các ảnh đã nhận trước khi kết thúc vẫn được chấm tiếp; kết quả đến muộn không làm
+gập bia của lượt sau. Ảnh nhận từ mốc 75 giây trở đi không được nhận vào bài.
+
+Mỗi phát nhận trong bài hoặc khi bắn Q0 phát tiếng nổ `assets/sounds/TN.mp3`, giống
+`MBT03-wireless`, kể cả phát trượt hoặc nhận diện lỗi. Âm thanh chạy qua Qt và hỗ trợ
+các phát liên tiếp. Trong bài, nút cài đặt thiết bị bị khóa để không dựng bia Q0 xen
+vào lịch. Phím thử `D` ghi điểm ngẫu nhiên đã được bỏ.
+
 Ở màn hình lựa chọn ban đầu, nút hiển thị ngắn gọn `Gập bia: BẬT` với màu xanh khi chức năng đang được chọn; trạng thái tắt hiển thị `Gập bia: TẮT` với màu xám. Khi chỉ chọn 1 bệ, chức năng mặc định bật nhưng vẫn có thể bấm nút để tắt. Khi chọn từ 2 bệ trở lên, chức năng mặc định tắt. Nếu đang bật và phát bắn được xác định là trúng, hệ thống gửi lệnh gập/ẩn bia qua LoRa: bia số 6 dùng `@112#`, bia số 10 dùng `@222#`, bia số 7B dùng `@332#`, bia số 8 dùng `@442#`. Mỗi loại bia chỉ gửi lệnh một lần trong một bài bắn.
 
 Sau khi kết thúc bài bắn, nhấn `Xem lại` tại từng bệ để duyệt các phát bắn của phiên vừa kết thúc. Cửa sổ hiển thị ảnh camera được zoom mặc định 1.5x quanh điểm chạm bên trái, ảnh bia mô phỏng bên phải. Chọn trực tiếp một phát trong danh sách bên dưới hoặc dùng `Phát trước`, `Phát sau` và phím mũi tên. Home/End chuyển đến phát đầu/cuối, Esc đóng cửa sổ.

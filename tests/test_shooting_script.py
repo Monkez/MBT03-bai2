@@ -1,4 +1,5 @@
 import os
+import time
 import unittest
 from types import SimpleNamespace
 from unittest.mock import MagicMock, call, patch
@@ -15,6 +16,7 @@ from gui.main_window import MainWindow
 from gui.option_window import OptionWindow
 from gui.client_widget import ClientWidget
 from gui.setting_window import SettingWindow
+from gui.shooting_session import ShootingSession
 
 
 class FakeButton:
@@ -46,7 +48,7 @@ class ShootingScriptTests(unittest.TestCase):
         for close_action in ("confirm_btn", "cancel_btn", "close", "escape"):
             with self.subTest(close_action=close_action):
                 dialog = SettingWindow()
-                window = SimpleNamespace(p_num=1, servers=[], lora=MagicMock())
+                window = SimpleNamespace(testing=False, p_num=1, servers=[], lora=MagicMock())
                 calls_while_open = []
 
                 def close_dialog():
@@ -71,7 +73,7 @@ class ShootingScriptTests(unittest.TestCase):
                     dialog.deleteLater()
 
     def test_settings_failure_still_lowers_target_and_clears_dialog(self):
-        window = SimpleNamespace(p_num=1, servers=[], lora=MagicMock())
+        window = SimpleNamespace(testing=False, p_num=1, servers=[], lora=MagicMock())
         dialog = MagicMock()
         dialog.exec_.side_effect = RuntimeError("dialog failure")
         with patch("gui.main_window.SettingWindow", return_value=dialog):
@@ -160,6 +162,9 @@ class ShootingScriptTests(unittest.TestCase):
         window.AUTO_CLOSE_TARGET_COMMANDS = MainWindow.AUTO_CLOSE_TARGET_COMMANDS
         window._auto_closed_target_classes = set()
         window.lora = MagicMock()
+        now = time.monotonic()
+        window._shooting_session = ShootingSession(now)
+        window._shooting_session.open_target(1, now)
 
         self.assertTrue(MainWindow._maybe_close_hit_target(window, 1, True))
         self.assertFalse(MainWindow._maybe_close_hit_target(window, 1, True))
@@ -174,6 +179,10 @@ class ShootingScriptTests(unittest.TestCase):
         window.AUTO_CLOSE_TARGET_COMMANDS = MainWindow.AUTO_CLOSE_TARGET_COMMANDS
         window._auto_closed_target_classes = set()
         window.lora = MagicMock()
+        now = time.monotonic()
+        window._shooting_session = ShootingSession(now)
+        for class_id in (1, 0, 2, 3):
+            window._shooting_session.open_target(class_id, now)
 
         self.assertTrue(MainWindow._maybe_close_hit_target(window, 3, True))
         self.assertFalse(MainWindow._maybe_close_hit_target(window, 3, True))

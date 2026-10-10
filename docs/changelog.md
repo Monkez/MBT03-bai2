@@ -2,6 +2,9 @@
 
 ## 2026-10-10
 
+- Tự kết thúc bài ở giây 75; kiểm tra bia theo thứ tự 6 → 10 → 7B → 8 và cửa sổ 7 giây, đóng sớm khi gửi lệnh gập vì trúng. Sai bia/ngoài cửa sổ chỉ tính đạn, lưu lý do trong xem lại. Giữ kết quả các phát đã nhận trước khi dừng dù xử lý xong muộn.
+- Phát tiếng nổ `TN.mp3` qua Qt cho mỗi ảnh bắn trong bài và Q0; khóa cài đặt khi đang bắn và bỏ phím `D` ghi điểm ngẫu nhiên. Chỉ cần khởi động lại ứng dụng PC.
+
 - Sửa riêng phía PC: khi hàng đợi giải mã đầy, chờ có chỗ thay vì bỏ ảnh bắn; khi chấm ảnh báo lỗi, vẫn cộng đạn của phiên đang chạy và lưu lỗi trong xem lại, không tạo điểm chạm/trúng giả. Kiểm thử mô phỏng tái hiện cả hai đường mất đạn; chưa xác nhận đây là nguyên nhân phiên bắn thực tế. Các thay đổi này chỉ cần khởi động lại phần mềm PC.
 - Sửa mất lượt bắn nhanh: client Orange Pi xử lý từng tín hiệu UART trong cùng một lần đọc và giữ phần tín hiệu chưa đủ; mỗi tín hiệu phần cứng tạo một lượt gửi ảnh, không bị bộ lọc 15 ms loại bỏ. Server cũng không loại thông báo theo khoảng cách nhận qua mạng. Cần deploy lại client trên từng board và khởi động lại phần mềm PC để áp dụng đầy đủ.
 - Mở cài đặt gửi LoRa `@114#` dựng bia 6, đóng gửi `@112#` gập bia (Chấp nhận, Hủy, Esc, X); dọn trạng thái và gửi gập cả khi vòng lặp dialog báo lỗi. Lịch bài bắn vẫn dùng `@111#`.

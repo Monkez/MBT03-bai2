@@ -18,7 +18,13 @@ Nhóm `shooting`:
 | `automatic_close_target.default_single_pedestal` | Mặc định bật/tắt gập bia tự động khi chọn 1 bệ. |
 | `automatic_close_target.default_multiple_pedestals` | Mặc định bật/tắt gập bia tự động khi chọn từ 2 bệ. |
 | `automatic_close_target.commands_by_class` | Lệnh gập/ẩn bia theo class mô hình. Để `command` thành chuỗi rỗng nếu muốn vô hiệu hóa một bia. |
-| `lora_timeline` | Danh sách lệnh LoRa theo số giây tính từ lúc bắt đầu bài. Có thể thêm, xóa hoặc đổi thứ tự các phần tử. |
+| `lora_timeline` | Đúng 4 lệnh LoRa theo thứ tự bia 6 → 10 → 7B → 8. Các mốc phải cách nhau ít nhất 7 giây và kết thúc cửa sổ cuối trước hoặc đúng giây 75; lịch sai dùng lại mặc định 15/32/42/64 giây. |
+
+Bài bắn tự kết thúc sau 75 giây, độc lập với chu kỳ cập nhật giao diện. Mỗi bia chỉ
+được tính trúng trong 7 giây kể từ lúc phần mềm gửi lệnh dựng, hoặc đến khi phần mềm
+gửi lệnh gập sớm vì trúng. Đây là cửa sổ theo lệnh điều khiển trên PC; giao thức hiện
+không trả trạng thái vị trí bia thực tế. Thời điểm xét phát bắn là lúc PC nhận ảnh
+để đưa vào hàng đợi chấm, không phải lúc model xử lý xong.
 
 Quy ước class hiện tại:
 
