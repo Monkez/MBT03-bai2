@@ -471,6 +471,15 @@ class ShotReviewDialog(QDialog):
                 if point is not None else None for point in points
             ]
         before, after = points
+        if before is not None and after is not None:
+            start = tuple(int(round(value)) for value in before)
+            end = tuple(int(round(value)) for value in after)
+            if start != end:
+                cv2.line(
+                    preview, start, end, (0, 190, 255),
+                    max(2, int(round(max(preview.shape[:2]) * 0.002))),
+                    cv2.LINE_AA,
+                )
         if before is not None:
             coincident = after is not None and np.allclose(before, after, rtol=0, atol=1e-9)
             draw_impact_marker(

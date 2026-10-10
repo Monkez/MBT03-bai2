@@ -46,6 +46,8 @@ Các thay đổi chính gồm cổng kết nối ổn định có fallback, hàn
 
 ## Kiểm tra gần nhất
 
+- Ngày 2026-10-10: chỉ cửa sổ xem lại vẽ cả hai điểm offset, thêm đường thẳng vàng nối hai điểm bên dưới marker. Bia mô phỏng màn hình chính tiếp tục chỉ nhận `transformed_point` (sau offset) cho mỗi phát.
+
 - Kiểm tra hai bệ ngày 2026-10-10: chưa tái hiện lẫn dữ liệu giữa hai bệ. Test `test_pedestal_isolation.py` bao phủ tín hiệu gắn đúng `port_id`, kết quả chấm trả về khác thứ tự, bộ đếm/marker/review riêng và ảnh/Q0 qua hai client ZeroMQ thực trên cổng localhost tạm. Màn hình chính dùng xanh=trúng, đỏ=trượt; màn hình xem lại dùng xanh=trước offset, đỏ=sau offset. Log phiên 10:21–10:23 và ảnh lưu của từng bệ phù hợp với sự phân tách này; phép chấm lại dùng Q0 làm tròn từ log, không thay thế kiểm chứng thiết bị thật.
 
 - Ngày 2026-10-10: bắt đầu bài bắn dùng `0F016\n` thay cho lệnh Q0 tạm thời. Mở setting gửi `calibration.target_raise_command` (`@114#`), thoát vòng lặp dialog luôn gửi `calibration.target_lower_command` (`@112#`) và xóa `_setting_window` trong `finally`. Nút Q0 vẫn gửi `0Q000\n`; dựng/gập trong setting không phụ thuộc tùy chọn gập bia tự động. Lịch bài bắn vẫn dựng bia 6 bằng `@111#`.
