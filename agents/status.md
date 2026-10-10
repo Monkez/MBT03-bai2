@@ -1,5 +1,11 @@
 # Trạng thái dự án
 
+## Cảnh báo lỗi súng (2026-10-10)
+
+- Nối `data_received_signal` theo đúng bệ với cảnh báo `UART_RX_DEBUG`: E1 giữ cò lâu, E2 bắn nhanh. Chỉ nhận mã đầy đủ, không dò chuỗi con.
+- `ClientWidget` hiển thị cảnh báo trên bia, timer riêng mặc định 7 giây (`runtime.error_message_duration_ms`), lỗi mới khởi động lại timer; bắt đầu bài mới xóa cảnh báo cũ. Không cập nhật điểm/số đạn từ mã lỗi.
+- `test.bat` đạt 188 test; đã xem ảnh dựng E1/E2 ở kích thước thường và hẹp. Chưa thử lỗi từ súng thật; cần build lại để cập nhật EXE.
+
 ## Lệnh bắt đầu/kết thúc (2026-10-10)
 
 - Bắt đầu gửi `0F016`, timer một lần gửi `0A000` sau 100 ms. Dừng bài/thoát ứng dụng hủy timer để không gửi lệnh muộn.

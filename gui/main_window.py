@@ -274,11 +274,27 @@ class MainWindow(QMainWindow):
                 server.connection_quality_signal.connect(
                     lambda quality, pid=port_id: self._on_connection_quality(pid, quality)
                 )
+                server.data_received_signal.connect(
+                    lambda data, pid=port_id: self._on_data_received(pid, data)
+                )
                 server.start()
                 self.servers.append(server)
             self._update_hub_availability()
         except Exception as exc:
             print(f"[Main] Khong khoi dong duoc ket noi client: {exc}")
+
+    def _on_data_received(self, port_id, data):
+        if self._closing or not (1 <= port_id <= len(self.client_widgets)):
+            return
+        if not isinstance(data, dict):
+            return
+        code = data.get("UART_RX_DEBUG")
+        if not isinstance(code, str):
+            return
+        # Accept complete hardware tokens, not substrings such as E10.
+        code = code.strip()
+        code = {"0E100": "E1", "0E200": "E2"}.get(code, code)
+        self.client_widgets[port_id - 1].show_error(code)
 
     def _update_hub_availability(self):
         if self.hub_registrar is None:

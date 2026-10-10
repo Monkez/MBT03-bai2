@@ -2,6 +2,7 @@
 
 ## 2026-10-10
 
+- Hiển thị lỗi súng E1 (giữ cò quá lâu) và E2 (bắn quá nhanh) trên đúng bệ, tự ẩn sau 7 giây như MBT03-wireless; không ảnh hưởng điểm hoặc số đạn.
 - Khi bắt đầu bài, gửi UART `0F016` rồi `0A000` sau khoảng 100 ms bằng timer; hủy lệnh chờ khi dừng bài hoặc đóng ứng dụng.
 - Gửi UART `0S000` đến tất cả súng khi kết thúc bài hoặc đóng cửa sổ cài đặt, bao gồm Hủy/Esc/X.
 - Thêm `build.bat`, PyInstaller và bộ đóng gói portable tự tăng tên `MBT03-Bai2-V<version>-<ddmmyy>`; hỗ trợ `--dry-run`, kiểm tra output, chỉ ghi phiên bản sau build thành công, không đóng gói dữ liệu ghép nối/Wi-Fi riêng.

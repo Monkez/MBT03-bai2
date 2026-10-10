@@ -3,7 +3,7 @@ import os
 import cv2
 import numpy as np
 from PyQt5 import uic
-from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtCore import QEvent, QTimer, Qt, pyqtSignal
 from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import QLabel, QPushButton, QWidget, QFrame
 
@@ -104,11 +104,58 @@ class ClientWidget(QFrame):
 
     def _configure_ui(self):
         self._set_target_background_white()
+        self.error_label = QLabel(self.sign_image)
+        self.error_label.setTextFormat(Qt.PlainText)
+        self.error_label.setAlignment(Qt.AlignCenter)
+        self.error_label.setWordWrap(True)
+        self.error_label.setAttribute(Qt.WA_TransparentForMouseEvents, True)
+        self.error_label.setAccessibleName("Cảnh báo lỗi súng")
+        self.error_label.setStyleSheet(
+            "background-color: rgba(255, 245, 245, 245); color: #b91c1c;"
+            "font-size: 20px; font-weight: bold; border: 2px solid #b91c1c;"
+            "border-radius: 6px; padding: 10px;"
+        )
+        self.error_label.hide()
+        self._error_timer = QTimer(self)
+        self._error_timer.setSingleShot(True)
+        self._error_timer.timeout.connect(self.error_label.hide)
+        self.sign_image.installEventFilter(self)
         self.score_speak_icon.clicked.connect(lambda: self.score_speak_requested.emit(self.id))
         self.review_btn.clicked.connect(lambda: self.review_requested.emit(self.id))
         self.review_btn.setToolTip("Xem lại các phát bắn của phiên vừa kết thúc")
         self.review_btn.setEnabled(False)
         self.go_out_btn.clicked.connect(self.reset_shooter)
+
+    def show_error(self, code):
+        messages = {"E1": "Lỗi giữ cò quá lâu!", "E2": "Lỗi bắn quá nhanh!"}
+        if code not in messages:
+            return
+        self.error_label.setText(messages[code] + "\nChờ 7 giây trước khi bắn tiếp.")
+        self._position_error_label()
+        self.error_label.show()
+        self.error_label.raise_()
+        self._error_timer.start(cf.config_int(
+            "runtime.error_message_duration_ms", 7000, minimum=1, maximum=60000
+        ))
+
+    def _position_error_label(self):
+        width = max(1, min(400, self.sign_image.width() - 24))
+        self.error_label.setFixedWidth(width)
+        height = self.error_label.heightForWidth(width)
+        self.error_label.resize(width, max(90, height))
+        self.error_label.move(
+            (self.sign_image.width() - width) // 2,
+            max(0, (self.sign_image.height() - self.error_label.height()) // 2),
+        )
+
+    def eventFilter(self, watched, event):
+        if watched is self.sign_image and event.type() == QEvent.Resize:
+            self._position_error_label()
+        return super().eventFilter(watched, event)
+
+    def clear_error(self):
+        self._error_timer.stop()
+        self.error_label.hide()
 
     def set_review_available(self, available):
         self.review_btn.setEnabled(bool(available))
@@ -120,6 +167,7 @@ class ClientWidget(QFrame):
             self.sign_image.frame.setStyleSheet("background-color: rgb(255, 255, 255); border-radius: 5px;")
 
     def reset_all(self):
+        self.clear_error()
         self.bullet_count = 0
         self.hit_targets.clear()
         self.shots.clear()
@@ -215,6 +263,7 @@ class ClientWidget(QFrame):
         )
 
     def start_test(self):
+        self.clear_error()
         self.bullet_count = 0
         self.hit_targets.clear()
         self.shots.clear()

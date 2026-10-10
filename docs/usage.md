@@ -22,6 +22,16 @@ Cửa sổ không chặn màn hình chính; nhấn lại phím tắt để mở 
 
 ## Bài bắn
 
+Khi súng báo lỗi, cảnh báo màu đỏ xuất hiện ngay trên ô bia của bệ tương ứng:
+
+- `E1`: **Lỗi giữ cò quá lâu** — chờ 7 giây trước khi bắn tiếp.
+- `E2`: **Lỗi bắn quá nhanh** — chờ 7 giây trước khi bắn tiếp.
+
+Cảnh báo tự ẩn sau 7 giây; lỗi mới bắt đầu lại thời gian hiển thị. Cảnh báo không
+tự cộng đạn hoặc thay đổi điểm. Khi bắt đầu bài mới, cảnh báo cũ được xóa.
+Có thể chỉnh thời gian hiển thị bằng `runtime.error_message_duration_ms`
+(mặc định `7000`); thời gian này không thay đổi thời gian khóa bắn của phần cứng.
+
 Khi mở ứng dụng, chọn số bệ bắn rồi bấm `CHẤP NHẬN`.
 
 Màn hình chính hiện các bệ đã chọn. Mỗi bệ có 4 bia được ghép bằng OpenCV. Khi chọn 2 bệ, bố cục bia chuyển sang dạng dọc để mỗi bệ dễ quan sát hơn. Viền đỏ là mục tiêu chưa trúng, viền xanh lá là mục tiêu đã trúng. Nhãn kết quả hiển thị số đạn đã bắn trên 16 viên, số mục tiêu đã trúng trên 4 mục tiêu và xếp loại.

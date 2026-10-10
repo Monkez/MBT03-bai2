@@ -70,6 +70,7 @@ DEFAULT_CONFIG = {
         "max_attempts": 3,
     },
     "runtime": {
+        "error_message_duration_ms": 7000,
         "main_status_refresh_ms": 1000,
         "settings_frame_refresh_ms": 30,
         "max_scoring_workers": 4,

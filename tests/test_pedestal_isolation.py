@@ -31,6 +31,7 @@ class PedestalIsolationTests(unittest.TestCase):
             p_num=2, servers=[], _load_system_id=lambda: "isolation-test",
             _on_client_connected_event=MagicMock(), _on_client_disconnected_event=MagicMock(),
             _on_shoot_image=MagicMock(), _on_connection_quality=MagicMock(),
+            _on_data_received=MagicMock(),
             _update_hub_availability=MagicMock(),
         )
         with (
@@ -48,6 +49,9 @@ class PedestalIsolationTests(unittest.TestCase):
             self.assertEqual(args[0], index + 1)
             self.assertIs(args[1], frame)
             self.assertIs(args[2], metadata)
+            data = {"UART_RX_DEBUG": "E2"}
+            servers[index].data_received_signal.connect.call_args.args[0](data)
+            window._on_data_received.assert_called_with(index + 1, data)
 
     def test_out_of_order_results_keep_counts_markers_and_review_separate(self):
         widgets = [ClientWidget(i, target_layout_mode="two_pedestals") for i in (1, 2)]
