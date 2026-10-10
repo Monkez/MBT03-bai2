@@ -17,11 +17,13 @@ sau khi bắt tay hợp lệ.
 
 Nút `Cài đặt thiết bị` mở cửa sổ cài đặt từ `assets/qt/setting.ui`, cho phép chọn bệ đang kết nối, xem luồng camera, hiệu chỉnh camera và thực hiện quy không.
 
+Khi mở cửa sổ này, phần mềm gửi LoRa `@111#` để dựng bia số 6 phục vụ bắn Q0. Khi đóng bằng Chấp nhận, Hủy, Esc hoặc nút X, phần mềm gửi `@112#` để gập bia xuống, độc lập với tùy chọn gập bia tự động trong bài bắn. Cần kết nối LoRa để bia nhận được lệnh.
+
 Trong lúc bắn Q0, camera tiếp tục hiển thị stream trực tiếp sau mỗi phát. Các dấu Q0 của những phát đã xử lý được vẽ chồng lên các frame mới để vừa theo dõi hình ảnh hiện tại vừa đối chiếu các phát trước.
 
 Trải nghiệm Quy không được đồng bộ với `MBT03-wireless`: các chấm xanh ở góc trên ảnh camera biểu thị số phát hợp lệ còn thiếu; mỗi phát hợp lệ được đánh dấu bằng chữ thập vàng. Nút `CHẤP NHẬN` chỉ lưu giá trị trung bình và đóng cửa sổ sau khi đã nhận đủ số phát cấu hình. Khi không bắn Quy không, chữ thập xanh hiển thị vị trí Q0 đã lưu của bệ đang chọn.
 
-Tạm thời, khi nhấn `BẮT ĐẦU`, ứng dụng gửi lệnh UART Q0 `0Q000` (kèm ký tự xuống dòng) đến súng ở mỗi bệ đang kết nối trước khi thực hiện lịch điều khiển bia của bài bắn.
+Khi nhấn `BẮT ĐẦU`, ứng dụng gửi lệnh UART `0F016` (kèm ký tự xuống dòng) đến súng ở mỗi bệ trước khi thực hiện lịch điều khiển bia của bài bắn. Riêng nút bắn Q0 trong cửa sổ cài đặt vẫn gửi `0Q000`.
 
 Ở màn hình lựa chọn ban đầu, nút hiển thị ngắn gọn `Gập bia: BẬT` với màu xanh khi chức năng đang được chọn; trạng thái tắt hiển thị `Gập bia: TẮT` với màu xám. Khi chỉ chọn 1 bệ, chức năng mặc định bật nhưng vẫn có thể bấm nút để tắt. Khi chọn từ 2 bệ trở lên, chức năng mặc định tắt. Nếu đang bật và phát bắn được xác định là trúng, hệ thống gửi lệnh gập/ẩn bia qua LoRa: bia số 6 dùng `@112#`, bia số 10 dùng `@222#`, bia số 7B dùng `@332#`, bia số 8 dùng `@442#`. Mỗi loại bia chỉ gửi lệnh một lần trong một bài bắn.
 

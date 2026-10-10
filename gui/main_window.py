@@ -80,7 +80,7 @@ class MainWindow(QMainWindow):
     scoring_done_signal = pyqtSignal(object)
     q0_done_signal = pyqtSignal(object)
     START_UART_COMMAND = cf.config_str(
-        "shooting.start_uart_command", "0Q000\n"
+        "shooting.start_uart_command", "0F016\n"
     )
     AUTO_CLOSE_TARGET_COMMANDS = _configured_auto_close_commands()
     LORA_SCRIPT = _configured_lora_script()
@@ -667,8 +667,12 @@ class MainWindow(QMainWindow):
             lora_controller=self.lora,
             parent=self,
         )
-        self._setting_window.exec_()
-        self._setting_window = None
+        try:
+            self.lora.send_command(cf.config_str("calibration.target_raise_command", "@111#"))
+            self._setting_window.exec_()
+        finally:
+            self._setting_window = None
+            self.lora.send_command(cf.config_str("calibration.target_lower_command", "@112#"))
 
     def request_score_speak(self, port_id):
         return

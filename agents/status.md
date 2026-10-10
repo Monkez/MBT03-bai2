@@ -46,6 +46,9 @@ Các thay đổi chính gồm cổng kết nối ổn định có fallback, hàn
 
 ## Kiểm tra gần nhất
 
+- Ngày 2026-10-10: bắt đầu bài bắn dùng `0F016\n` thay cho lệnh Q0 tạm thời. Mở setting gửi `calibration.target_raise_command` (`@111#`), thoát vòng lặp dialog luôn gửi `calibration.target_lower_command` (`@112#`) và xóa `_setting_window` trong `finally`. Nút Q0 vẫn gửi `0Q000\n`; dựng/gập trong setting không phụ thuộc tùy chọn gập bia tự động.
+- `test.bat` ngày 2026-10-10 đạt 125/125; kiểm tra vòng lặp dialog Qt và bốn đường đóng với LoRa giả lập. Chưa kiểm tra chuyển động bia hoặc lệnh UART trên thiết bị thật.
+
 - Ngày 2026-10-09: offset vận hành và mặc định đã khớp `LAB/scoring.py`: class 0 `[0, -0.15]`, class 1 `[0, 0]`, class 2 `[0, -0.30]`, class 3 `[-0.60, 0]`; thay thế bộ giá trị ngày 2026-09-13. Vẫn tắt xoay offset. `scoring()` xét vùng trúng bằng điểm sau offset, GUI ghi nhận trực tiếp kết quả đó.
 - Review lưu `target_point_before_offset` và `target_point` chuẩn hóa theo ảnh bia, không clamp vào `[0, 1]` và không tính lại từ cấu hình. Màn hình có bộ chọn phát, dấu thập xanh dương trước offset, dấu thập đỏ sau offset và vùng nền mở rộng cho điểm ngoài bia. Marker đơn giản, không viền hay mũi tên; nếu hai điểm trùng tâm, dấu xanh dài hơn một chút.
 - Kiểm chứng ngày 2026-10-09: `test.bat` đạt 122/122; đã render cửa sổ Qt trên Windows, kiểm tra bố cục tối thiểu 920×600 và scaling 150%, chọn phát bằng chuột/phím, điểm trùng nhau/ngoài bia và trạng thái rỗng. Dữ liệu UI là fixture; chưa thử phiên bắn mới trên thiết bị thật.
@@ -78,7 +81,7 @@ Các thay đổi chính gồm cổng kết nối ổn định có fallback, hàn
 
 - `test.bat`: đạt 91/91 bài kiểm thử ngày 2026-08-08; gồm hồi quy client dùng chung, phục hồi màu nhãn kết nối, lệnh ẩn bia số 8, stream Q0, chỉ báo tiến độ Quy không và lưu ảnh camera gốc theo cấu hình.
 - `assets/server_client/test_integration.py`: kết nối qua Hub thành công trên cổng điều khiển/dữ liệu `1711/1811`, gửi dữ liệu hai chiều và kết nối lại thành công.
-- Luồng bắt đầu bài bắn tạm thời gửi lệnh Q0 `0Q000\n` qua từng `MBT03ServerCore`; Orange Pi nhận gói `UART_CMD` và ghi lệnh xuống UART của súng.
+- Luồng bắt đầu bài bắn gửi `0F016\n` qua từng `MBT03ServerCore`; Orange Pi nhận gói `UART_CMD` và ghi lệnh xuống UART của súng.
 - Cửa sổ cài đặt không giữ ảnh chụp tĩnh sau phát Q0; luôn hiển thị frame stream mới nhất và vẽ chồng các dấu Q0 đã xử lý lên stream.
 - Review session được tính từ `start_test()` đến `stop_test()`. Mỗi bệ giữ ảnh camera, điểm chạm và kết quả mô phỏng của phiên vừa kết thúc; `start_test()` xóa toàn bộ dữ liệu review cũ.
 - Khi nhiều detection chứa cùng điểm chạm, hệ thống ưu tiên bia có phép chiếu affine hợp lệ trên ảnh tham chiếu, vị trí tương đối gần tâm/ở sâu trong khung, khung nhỏ sát mục tiêu hơn và sau cùng mới xét confidence. Không dùng độ sâu pixel tuyệt đối vì sẽ thiên lệch về khung lớn.

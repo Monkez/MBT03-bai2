@@ -13,7 +13,7 @@ ASSETS_CUSTOM_WIDGETS_DIR = os.path.join(DATA_DIR, "assets", "MonkezCustomWidget
 DEFAULT_CONFIG = {
     "save_raw_data": True,
     "shooting": {
-        "start_uart_command": "0Q000\n",
+        "start_uart_command": "0F016\n",
         "automatic_close_target": {
             "default_single_pedestal": True,
             "default_multiple_pedestals": False,
@@ -57,6 +57,8 @@ DEFAULT_CONFIG = {
     },
     "calibration": {
         "uart_command": "0Q000\n",
+        "target_raise_command": "@111#",
+        "target_lower_command": "@112#",
         "sample_count": 3,
         "target_class_id": 1,
         "reference_center": [0.48607595, 0.44050633],

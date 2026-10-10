@@ -1,7 +1,7 @@
 {
     "save_raw_data": true,
     "shooting": {
-        "start_uart_command": "0Q000\n",
+        "start_uart_command": "0F016\n",
         "automatic_close_target": {
             "default_single_pedestal": true,
             "default_multiple_pedestals": false,
@@ -69,6 +69,8 @@
     },
     "calibration": {
         "uart_command": "0Q000\n",
+        "target_raise_command": "@111#",
+        "target_lower_command": "@112#",
         "sample_count": 3,
         "target_class_id": 1,
         "reference_center": [

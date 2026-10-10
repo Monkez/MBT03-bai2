@@ -1,12 +1,14 @@
 import os
 import unittest
 from types import SimpleNamespace
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
 import numpy as np
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
+from PyQt5.QtCore import QTimer, Qt
+from PyQt5.QtTest import QTest
 from PyQt5.QtWidgets import QApplication
 
 from gui.main_window import MainWindow
@@ -36,9 +38,56 @@ class ShootingScriptTests(unittest.TestCase):
 
         MainWindow._send_start_uart_command(window)
 
-        self.assertEqual(MainWindow.START_UART_COMMAND, "0Q000\n")
+        self.assertEqual(MainWindow.START_UART_COMMAND, "0F016\n")
         for server in servers:
-            server.send_uart_command.assert_called_once_with("0Q000\n")
+            server.send_uart_command.assert_called_once_with("0F016\n")
+
+    def test_settings_raises_target_and_lowers_on_every_close_path(self):
+        for close_action in ("confirm_btn", "cancel_btn", "close", "escape"):
+            with self.subTest(close_action=close_action):
+                dialog = SettingWindow()
+                window = SimpleNamespace(p_num=1, servers=[], lora=MagicMock())
+                calls_while_open = []
+
+                def close_dialog():
+                    calls_while_open.extend(window.lora.send_command.call_args_list)
+                    if close_action == "escape":
+                        QTest.keyClick(dialog, Qt.Key_Escape)
+                    elif close_action.endswith("_btn"):
+                        getattr(dialog, close_action).click()
+                    else:
+                        getattr(dialog, close_action)()
+
+                try:
+                    with patch("gui.main_window.SettingWindow", return_value=dialog):
+                        QTimer.singleShot(0, close_dialog)
+                        MainWindow.open_setting_window(window)
+                    self.assertEqual(calls_while_open, [call("@111#")])
+                    self.assertEqual(window.lora.send_command.call_args_list,
+                                     [call("@111#"), call("@112#")])
+                    self.assertIsNone(window._setting_window)
+                finally:
+                    dialog._frame_timer.stop()
+                    dialog.deleteLater()
+
+    def test_settings_failure_still_lowers_target_and_clears_dialog(self):
+        window = SimpleNamespace(p_num=1, servers=[], lora=MagicMock())
+        dialog = MagicMock()
+        dialog.exec_.side_effect = RuntimeError("dialog failure")
+        with patch("gui.main_window.SettingWindow", return_value=dialog):
+            with self.assertRaisesRegex(RuntimeError, "dialog failure"):
+                MainWindow.open_setting_window(window)
+        self.assertEqual(window.lora.send_command.call_args_list,
+                         [call("@111#"), call("@112#")])
+        self.assertIsNone(window._setting_window)
+
+    def test_q0_still_sends_its_own_uart_command(self):
+        server = MagicMock()
+        window = SimpleNamespace(Q0=False, Q0_btn=MagicMock(),
+                                 _stream_server=server,
+                                 Q0_UART_COMMAND=SettingWindow.Q0_UART_COMMAND)
+        SettingWindow._toggle_q0(window)
+        server.send_uart_command.assert_called_once_with("0Q000\n")
 
     def test_q0_display_keeps_live_stream_and_overlays_previous_shot(self):
         live_frame = np.full((120, 160, 3), 10, dtype=np.uint8)

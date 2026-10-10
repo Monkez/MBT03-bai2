@@ -14,7 +14,7 @@ Nhóm `shooting`:
 
 | Khóa | Ý nghĩa |
 | --- | --- |
-| `start_uart_command` | Lệnh UART gửi đến súng khi bắt đầu bài. Ký tự `\n` trong JSON là ký tự xuống dòng thật. |
+| `start_uart_command` | Lệnh UART gửi đến súng khi bắt đầu bài, mặc định `0F016\n`. Ký tự `\n` trong JSON là ký tự xuống dòng thật. |
 | `automatic_close_target.default_single_pedestal` | Mặc định bật/tắt gập bia tự động khi chọn 1 bệ. |
 | `automatic_close_target.default_multiple_pedestals` | Mặc định bật/tắt gập bia tự động khi chọn từ 2 bệ. |
 | `automatic_close_target.commands_by_class` | Lệnh gập/ẩn bia theo class mô hình. Để `command` thành chuỗi rỗng nếu muốn vô hiệu hóa một bia. |
@@ -77,6 +77,8 @@ Nhóm `calibration`:
 | Khóa | Ý nghĩa |
 | --- | --- |
 | `uart_command` | Lệnh UART chuyển súng sang chế độ quy không. |
+| `target_raise_command` | Lệnh LoRa khi mở cửa sổ cài đặt, mặc định `@111#` dựng bia 6. |
+| `target_lower_command` | Lệnh LoRa khi đóng cửa sổ cài đặt, mặc định `@112#` gập bia 6. |
 | `sample_count` | Số phát dùng để lấy trung bình quy không. |
 | `target_class_id` | Class bia dùng làm chuẩn quy không. |
 | `reference_center` | Tâm quy không chuẩn hóa `[x, y]` trên ảnh bia mẫu. |

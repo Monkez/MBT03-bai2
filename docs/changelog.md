@@ -1,5 +1,10 @@
 # Lịch sử thay đổi
 
+## 2026-10-10
+
+- Mở cài đặt gửi LoRa `@111#` dựng bia 6, đóng gửi `@112#` gập bia (Chấp nhận, Hủy, Esc, X); dọn trạng thái và gửi gập cả khi vòng lặp dialog báo lỗi.
+- Đổi lệnh bắt đầu bài bắn thành `0F016\n`; chế độ Q0 vẫn dùng `0Q000\n`. Thêm cấu hình lệnh dựng/gập cho cửa sổ cài đặt.
+
 ## 2026-10-09
 
 - Đồng bộ offset vận hành và mặc định theo LAB: bia 10 `[0, -0.15]`, bia 6 `[0, 0]`, bia 7B `[0, -0.30]`, bia 8 `[-0.60, 0]`. Kết quả trúng/trượt dùng điểm sau offset.
