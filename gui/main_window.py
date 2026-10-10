@@ -129,6 +129,10 @@ class MainWindow(QMainWindow):
         self._test_timeout_timer.setSingleShot(True)
         self._test_timeout_timer.setTimerType(Qt.PreciseTimer)
         self._test_timeout_timer.timeout.connect(self.stop_test)
+        self._start_followup_timer = QTimer(self)
+        self._start_followup_timer.setSingleShot(True)
+        self._start_followup_timer.setTimerType(Qt.PreciseTimer)
+        self._start_followup_timer.timeout.connect(self._send_start_followup_command)
         self._lora_schedule_timers = []
         self._closing = False
         self.servers = []
@@ -710,6 +714,13 @@ class MainWindow(QMainWindow):
     def _send_start_uart_command(self):
         for server in self.servers:
             server.send_uart_command(self.START_UART_COMMAND)
+        self._start_followup_timer.start(100)
+
+    def _send_start_followup_command(self):
+        if not self.testing or self._closing:
+            return
+        for server in self.servers:
+            server.send_uart_command("0A000\n")
 
     def _maybe_close_hit_target(self, class_id, hit):
         if not self.testing or not self.automatic_close_target_enabled or not hit:
@@ -730,6 +741,9 @@ class MainWindow(QMainWindow):
             return
         self.testing = False
         self._test_timeout_timer.stop()
+        self._start_followup_timer.stop()
+        for server in self.servers:
+            server.send_uart_command("0S000\n")
         self.setting_btn.setEnabled(True)
         self._finish_review_session()
         self._cancel_lora_script()
@@ -766,6 +780,8 @@ class MainWindow(QMainWindow):
             self._setting_window.exec_()
         finally:
             self._setting_window = None
+            for server in self.servers:
+                server.send_uart_command("0S000\n")
             self.lora.send_command(cf.config_str("calibration.target_lower_command", "@112#"))
 
     def request_score_speak(self, port_id):
@@ -821,10 +837,12 @@ class MainWindow(QMainWindow):
             event.accept()
             return
         self._closing = True
+        self.stop_test()
         if self._uart_debug_dialog is not None:
             self._uart_debug_dialog.shutdown()
         self._test_timeout_timer.stop()
         self._shot_sound.stop()
+        self._start_followup_timer.stop()
         for server in self.servers:
             try:
                 server.stop()

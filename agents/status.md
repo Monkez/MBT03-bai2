@@ -1,5 +1,11 @@
 # Trạng thái dự án
 
+## Lệnh bắt đầu/kết thúc (2026-10-10)
+
+- Bắt đầu gửi `0F016`, timer một lần gửi `0A000` sau 100 ms. Dừng bài/thoát ứng dụng hủy timer để không gửi lệnh muộn.
+- Kết thúc bài (kể cả hết 75 giây hoặc thoát app trong bài) và đóng Setting gửi `0S000` tới tất cả súng; mọi lệnh UART đều kèm xuống dòng.
+- `test.bat` đạt 181 test; chưa thử trên súng thật. Bản EXE V2 trước đó chưa chứa thay đổi này, cần chạy `build.bat` để đóng gói lại.
+
 ## Build và UART Debug (2026-10-10)
 
 - `build.bat` gọi `scripts/build_release.py`, dùng `.venv` và `requirements-build.txt`. Output onedir/windowed trong `dist/`, phiên bản lưu sau build thành công ở `build_state.json`; đọc `docs/build.md` khi đổi cách đóng gói.

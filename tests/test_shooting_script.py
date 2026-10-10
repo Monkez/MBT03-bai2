@@ -37,18 +37,21 @@ class ShootingScriptTests(unittest.TestCase):
         window = type("WindowState", (), {})()
         window.servers = servers
         window.START_UART_COMMAND = MainWindow.START_UART_COMMAND
+        window._start_followup_timer = MagicMock()
 
         MainWindow._send_start_uart_command(window)
 
         self.assertEqual(MainWindow.START_UART_COMMAND, "0F016\n")
         for server in servers:
             server.send_uart_command.assert_called_once_with("0F016\n")
+        window._start_followup_timer.start.assert_called_once_with(100)
 
     def test_settings_raises_target_and_lowers_on_every_close_path(self):
         for close_action in ("confirm_btn", "cancel_btn", "close", "escape"):
             with self.subTest(close_action=close_action):
                 dialog = SettingWindow()
-                window = SimpleNamespace(testing=False, p_num=1, servers=[], lora=MagicMock())
+                servers = [MagicMock(), MagicMock()]
+                window = SimpleNamespace(testing=False, p_num=1, servers=servers, lora=MagicMock())
                 calls_while_open = []
 
                 def close_dialog():
@@ -68,12 +71,15 @@ class ShootingScriptTests(unittest.TestCase):
                     self.assertEqual(window.lora.send_command.call_args_list,
                                      [call("@114#"), call("@112#")])
                     self.assertIsNone(window._setting_window)
+                    for server in servers:
+                        server.send_uart_command.assert_called_once_with("0S000\n")
                 finally:
                     dialog._frame_timer.stop()
                     dialog.deleteLater()
 
     def test_settings_failure_still_lowers_target_and_clears_dialog(self):
-        window = SimpleNamespace(testing=False, p_num=1, servers=[], lora=MagicMock())
+        servers = [MagicMock(), MagicMock()]
+        window = SimpleNamespace(testing=False, p_num=1, servers=servers, lora=MagicMock())
         dialog = MagicMock()
         dialog.exec_.side_effect = RuntimeError("dialog failure")
         with patch("gui.main_window.SettingWindow", return_value=dialog):
@@ -82,6 +88,8 @@ class ShootingScriptTests(unittest.TestCase):
         self.assertEqual(window.lora.send_command.call_args_list,
                          [call("@114#"), call("@112#")])
         self.assertIsNone(window._setting_window)
+        for server in servers:
+            server.send_uart_command.assert_called_once_with("0S000\n")
 
     def test_q0_still_sends_its_own_uart_command(self):
         server = MagicMock()

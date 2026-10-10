@@ -1,6 +1,6 @@
 import os
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
 import numpy as np
 
@@ -90,6 +90,55 @@ class ShootingFlowTests(unittest.TestCase):
         seconds, command, description = self.window.LORA_SCRIPT[index]
         self.clock.return_value = 100 + seconds
         self.window._send_lora_script_command(command, description, (1, 0, 2, 3)[index])
+
+    def test_start_sends_followup_once_after_delay_to_each_server(self):
+        self.window.stop_test()
+        self.window.servers = [MagicMock(), MagicMock()]
+        self.window.start_test()
+        timer = self.window._start_followup_timer
+        self.assertEqual(timer.interval(), 100)
+        for server in self.window.servers:
+            server.send_uart_command.assert_called_once_with("0F016\n")
+        self.assertTrue(QSignalSpy(timer.timeout).wait(1000))
+        for server in self.window.servers:
+            self.assertEqual(server.send_uart_command.call_args_list,
+                             [call("0F016\n"), call("0A000\n")])
+        self.assertFalse(timer.isActive())
+
+    def test_stop_cancels_followup_and_restart_schedules_new_one(self):
+        self.window.servers = [MagicMock()]
+        timer = self.window._start_followup_timer
+        self.assertTrue(timer.isActive())
+        self.window.stop_test()
+        self.assertFalse(timer.isActive())
+        self.window._send_start_followup_command()
+        self.window.servers[0].send_uart_command.assert_called_once_with("0S000\n")
+        self.window.start_test()
+        self.assertTrue(QSignalSpy(timer.timeout).wait(1000))
+        self.assertEqual(self.window.servers[0].send_uart_command.call_args_list,
+                         [call("0S000\n"), call("0F016\n"), call("0A000\n")])
+
+    def test_close_cancels_followup(self):
+        self.window.servers = [MagicMock()]
+        self.window.close()
+        self.assertFalse(self.window._start_followup_timer.isActive())
+        self.window._send_start_followup_command()
+        self.window.servers[0].send_uart_command.assert_called_once_with("0S000\n")
+
+    def test_manual_and_automatic_stop_send_stop_command_to_all_servers_once(self):
+        for automatic in (False, True):
+            with self.subTest(automatic=automatic):
+                self.window.servers = [MagicMock(), MagicMock()]
+                if automatic:
+                    self.clock.return_value = 175
+                    self.window.update_app()
+                else:
+                    self.window.start_btn_clicked()
+                self.window.stop_test()
+                for server in self.window.servers:
+                    server.send_uart_command.assert_called_once_with("0S000\n")
+                if not automatic:
+                    self.window.start_test()
 
     def receive(self, at):
         self.clock.return_value = at
