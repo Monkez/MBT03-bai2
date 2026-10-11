@@ -1,5 +1,11 @@
 # Trạng thái dự án
 
+## Đọc số bệ khi trúng (2026-10-11)
+
+- Chế độ từ 2 bệ đọc `assets/sounds/noti/1.mp3` đến `4.mp3` ở tốc độ 1.75× sau khi kết quả vượt qua kiểm tra phiên/cửa sổ bia. `gui/hit_sound.py` chống lặp theo cặp bệ–bia trong bài và phát hàng đợi tuần tự; lỗi âm thanh không chặn số tiếp theo.
+- Bắt đầu bài mới hủy hàng đợi cũ và xóa trạng thái đã đọc; đóng app dừng phát, bỏ kết quả đến muộn. Kết quả hợp lệ đang chấm khi kết thúc bài vẫn được đọc như cách cập nhật điểm hiện có.
+- `test.bat` đạt 195 test. Qt Multimedia phát đủ 4 MP3 ở âm lượng 0, không lỗi: tổng 8.422 giây ở 1× và 5.141 giây ở 1.75× (gồm thời gian nạp/chuyển file). Chưa nghe qua loa hoặc thử với súng thật; EXE hiện có cần build lại để nhận thay đổi.
+
 ## Cảnh báo lỗi súng (2026-10-10)
 
 - Nối `data_received_signal` theo đúng bệ với cảnh báo `UART_RX_DEBUG`: E1 giữ cò lâu, E2 bắn nhanh. Chỉ nhận mã đầy đủ, không dò chuỗi con.

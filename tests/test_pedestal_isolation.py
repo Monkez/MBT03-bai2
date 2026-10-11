@@ -59,6 +59,7 @@ class PedestalIsolationTests(unittest.TestCase):
             testing=True, _active_review_session_id=1, _previous_review_session_id=None,
             client_widgets=widgets, _reference_images={0: np.zeros((100, 200, 3))},
             _review_sessions={1: {1: [], 2: []}}, _maybe_close_hit_target=MagicMock(),
+            _hit_sound=MagicMock(),
         )
         window._store_review_shot = lambda result: MainWindow._store_review_shot(window, result)
         try:

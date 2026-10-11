@@ -79,6 +79,7 @@ class ShootingFlowTests(unittest.TestCase):
         patch.object(MainWindow, "_start_servers").start()
         patch("gui.main_window.LoraController").start()
         patch("gui.main_window.ShotSound").start()
+        patch("gui.main_window.HitSound").start()
         self.window = MainWindow()
         self.window._scoring_pool.shutdown(wait=True)
         self.window._scoring_pool = MagicMock()
@@ -121,6 +122,7 @@ class ShootingFlowTests(unittest.TestCase):
     def test_close_cancels_followup(self):
         self.window.servers = [MagicMock()]
         self.window.close()
+        self.window._hit_sound.stop.assert_called_once_with()
         self.assertFalse(self.window._start_followup_timer.isActive())
         self.window._send_start_followup_command()
         self.window.servers[0].send_uart_command.assert_called_once_with("0S000\n")
@@ -258,6 +260,7 @@ class ShootingFlowTests(unittest.TestCase):
         self.window.stop_test()
         self.clock.return_value = 180
         self.window.start_test()
+        self.assertEqual(self.window._hit_sound.reset.call_count, 2)
         self.complete(1)
         self.assertEqual(self.window.client_widgets[0].bullet_count, 0)
         self.assertEqual(self.window._review_sessions, {2: {1: []}})

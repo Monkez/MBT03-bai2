@@ -76,6 +76,14 @@ Mỗi phát nhận trong bài hoặc khi bắn Q0 phát tiếng nổ `assets/sou
 các phát liên tiếp. Trong bài, nút cài đặt thiết bị bị khóa để không dựng bia Q0 xen
 vào lịch. Phím thử `D` ghi điểm ngẫu nhiên đã được bỏ.
 
+Khi chọn từ **2 bệ trở lên**, mỗi lần một bệ trúng một bia lần đầu trong bài,
+ứng dụng đọc số bệ bằng `assets/sounds/noti/1.mp3` đến `4.mp3` ở tốc độ **1.75×**.
+Mỗi cặp bia–bệ chỉ đọc một lần dù trúng nhiều viên; sang bia khác hoặc bắt đầu
+bài mới sẽ được đọc tiếp. Các số được phát lần lượt để không chồng giọng khi
+nhiều bệ trúng gần nhau. Phát trượt, nhận diện lỗi hoặc trúng ngoài cửa sổ hợp lệ
+không đọc số. Kết quả hợp lệ đang chấm dở khi kết thúc bài vẫn được thông báo;
+bắt đầu bài mới hủy thông báo còn chờ của bài cũ.
+
 Ở màn hình lựa chọn ban đầu, nút hiển thị ngắn gọn `Gập bia: BẬT` với màu xanh khi chức năng đang được chọn; trạng thái tắt hiển thị `Gập bia: TẮT` với màu xám. Khi chỉ chọn 1 bệ, chức năng mặc định bật nhưng vẫn có thể bấm nút để tắt. Khi chọn từ 2 bệ trở lên, chức năng mặc định tắt. Nếu đang bật và phát bắn được xác định là trúng, hệ thống gửi lệnh gập/ẩn bia qua LoRa: bia số 6 dùng `@112#`, bia số 10 dùng `@222#`, bia số 7B dùng `@332#`, bia số 8 dùng `@442#`. Mỗi loại bia chỉ gửi lệnh một lần trong một bài bắn.
 
 Sau khi kết thúc bài bắn, nhấn `Xem lại` tại từng bệ để duyệt các phát bắn của phiên vừa kết thúc. Cửa sổ hiển thị ảnh camera được zoom mặc định 1.5x quanh điểm chạm bên trái, ảnh bia mô phỏng bên phải. Chọn trực tiếp một phát trong danh sách bên dưới hoặc dùng `Phát trước`, `Phát sau` và phím mũi tên. Home/End chuyển đến phát đầu/cuối, Esc đóng cửa sổ.

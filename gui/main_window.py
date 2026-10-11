@@ -24,6 +24,7 @@ from gui.option_window import OptionWindow
 from gui.review_window import ShotReviewDialog
 from gui.setting_window import SettingWindow
 from gui.shot_sound import ShotSound
+from gui.hit_sound import HitSound
 from gui.uart_debug_dialog import UartDebugDialog
 from gui.shooting_session import (
     MAX_DURATION_SECONDS, TARGET_CLASS_SEQUENCE, TARGET_VISIBLE_SECONDS, ShootingSession,
@@ -125,6 +126,7 @@ class MainWindow(QMainWindow):
         self._test_start_time = 0.0
         self._shooting_session = None
         self._shot_sound = ShotSound(self)
+        self._hit_sound = HitSound(self)
         self._test_timeout_timer = QTimer(self)
         self._test_timeout_timer.setSingleShot(True)
         self._test_timeout_timer.setTimerType(Qt.PreciseTimer)
@@ -600,6 +602,8 @@ class MainWindow(QMainWindow):
             y_ratio,
             hit,
         )
+        if hit and len(self.client_widgets) > 1:
+            self._hit_sound.announce(port_id, class_id)
         self._maybe_close_hit_target(class_id, hit)
         print(
             f"[Main] Be {port_id}: class={class_id}, "
@@ -714,6 +718,7 @@ class MainWindow(QMainWindow):
             return
         self._play_start_announcement()
         self._begin_review_session()
+        self._hit_sound.reset()
         self._auto_closed_target_classes.clear()
         self.testing = True
         self._test_start_time = time.monotonic()
@@ -858,6 +863,7 @@ class MainWindow(QMainWindow):
             self._uart_debug_dialog.shutdown()
         self._test_timeout_timer.stop()
         self._shot_sound.stop()
+        self._hit_sound.stop()
         self._start_followup_timer.stop()
         for server in self.servers:
             try:
