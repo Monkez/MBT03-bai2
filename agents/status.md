@@ -1,5 +1,10 @@
 # Trạng thái dự án
 
+## Bố cục bia mô phỏng (2026-10-11)
+
+- Đổi vị trí bia 7B và bia 10 trong cả bố cục thường lẫn 2 bệ: 7B ở ô trên cao hơn, 10 ở ô dưới dạng ngang. Giữ cơ chế fit đúng tỉ lệ và ánh xạ dấu đạn theo vùng ảnh đã vẽ.
+- Đã xem widget Qt ở bốn kích thước, kiểm tra tỉ lệ/biên ảnh và tọa độ dấu trúng trên cả hai bia. `test.bat` đạt 199 test. Chưa đóng gói bố cục mới vì đang chờ người dùng hoàn tất thay âm thanh.
+
 ## Thời gian bài bắn và cấu hình âm thanh (2026-10-11)
 
 - `gui/shooting_session.py`: bài tối đa 85 giây; bia 6/10/7B giữ 7 giây, bia 8 tăng lên 18 giây. Lịch mặc định vẫn 15/32/42/64; bia 8 nhận trúng đến trước giây 82. Kiểm tra lịch dùng thời lượng riêng từng bia và không cho vượt thời hạn bài.
