@@ -36,8 +36,10 @@ Khi mở ứng dụng, chọn số bệ bắn rồi bấm `CHẤP NHẬN`.
 
 Màn hình chính hiện các bệ đã chọn. Mỗi bệ có 4 bia được ghép bằng OpenCV. Khi chọn 2 bệ, bố cục bia chuyển sang dạng dọc để mỗi bệ dễ quan sát hơn. Viền đỏ là mục tiêu chưa trúng, viền xanh lá là mục tiêu đã trúng. Nhãn kết quả hiển thị số đạn đã bắn trên 16 viên, số mục tiêu đã trúng trên 4 mục tiêu và xếp loại.
 
-Trong cả hai bố cục, bia 7B nằm trên bia 10. Ô trên cao hơn dành cho bia 7B dạng đứng,
-ô dưới dành cho bia 10 dạng ngang; ảnh giữ đúng tỉ lệ, không kéo méo hoặc cắt bia.
+Bố cục thường: bia 6 trên trái, bia 10 dưới trái, bia 7B ở cột giữa và bia 8 bên phải.
+Khi chọn 2 bệ, bố cục dọc lần lượt là bia 6, bia 10, rồi hàng cuối gồm bia 7B bên trái
+và bia 8 bên phải. Bia 7B được phóng vừa ô đứng; mọi ảnh giữ đúng tỉ lệ, không kéo méo
+hoặc cắt bia.
 
 Màu vết chạm trên màn hình chính biểu thị kết quả: **xanh dương là trúng, đỏ là trượt**, không phải màu phân biệt bệ. Mỗi vết là điểm sau offset của một phát; nhiều phát trên cùng bia có thể có cả hai màu. Riêng cửa sổ `Xem lại` dùng xanh dương cho điểm trước offset và đỏ cho điểm sau offset của cùng một phát. Để kiểm tra nhầm bệ, bắn riêng từng bệ và theo dõi bộ đếm `Đạn` cùng ảnh camera trong lịch sử của bệ đó.
 

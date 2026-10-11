@@ -2,7 +2,7 @@
 
 ## Bố cục bia mô phỏng (2026-10-11)
 
-- Đổi vị trí bia 7B và bia 10 trong cả bố cục thường lẫn 2 bệ: 7B ở ô trên cao hơn, 10 ở ô dưới dạng ngang. Giữ cơ chế fit đúng tỉ lệ và ánh xạ dấu đạn theo vùng ảnh đã vẽ.
+- Bố cục đã chỉnh theo ảnh người dùng: bia 6 trên trái, bia 10 dưới trái, bia 7B ở cột giữa cao và bia 8 bên phải. Chế độ 2 bệ dùng thứ tự dọc 6, 10, rồi hàng 7B/8. Bia 7B được phóng vừa ô đứng, giữ cơ chế fit đúng tỉ lệ và ánh xạ dấu đạn theo vùng ảnh đã vẽ.
 - Đã xem widget Qt ở bốn kích thước, kiểm tra tỉ lệ/biên ảnh và tọa độ dấu trúng trên cả hai bia. `test.bat` đạt 199 test. Chưa đóng gói bố cục mới vì đang chờ người dùng hoàn tất thay âm thanh.
 
 ## Thời gian bài bắn và cấu hình âm thanh (2026-10-11)
