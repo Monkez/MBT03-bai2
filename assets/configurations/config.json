@@ -1,6 +1,7 @@
 {
     "save_raw_data": true,
     "shooting": {
+        "hit_announcement_playback_rate": 1.75,
         "start_uart_command": "0F016\n",
         "automatic_close_target": {
             "default_single_pedestal": true,

@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 
 
-MAX_DURATION_SECONDS = 75
-TARGET_VISIBLE_SECONDS = 7
+MAX_DURATION_SECONDS = 85
+TARGET_VISIBLE_SECONDS_BY_CLASS = {1: 7, 0: 7, 2: 7, 3: 18}
 TARGET_CLASS_SEQUENCE = (1, 0, 2, 3)  # Bia 6, 10, 7B, 8.
 
 
@@ -34,7 +34,8 @@ class ShootingSession:
         if self.exposure is not None:
             self.exposure.closed_at = min(self.exposure.closed_at, now)
         self.exposure = TargetExposure(
-            class_id, now, min(now + TARGET_VISIBLE_SECONDS, self.deadline)
+            class_id, now,
+            min(now + TARGET_VISIBLE_SECONDS_BY_CLASS[class_id], self.deadline),
         )
         self.next_target += 1
         return True

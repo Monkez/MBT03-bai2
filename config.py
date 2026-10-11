@@ -13,6 +13,7 @@ ASSETS_CUSTOM_WIDGETS_DIR = os.path.join(DATA_DIR, "assets", "MonkezCustomWidget
 DEFAULT_CONFIG = {
     "save_raw_data": True,
     "shooting": {
+        "hit_announcement_playback_rate": 1.75,
         "start_uart_command": "0F016\n",
         "automatic_close_target": {
             "default_single_pedestal": True,
@@ -106,6 +107,8 @@ DEFAULT_CONFIG = {
 
 def _merge_known(defaults, overrides):
     """Merge only documented keys so stale or misspelled options are ignored."""
+    if isinstance(defaults, float) and type(overrides) in (int, float):
+        return float(overrides)
     if not isinstance(defaults, dict) or not isinstance(overrides, dict):
         return copy.deepcopy(overrides if type(overrides) is type(defaults) else defaults)
     merged = {}

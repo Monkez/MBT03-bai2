@@ -18,10 +18,11 @@ Nhóm `shooting`:
 | `automatic_close_target.default_single_pedestal` | Mặc định bật/tắt gập bia tự động khi chọn 1 bệ. |
 | `automatic_close_target.default_multiple_pedestals` | Mặc định bật/tắt gập bia tự động khi chọn từ 2 bệ. |
 | `automatic_close_target.commands_by_class` | Lệnh gập/ẩn bia theo class mô hình. Để `command` thành chuỗi rỗng nếu muốn vô hiệu hóa một bia. |
-| `lora_timeline` | Đúng 4 lệnh LoRa theo thứ tự bia 6 → 10 → 7B → 8. Các mốc phải cách nhau ít nhất 7 giây và kết thúc cửa sổ cuối trước hoặc đúng giây 75; lịch sai dùng lại mặc định 15/32/42/64 giây. |
+| `lora_timeline` | Đúng 4 lệnh LoRa theo thứ tự bia 6 → 10 → 7B → 8. Các mốc phải cách nhau ít nhất 7 giây và cửa sổ 18 giây của bia 8 phải kết thúc trước hoặc đúng giây 85; lịch sai dùng lại mặc định 15/32/42/64 giây. |
 
-Bài bắn tự kết thúc sau 75 giây, độc lập với chu kỳ cập nhật giao diện. Mỗi bia chỉ
-được tính trúng trong 7 giây kể từ lúc phần mềm gửi lệnh dựng, hoặc đến khi phần mềm
+Bài bắn tự kết thúc sau 85 giây, độc lập với chu kỳ cập nhật giao diện. Bia 6, 10, 7B
+được tính trúng trong 7 giây, riêng bia 8 trong 18 giây kể từ lúc phần mềm gửi lệnh
+dựng (không vượt quá thời hạn bài bắn), hoặc đến khi phần mềm
 gửi lệnh gập sớm vì trúng. Đây là cửa sổ theo lệnh điều khiển trên PC; giao thức hiện
 không trả trạng thái vị trí bia thực tế. Thời điểm xét phát bắn là lúc PC nhận ảnh
 để đưa vào hàng đợi chấm, không phải lúc model xử lý xong.
@@ -101,6 +102,14 @@ Nhóm `lora`:
 | `baud_rate` | Tốc độ serial. |
 | `ack_timeout_seconds` | Thời gian chờ phản hồi lặp lại lệnh. |
 | `max_attempts` | Số lần gửi tối đa nếu chưa nhận được phản hồi. |
+
+## Tốc độ đọc số bệ
+
+Trong nhóm `shooting`, chỉnh `hit_announcement_playback_rate` để đổi tốc độ đọc
+thông báo trúng bia ở chế độ nhiều bệ. Mặc định `1.75`; `1.0` là tốc độ gốc,
+`1.5` là nhanh 1.5 lần, `2` hoặc `2.0` là nhanh 2 lần.
+Giá trị được giới hạn trong khoảng `0.5`–`4.0`; thiếu khóa hoặc sai kiểu dữ liệu
+sẽ dùng mặc định. Lưu `assets/configurations/config.json` rồi mở lại ứng dụng.
 
 ## Tiến trình ứng dụng
 

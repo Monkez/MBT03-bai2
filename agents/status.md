@@ -1,5 +1,11 @@
 # Trạng thái dự án
 
+## Thời gian bài bắn và cấu hình âm thanh (2026-10-11)
+
+- `gui/shooting_session.py`: bài tối đa 85 giây; bia 6/10/7B giữ 7 giây, bia 8 tăng lên 18 giây. Lịch mặc định vẫn 15/32/42/64; bia 8 nhận trúng đến trước giây 82. Kiểm tra lịch dùng thời lượng riêng từng bia và không cho vượt thời hạn bài.
+- Tốc độ đọc lấy từ `shooting.hit_announcement_playback_rate` trong `assets/configurations/config.json`, mặc định 1.75, giới hạn 0.5–4.0; mở lại app sau khi chỉnh. Loader nhận cả số nguyên và số thực cho khóa kiểu float, không nhận bool. Test âm thanh dùng cấu hình riêng để không phụ thuộc giá trị người dùng đang chỉnh.
+- `test.bat` đạt 199 test. Đã kiểm tra mã thời gian trong EXE V4, nhưng V4 thiếu bốn âm thanh thông báo do người dùng thay file trong lúc đóng gói; không dùng bản này để bàn giao. Đang chờ người dùng xác nhận chỉnh âm thanh xong trước khi build lại.
+
 ## Đọc số bệ khi trúng (2026-10-11)
 
 - Chế độ từ 2 bệ đọc `assets/sounds/noti/1.mp3` đến `4.mp3` ở tốc độ 1.75× sau khi kết quả vượt qua kiểm tra phiên/cửa sổ bia. `gui/hit_sound.py` chống lặp theo cặp bệ–bia trong bài và phát hàng đợi tuần tự; lỗi âm thanh không chặn số tiếp theo.
@@ -27,7 +33,7 @@
 
 ## Quy tắc bài bắn (2026-10-10)
 
-- `gui/shooting_session.py` giới hạn 75 giây, thứ tự class `(1, 0, 2, 3)` và cửa sổ 7 giây theo thời điểm PC gửi lệnh dựng; lệnh gập vì trúng đóng cửa sổ sớm. Chưa có phản hồi vị trí bia thực từ phần cứng.
+- `gui/shooting_session.py` hiện giới hạn 85 giây (cập nhật 2026-10-11), thứ tự class `(1, 0, 2, 3)` và cửa sổ 7 giây cho ba bia đầu, 18 giây cho bia 8 theo thời điểm PC gửi lệnh dựng; lệnh gập vì trúng đóng cửa sổ sớm. Chưa có phản hồi vị trí bia thực từ phần cứng.
 - Mỗi job chấm mang thời điểm nhận ảnh và cửa sổ bia; kết quả phải qua kiểm tra trước khi cập nhật điểm, review hoặc gửi gập. Job nhận trước khi dừng được cập nhật vào phiên vừa kết thúc; bắt đầu phiên mới loại job cũ.
 - `gui/shot_sound.py` dùng Qt Multimedia phát `assets/sounds/TN.mp3`, không thêm dependency. Khóa cài đặt trong bài, bỏ phím `D` ghi điểm ngẫu nhiên.
 - Kiểm chứng: `test.bat` đạt 155 test; Qt Multimedia giải mã/phát thử 3 tiếng nổ liên tiếp ở âm lượng 0, không lỗi. Chưa kiểm tra cơ cấu bia thật hoặc nghe qua loa.

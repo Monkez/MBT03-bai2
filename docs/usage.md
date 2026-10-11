@@ -59,17 +59,18 @@ Trải nghiệm Quy không được đồng bộ với `MBT03-wireless`: các ch
 
 Khi nhấn `BẮT ĐẦU`, ứng dụng gửi lệnh UART `0F016` đến súng ở mỗi bệ, sau khoảng **100 ms** gửi tiếp `0A000` (cả hai kèm ký tự xuống dòng). Lệnh thứ hai được hủy nếu kết thúc bài hoặc đóng ứng dụng trước khi hết thời gian chờ. Riêng nút bắn Q0 trong cửa sổ cài đặt vẫn gửi `0Q000`.
 
-Bài bắn tự kết thúc sau **75 giây**; vẫn có thể kết thúc sớm bằng nút trên màn hình.
+Bài bắn tự kết thúc sau **85 giây**; vẫn có thể kết thúc sớm bằng nút trên màn hình.
 Khi kết thúc bài (thủ công, hết giờ hoặc thoát ứng dụng trong bài), phần mềm gửi
 `0S000` kèm xuống dòng đến tất cả súng. Đóng cửa sổ cài đặt bằng Chấp nhận, Hủy,
 Esc hoặc nút X cũng gửi lệnh này đến tất cả súng.
 Bia hiện theo thứ tự **6 → 10 → 7B → 8**, mặc định tại giây **15 / 32 / 42 / 64**.
-Mỗi bia có cửa sổ tính điểm **7 giây**, kết thúc sớm khi có lệnh gập do bắn trúng
+Bia 6, 10 và 7B có cửa sổ tính điểm **7 giây**; riêng bia 8 là **18 giây**
+(mặc định từ giây 64 đến trước giây 82), kết thúc sớm khi có lệnh gập do bắn trúng
 và đang bật `Gập bia`. Chỉ tính trúng khi bia nhận diện đúng với bia được phép hiện
 tại thời điểm PC nhận ảnh phát bắn. Nhận nhầm bia, bắn trước khi dựng hoặc sau khi
 cụp vẫn tính đạn nhưng không tính trúng; `Xem lại` ghi lý do loại kết quả.
 Các ảnh đã nhận trước khi kết thúc vẫn được chấm tiếp; kết quả đến muộn không làm
-gập bia của lượt sau. Ảnh nhận từ mốc 75 giây trở đi không được nhận vào bài.
+gập bia của lượt sau. Ảnh nhận từ mốc 85 giây trở đi không được nhận vào bài.
 
 Mỗi phát nhận trong bài hoặc khi bắn Q0 phát tiếng nổ `assets/sounds/TN.mp3`, giống
 `MBT03-wireless`, kể cả phát trượt hoặc nhận diện lỗi. Âm thanh chạy qua Qt và hỗ trợ
@@ -77,7 +78,9 @@ các phát liên tiếp. Trong bài, nút cài đặt thiết bị bị khóa đ
 vào lịch. Phím thử `D` ghi điểm ngẫu nhiên đã được bỏ.
 
 Khi chọn từ **2 bệ trở lên**, mỗi lần một bệ trúng một bia lần đầu trong bài,
-ứng dụng đọc số bệ bằng `assets/sounds/noti/1.mp3` đến `4.mp3` ở tốc độ **1.75×**.
+ứng dụng đọc số bệ bằng `assets/sounds/noti/1.mp3` đến `4.mp3`, mặc định **1.75×**.
+Chỉnh `shooting.hit_announcement_playback_rate` trong `assets/configurations/config.json`
+(ví dụ `1.5` hoặc `2.0`), rồi mở lại ứng dụng để áp dụng.
 Mỗi cặp bia–bệ chỉ đọc một lần dù trúng nhiều viên; sang bia khác hoặc bắt đầu
 bài mới sẽ được đọc tiếp. Các số được phát lần lượt để không chồng giọng khi
 nhiều bệ trúng gần nhau. Phát trượt, nhận diện lỗi hoặc trúng ngoài cửa sổ hợp lệ

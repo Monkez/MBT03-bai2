@@ -27,7 +27,8 @@ from gui.shot_sound import ShotSound
 from gui.hit_sound import HitSound
 from gui.uart_debug_dialog import UartDebugDialog
 from gui.shooting_session import (
-    MAX_DURATION_SECONDS, TARGET_CLASS_SEQUENCE, TARGET_VISIBLE_SECONDS, ShootingSession,
+    MAX_DURATION_SECONDS, TARGET_CLASS_SEQUENCE, TARGET_VISIBLE_SECONDS_BY_CLASS,
+    ShootingSession,
 )
 
 
@@ -83,10 +84,10 @@ def _configured_lora_script():
     if (len(script) != len(TARGET_CLASS_SEQUENCE)
             or not isinstance(configured, list) or len(configured) != len(script)
             or any(not math.isfinite(item[0]) or item[0] < 0
-                   or item[0] + TARGET_VISIBLE_SECONDS > MAX_DURATION_SECONDS
-                   for item in script)
-            or any(right[0] < left[0] + TARGET_VISIBLE_SECONDS
-                   for left, right in zip(script, script[1:]))):
+                   or item[0] + TARGET_VISIBLE_SECONDS_BY_CLASS[class_id] > MAX_DURATION_SECONDS
+                   for class_id, item in zip(TARGET_CLASS_SEQUENCE, script))
+            or any(right[0] < left[0] + TARGET_VISIBLE_SECONDS_BY_CLASS[class_id]
+                   for class_id, left, right in zip(TARGET_CLASS_SEQUENCE, script, script[1:]))):
         print("[Config] Lich bia khong hop le, dung lich mac dinh 6 -> 10 -> 7 -> 8")
         script = [
             (item["delay_seconds"], item["command"], item["description"])

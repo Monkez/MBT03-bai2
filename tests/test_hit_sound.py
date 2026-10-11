@@ -1,4 +1,6 @@
+import json
 import os
+import tempfile
 import unittest
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
@@ -8,6 +10,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 from PyQt5.QtMultimedia import QMediaPlayer
 from PyQt5.QtWidgets import QApplication
 
+import config as cf
 from gui.hit_sound import HitSound
 from gui.main_window import MainWindow
 from gui.shooting_session import TargetExposure
@@ -23,6 +26,7 @@ class HitSoundTests(unittest.TestCase):
         factory.EndOfMedia = QMediaPlayer.EndOfMedia
         factory.NoError = QMediaPlayer.NoError
         self.addCleanup(patch.stopall)
+        patch.object(cf, "APP_CONFIG", cf.DEFAULT_CONFIG).start()
         self.player = factory.return_value = MagicMock()
         self.sound = HitSound()
         self.addCleanup(self.sound.stop)
@@ -35,6 +39,25 @@ class HitSoundTests(unittest.TestCase):
         for _ in range(20):
             self.sound._on_status(QMediaPlayer.EndOfMedia)
             self.app.processEvents()
+
+    def test_playback_rate_loaded_from_config_with_defaults_and_limits(self):
+        for value, expected in ((1.5, 1.5), (2, 2.0), (2.0, 2.0),
+                                (0, 0.5), (-1.0, 0.5), (10.0, 4.0),
+                                ("fast", 1.75), (True, 1.75), (None, 1.75)):
+            with self.subTest(value=value), tempfile.TemporaryDirectory() as directory:
+                path = os.path.join(directory, "config.json")
+                with open(path, "w", encoding="utf-8") as file:
+                    json.dump({"shooting": {"hit_announcement_playback_rate": value}}, file)
+                with patch.object(cf, "APP_CONFIG", cf.load_app_config(path)):
+                    sound = HitSound()
+                    sound.announce(1, 0)
+                    self.player.setPlaybackRate.assert_called_with(expected)
+                    sound.stop()
+        with patch.object(cf, "APP_CONFIG", {}):
+            sound = HitSound()
+            sound.announce(1, 0)
+            self.player.setPlaybackRate.assert_called_with(1.75)
+            sound.stop()
 
     def test_burst_reads_each_pair_once_and_queues_all_four_pedestals(self):
         for target in (1, 0, 2, 3):

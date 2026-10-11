@@ -10,10 +10,11 @@ import config as cf
 class HitSound(QObject):
     """Read each target/pedestal pair once per exercise, without overlapping voices."""
 
-    PLAYBACK_RATE = 1.75
-
     def __init__(self, parent=None):
         super().__init__(parent)
+        self._playback_rate = cf.config_float(
+            "shooting.hit_announcement_playback_rate", 1.75, minimum=0.5, maximum=4.0
+        )
         self._announced = set()
         self._pending = deque()
         self._active = False
@@ -40,7 +41,7 @@ class HitSound(QObject):
         )))
         if not self._active:
             return
-        self._player.setPlaybackRate(self.PLAYBACK_RATE)
+        self._player.setPlaybackRate(self._playback_rate)
         self._player.play()
 
     def _on_status(self, status):
