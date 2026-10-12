@@ -113,6 +113,12 @@ nhầm bia vẫn tính đạn nhưng không tính trúng. Thời điểm nhận 
 tại luồng nhận mạng trên PC, trước hàng đợi giải mã và giao diện; không dùng đồng
 hồ của Orange Pi để so mốc. `Xem lại` ghi lý do loại, giây nhận ảnh và khoảng nhận
 của bia để đối chiếu nếu lịch phần mềm khác thời lượng cài trên bộ điều khiển bia.
+Thông báo “ảnh nhận ngoài thời gian cho phép tính điểm của bia” là lỗi thời gian,
+không phải điểm chạm ngoài vùng hình ảnh bia. Chi tiết ghi mốc PC nhận ảnh tính từ
+đầu bài, khoảng cho phép (từ mốc mở đến **trước** mốc đóng), và số giây sớm/muộn.
+Nếu nhận diện khác bia được phép tính điểm, thông báo ghi tên cả hai bia.
+`server.log` lưu số phiên, bệ, phát, kết quả trúng trên ảnh trước kiểm tra thời gian,
+kết quả tính trúng sau kiểm tra và lý do để đối chiếu.
 Các ảnh đã nhận trước khi kết thúc vẫn được chấm tiếp; kết quả đến muộn không làm
 gập bia của lượt sau. Ảnh nhận từ mốc 85 giây trở đi không được nhận vào bài.
 

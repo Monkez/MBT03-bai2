@@ -1,5 +1,10 @@
 # Trạng thái dự án
 
+## Thông báo loại phát bắn (2026-10-12)
+
+- Review thay cụm “ngoài cửa sổ nhận” bằng “ảnh nhận ngoài thời gian cho phép tính điểm”, ghi mốc PC nhận ảnh từ đầu bài, khoảng mở/đóng và độ sớm/muộn; nhận diện sai ghi cả bia nhận diện và bia được phép tính điểm. Không đổi quy tắc chấm.
+- Ghi chẩn đoán chấm vào `server.log` UTF-8 sẵn có, kèm phiên/bệ/phát, kết quả trên ảnh và kết quả sau kiểm tra thời gian. `test.bat` đạt 236 test. Chưa build EXE trong khi chờ hoàn tất âm thanh.
+
 ## Nhận trúng và báo trúng một bệ (2026-10-12)
 
 - PC đóng dấu `_server_received_at` bằng monotonic ngay sau nhận gói ảnh, trước decode/UI; trường này luôn ghi đè metadata từ client. MainWindow dùng dấu thời gian đó, giữ cửa sổ các bia trước và nhận ảnh chờ decode/UI của bài vừa dừng nếu nhận trước mốc dừng. Ảnh trước bài mới/sau mốc dừng không được tính.

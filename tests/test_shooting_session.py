@@ -204,10 +204,23 @@ class ShootingFlowTests(unittest.TestCase):
     def test_rejected_hit_reports_receipt_and_target_window_in_review(self):
         self.open_target(0)
         self.receive(125)
+        with self.assertLogs("mbt03_server", level="INFO") as logs:
+            self.complete(1)
+        status = self.window._review_sessions[1][1][0]["status"]
+        self.assertIn("ảnh nhận ngoài thời gian cho phép tính điểm", status)
+        self.assertIn("PC nhận ảnh lúc 25.000s tính từ đầu bài", status)
+        self.assertIn("từ 14.000s đến trước 24.000s", status)
+        self.assertIn("Muộn 1.000s so với mốc đóng", status)
+        self.assertIn("Bệ 1 | Phát 1 | class=1", logs.output[0])
+        self.assertIn("Trúng trên ảnh=True | Tính trúng=False", logs.output[0])
+        self.assertIn(status, logs.output[0])
+
+    def test_early_image_reports_time_before_opening(self):
+        self.receive(113.5)
         self.complete(1)
         status = self.window._review_sessions[1][1][0]["status"]
-        self.assertIn("Nhận ảnh: 25.00s", status)
-        self.assertIn("Khoảng nhận: 14.00–24.00s", status)
+        self.assertIn("Sớm 0.500s so với mốc mở", status)
+        self.assertIn("từ 14.000s đến trước 24.000s", status)
 
     def test_image_received_before_stop_is_scored_after_late_ui_dispatch(self):
         self.open_target(0)
@@ -315,6 +328,7 @@ class ShootingFlowTests(unittest.TestCase):
         shot = self.window._review_sessions[1][1][0]
         self.assertFalse(shot["hit"])
         self.assertIn("nhận diện khác bia", shot["status"])
+        self.assertIn("nhận diện: Bia so 8 phai; được phép: Bia so 7B", shot["status"])
 
     def test_outside_grace_windows_and_after_early_close_do_not_hit(self):
         self.receive(113.999)

@@ -1,4 +1,5 @@
 import json
+import logging
 import math
 import os
 import threading
@@ -564,6 +565,7 @@ class MainWindow(QMainWindow):
         # Exposure objects retain early closure times for jobs already queued.
         metadata = result.get("metadata")
         if result.get("ok") and metadata is not None:
+            hit_on_image = metadata.get("hit")
             exposure = result.get("exposure")
             received_at = result.get("received_at")
             current_id = (self._active_review_session_id if self.testing
@@ -581,20 +583,46 @@ class MainWindow(QMainWindow):
             if not eligible:
                 metadata = dict(metadata)
                 metadata["hit"] = False
-                metadata["status"] = (
-                    "Không tính trúng: ngoài cửa sổ nhận của bia"
-                    if exposure is None or received_at is None or not exposure.contains(received_at)
-                    else "Không tính trúng: nhận diện khác bia đang được hiện"
-                )
+                if received_at is None:
+                    metadata["status"] = "Không tính trúng: thiếu thời điểm PC nhận ảnh"
+                elif exposure is None or not exposure.contains(received_at):
+                    metadata["status"] = (
+                        "Không tính trúng: ảnh nhận ngoài thời gian cho phép tính điểm của bia"
+                    )
+                else:
+                    detected_name = scoring.CLASS_NAMES.get(metadata.get("class_id"), "không rõ bia")
+                    expected_name = scoring.CLASS_NAMES.get(exposure.class_id, "không rõ bia")
+                    metadata["status"] = (
+                        "Không tính trúng: nhận diện khác bia được phép tính điểm"
+                        f" (nhận diện: {detected_name}; được phép: {expected_name})"
+                    )
                 if session is not None and received_at is not None:
-                    metadata["status"] += f" · Nhận ảnh: {received_at - session.started_at:.2f}s"
+                    metadata["status"] += (
+                        f" · PC nhận ảnh lúc {received_at - session.started_at:.3f}s tính từ đầu bài"
+                    )
                     target_window = session.window_for_target(metadata.get("class_id"))
                     if target_window is not None:
                         metadata["status"] += (
-                            f" · Khoảng nhận: {target_window.opened_at - session.started_at:.2f}"
-                            f"–{target_window.closed_at - session.started_at:.2f}s"
+                            " · Thời gian cho phép của bia nhận diện: từ "
+                            f"{target_window.opened_at - session.started_at:.3f}s"
+                            f" đến trước {target_window.closed_at - session.started_at:.3f}s"
                         )
+                        if received_at < target_window.opened_at:
+                            metadata["status"] += (
+                                f" · Sớm {target_window.opened_at - received_at:.3f}s so với mốc mở"
+                            )
+                        elif received_at >= target_window.closed_at:
+                            metadata["status"] += (
+                                f" · Muộn {received_at - target_window.closed_at:.3f}s so với mốc đóng"
+                            )
                 result = dict(result, metadata=metadata)
+            logging.getLogger("mbt03_server").info(
+                "[Scoring] session=%s | Bệ %s | Phát %s | class=%s | "
+                "Trúng trên ảnh=%s | Tính trúng=%s | %s",
+                result.get("session_id"), result.get("port_id"), result.get("shot_number"),
+                metadata.get("class_id"), hit_on_image, metadata.get("hit"),
+                metadata.get("status"),
+            )
         self._store_review_shot(result)
         if not result.get("ok"):
             print(f"[Main] Cham bia loi tai be {result.get('port_id')}: {result.get('error')}")
