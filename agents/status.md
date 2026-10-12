@@ -1,5 +1,11 @@
 # Trạng thái dự án
 
+## Cửa sổ nhận bia (2026-10-12)
+
+- `ShootingSession` nhận lịch dựng từ MainWindow, tạo trước cửa sổ để chấm được ảnh đến sớm 1 giây. Kết thúc nhận sau thời lượng cơ sở/lệnh gập sớm thêm 2 giây, không vượt hạn bài 85 giây. Giữ object cửa sổ khi gửi lệnh dựng để job đến sớm vẫn được kiểm tra đúng.
+- Lịch mặc định có cửa sổ [14,24), [31,41), [41,51), [63,84). Kiểm tra lịch yêu cầu các mốc cách nhau ít nhất 10 giây và bia cuối dựng không muộn hơn giây 65. Tách thời gian bia đang được dựng khỏi cửa sổ nhận để không gập trước lệnh dựng, trong phần nhận muộn hoặc gập lặp.
+- `test.bat` đạt 205 test, bao phủ ranh giới cửa sổ, nhận sớm trước lệnh dựng, timer dựng trễ, gập sớm, hai cửa sổ liền nhau và hạn 85 giây. Chưa thử súng/bia thật hoặc build lại EXE; vẫn chờ người dùng hoàn tất âm thanh.
+
 ## Xếp loại (2026-10-12)
 
 - `ClientWidget._rank_text()` xếp loại theo số bia khác nhau đã trúng: 4 = Giỏi, 3 = Khá, 2 = Đạt, 0–1 = Không đạt. Cập nhật ngay theo kết quả, không chờ hết 16 viên.
@@ -12,7 +18,7 @@
 
 ## Thời gian bài bắn và cấu hình âm thanh (2026-10-11)
 
-- `gui/shooting_session.py`: bài tối đa 85 giây; bia 6/10/7B giữ 7 giây, bia 8 tăng lên 18 giây. Lịch mặc định vẫn 15/32/42/64; bia 8 nhận trúng đến trước giây 82. Kiểm tra lịch dùng thời lượng riêng từng bia và không cho vượt thời hạn bài.
+- `gui/shooting_session.py`: bài tối đa 85 giây; bia 6/10/7B giữ 7 giây cơ sở, bia 8 tăng lên 18 giây. Lịch mặc định vẫn 15/32/42/64; từ 2026-10-12 nới nhận sớm 1 giây/muộn 2 giây như phần cửa sổ nhận ở trên. Kiểm tra lịch dùng thời lượng riêng từng bia và không cho vượt thời hạn bài.
 - Tốc độ đọc lấy từ `shooting.hit_announcement_playback_rate` trong `assets/configurations/config.json`, mặc định 1.75, giới hạn 0.5–4.0; mở lại app sau khi chỉnh. Loader nhận cả số nguyên và số thực cho khóa kiểu float, không nhận bool. Test âm thanh dùng cấu hình riêng để không phụ thuộc giá trị người dùng đang chỉnh.
 - `test.bat` đạt 199 test. Đã kiểm tra mã thời gian trong EXE V4, nhưng V4 thiếu bốn âm thanh thông báo do người dùng thay file trong lúc đóng gói; không dùng bản này để bàn giao. Đang chờ người dùng xác nhận chỉnh âm thanh xong trước khi build lại.
 

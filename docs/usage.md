@@ -73,11 +73,21 @@ Khi kết thúc bài (thủ công, hết giờ hoặc thoát ứng dụng trong 
 `0S000` kèm xuống dòng đến tất cả súng. Đóng cửa sổ cài đặt bằng Chấp nhận, Hủy,
 Esc hoặc nút X cũng gửi lệnh này đến tất cả súng.
 Bia hiện theo thứ tự **6 → 10 → 7B → 8**, mặc định tại giây **15 / 32 / 42 / 64**.
-Bia 6, 10 và 7B có cửa sổ tính điểm **7 giây**; riêng bia 8 là **18 giây**
-(mặc định từ giây 64 đến trước giây 82), kết thúc sớm khi có lệnh gập do bắn trúng
-và đang bật `Gập bia`. Chỉ tính trúng khi bia nhận diện đúng với bia được phép hiện
-tại thời điểm PC nhận ảnh phát bắn. Nhận nhầm bia, bắn trước khi dựng hoặc sau khi
-cụp vẫn tính đạn nhưng không tính trúng; `Xem lại` ghi lý do loại kết quả.
+Bia 6, 10 và 7B có thời lượng cơ sở **7 giây**; riêng bia 8 là **18 giây**.
+Cửa sổ nhận trúng mở **sớm 1 giây** so với lịch dựng và đóng **muộn 2 giây** so
+với thời điểm kết thúc cơ sở. Theo lịch mặc định, khi không gập sớm:
+
+| Bia | Khoảng nhận trúng từ lúc bắt đầu bài |
+| --- | --- |
+| 6 | Từ giây 14 đến trước giây 24 |
+| 10 | Từ giây 31 đến trước giây 41 |
+| 7B | Từ giây 41 đến trước giây 51 |
+| 8 | Từ giây 63 đến trước giây 84 |
+
+Nếu bật `Gập bia` và có lệnh gập sớm do trúng, vẫn nhận thêm **2 giây sau lệnh gập**.
+Phát nhận sớm không gửi lệnh gập trước khi bia được dựng. Chỉ tính trúng khi nhận
+diện đúng bia trong cửa sổ nhận tại thời điểm PC nhận ảnh; ngoài cửa sổ hoặc nhận
+nhầm bia vẫn tính đạn nhưng không tính trúng. `Xem lại` ghi lý do loại kết quả.
 Các ảnh đã nhận trước khi kết thúc vẫn được chấm tiếp; kết quả đến muộn không làm
 gập bia của lượt sau. Ảnh nhận từ mốc 85 giây trở đi không được nhận vào bài.
 

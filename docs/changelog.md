@@ -2,6 +2,7 @@
 
 ## 2026-10-12
 
+- Mở cửa sổ nhận trúng sớm 1 giây trước lịch dựng và muộn 2 giây sau thời lượng cơ sở hoặc lệnh gập sớm; giới hạn bài vẫn 85 giây, không đổi lịch lệnh dựng.
 - Tăng khoảng chờ giữa lệnh bắt đầu `0F016` và `0A000` từ 100 ms lên 300 ms; vẫn hủy lệnh đang chờ khi dừng bài hoặc đóng ứng dụng.
 
 ## 2026-10-10

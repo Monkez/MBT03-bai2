@@ -20,7 +20,7 @@ class ShootingSessionTests(unittest.TestCase):
         defaults = cf.DEFAULT_CONFIG["shooting"]["lora_timeline"]
         expected = tuple((item["delay_seconds"], item["command"], item["description"])
                          for item in defaults)
-        for delays in ((15, 18, 42, 64), (15, 32, 42, 70), (15, 32, 42),
+        for delays in ((15, 18, 42, 64), (15, 32, 41, 64), (15, 32, 42, 70), (15, 32, 42),
                        (15, 32, float("nan"), 64), (15, 32, float("inf"), 64),
                        (-1, 32, 42, 64)):
             configured = [dict(item, delay_seconds=delay)
@@ -34,16 +34,17 @@ class ShootingSessionTests(unittest.TestCase):
         for seconds, class_id, duration in ((15, 1, 7), (32, 0, 7), (42, 2, 7), (64, 3, 18)):
             now = 100 + seconds
             self.assertTrue(session.open_target(class_id, now))
-            self.assertIsNone(session.active_target(now - 0.001))
+            self.assertIsNone(session.active_target(now - 1.001))
+            self.assertEqual(session.active_target(now - 1).class_id, class_id)
             self.assertEqual(session.active_target(now).class_id, class_id)
-            self.assertEqual(session.active_target(now + duration - 0.001).class_id, class_id)
-            self.assertIsNone(session.active_target(now + duration))
+            self.assertEqual(session.active_target(now + duration + 1.999).class_id, class_id)
+            self.assertIsNone(session.active_target(now + duration + 2))
         self.assertFalse(session.expired(184.999))
         self.assertTrue(session.expired(185))
         self.assertFalse(session.open_target(1, 186))
 
-    def test_last_target_timeline_must_fit_all_eighteen_seconds(self):
-        for seconds, accepted in ((67, True), (67.001, False)):
+    def test_last_target_timeline_must_fit_visibility_and_late_grace(self):
+        for seconds, accepted in ((65, True), (65.001, False)):
             script = [dict(item) for item in cf.DEFAULT_CONFIG["shooting"]["lora_timeline"]]
             script[-1]["delay_seconds"] = seconds
             with self.subTest(seconds=seconds), patch("gui.main_window.cf.get_setting", return_value=script):
@@ -73,8 +74,34 @@ class ShootingSessionTests(unittest.TestCase):
         self.assertFalse(session.close_target(3, 116))
         self.assertTrue(session.close_target(1, 117))
         self.assertTrue(exposure.contains(116.999))
-        self.assertFalse(exposure.contains(117))
-        self.assertIsNone(session.active_target(118))
+        self.assertTrue(exposure.contains(118.999))
+        self.assertFalse(exposure.contains(119))
+        self.assertIsNone(session.active_target(119))
+        self.assertFalse(session.close_target(1, 118))
+
+    def test_scheduled_windows_accept_early_shots_and_share_exposure_with_command(self):
+        session = ShootingSession(100, (15, 32, 42, 64))
+        for class_id, raised_at, end in ((1, 115, 124), (0, 132, 141),
+                                         (2, 142, 151), (3, 164, 184)):
+            exposure = session.active_target(raised_at - 1)
+            self.assertEqual(exposure.class_id, class_id)
+            self.assertFalse(exposure.contains(raised_at - 1.001))
+            self.assertFalse(session.close_target(class_id, raised_at - 0.5))
+            self.assertTrue(session.open_target(class_id, raised_at))
+            self.assertIs(exposure, session.exposure)
+            self.assertTrue(exposure.contains(end - 0.001))
+            self.assertFalse(exposure.contains(end))
+            self.assertFalse(session.close_target(class_id, end - 0.5))
+
+    def test_delayed_raise_keeps_pre_command_shot_and_extends_from_actual_raise(self):
+        session = ShootingSession(100, (15, 32, 42, 64))
+        early = session.active_target(114)
+        self.assertIs(session.active_target(115.1), early)
+        session.open_target(1, 115.2)
+        self.assertIs(session.exposure, early)
+        self.assertTrue(early.contains(114))
+        self.assertTrue(early.contains(124.199))
+        self.assertFalse(early.contains(124.2))
 
 
 class ShootingFlowTests(unittest.TestCase):
@@ -185,16 +212,16 @@ class ShootingFlowTests(unittest.TestCase):
         self.assertFalse(shot["hit"])
         self.assertIn("nhận diện khác bia", shot["status"])
 
-    def test_before_open_at_seven_seconds_and_after_early_close_do_not_hit(self):
-        self.receive(114.999)
+    def test_outside_grace_windows_and_after_early_close_do_not_hit(self):
+        self.receive(113.999)
         self.complete(1)
         self.open_target(0)
-        self.receive(122)
+        self.receive(124)
         self.complete(1)
         self.open_target(1)
         self.receive(133)
         self.complete(0)
-        self.receive(133.001)
+        self.receive(135)
         self.complete(0)
         widget = self.window.client_widgets[0]
         self.assertEqual(widget.bullet_count, 4)
@@ -210,6 +237,42 @@ class ShootingFlowTests(unittest.TestCase):
         self.assertEqual(self.window.client_widgets[0].hit_targets, {1})
         self.assertEqual(self.window.lora.send_command.call_count, 2)
         self.assertEqual(self.window._shooting_session.active_target(133).class_id, 0)
+
+    def test_early_hit_is_scored_before_raise_without_sending_premature_close(self):
+        self.receive(114)
+        self.complete(1)
+        self.assertEqual(self.window.client_widgets[0].hit_targets, {1})
+        self.window.lora.send_command.assert_not_called()
+        self.open_target(0)
+        self.window.lora.send_command.assert_called_once_with("@111#")
+
+    def test_early_result_arriving_after_raise_retains_its_window(self):
+        self.receive(114)
+        self.open_target(0)
+        self.complete(1)
+        self.assertEqual(self.window.client_widgets[0].hit_targets, {1})
+        self.window.lora.send_command.assert_called_with("@112#")
+
+    def test_two_seconds_after_early_close_counts_without_resending_close(self):
+        self.open_target(0)
+        for received_at in (116, 117.999, 118):
+            self.receive(received_at)
+            self.complete(1)
+        self.assertEqual([shot[3] for shot in self.window.client_widgets[0].shots],
+                         [True, True, False])
+        self.assertEqual(self.window.lora.send_command.call_args_list,
+                         [call("@111#"), call("@112#")])
+
+    def test_adjacent_grace_windows_route_boundary_to_next_target(self):
+        self.window.automatic_close_target_enabled = False
+        self.open_target(0)
+        self.open_target(1)
+        for received_at, class_id in ((140.999, 0), (141, 0), (141, 2)):
+            self.receive(received_at)
+            self.complete(class_id)
+        self.assertEqual([shot[3] for shot in self.window.client_widgets[0].shots],
+                         [True, False, True])
+        self.assertEqual(self.window.lora.send_command.call_count, 2)
 
     def test_multiple_pedestals_without_auto_close_keep_window_open(self):
         self.window.automatic_close_target_enabled = False
@@ -232,12 +295,13 @@ class ShootingFlowTests(unittest.TestCase):
         self.assertEqual(self.window.client_widgets[0].bullet_count, 2)
         self.assertEqual([shot[3] for shot in self.window.client_widgets[0].shots], [True, True])
         self.assertEqual(self.window.lora.send_command.call_count, 2)
-        self.assertIsNone(self.window._shooting_session.active_target(117))
+        self.assertIsNotNone(self.window._shooting_session.active_target(118.999))
+        self.assertIsNone(self.window._shooting_session.active_target(119))
 
     def test_deadline_rejects_new_shots_but_counts_pending_result(self):
         for index in range(4):
             self.open_target(index)
-        self.receive(181.999)
+        self.receive(183.999)
         self.clock.return_value = 185
         self.window.update_app()
         self.assertFalse(self.window.testing)
@@ -256,15 +320,15 @@ class ShootingFlowTests(unittest.TestCase):
         self.window._scoring_pool.submit.assert_not_called()
         self.window._shot_sound.play.assert_not_called()
 
-    def test_target_eight_scores_after_seven_seconds_until_eighteen_seconds(self):
+    def test_target_eight_scores_until_twenty_seconds_including_late_grace(self):
         self.window.automatic_close_target_enabled = False
         for index in range(4):
             self.open_target(index)
-        for received_at in (171, 175, 181.999, 182):
+        for received_at in (171, 175, 181.999, 182, 183.999, 184):
             self.assertTrue(self.receive(received_at))
             self.complete(3)
         self.assertEqual([shot[3] for shot in self.window.client_widgets[0].shots],
-                         [True, True, True, False])
+                         [True, True, True, True, True, False])
         self.clock.return_value = 184.999
         self.window.update_app()
         self.assertTrue(self.window.testing)
