@@ -14,6 +14,7 @@
 
 ## Xếp loại và đọc kết quả (2026-10-12)
 
+- Hàng kết quả cách các nút 8 px; nút loa 28×28 với icon 20×20, nút Xem lại lấy kích thước theo nội dung thay vì giới hạn 50 px. Đã xem widget ở DPI 100%/200%, đo khoảng cách tại ba chiều rộng; bộ 218 test đạt.
 - `ClientWidget._rank_text()` xếp loại theo số bia khác nhau đã trúng: 4 = Giỏi; 3 và có bia số 8 (class 3) = Khá; 2 hoặc 3 thiếu bia 8 = Đạt; 0–1 = Không đạt. Cập nhật ngay theo kết quả, không chờ hết 16 viên.
 - Nút loa đọc kết quả đang hiển thị bằng `ResultSound`: `Beso{port}.mp3` rồi `GIOI/KHA/DAT/KDAT.mp3`, tốc độ 1×. Qt phát tuần tự, chỉ một bệ đọc; bấm lại để dừng, lỗi file mở lại nút và báo lỗi. Gửi `0P000\n` đến súng được chọn như wireless. Khóa nút loa trong bài; bắt đầu bài/đóng cửa sổ hủy đọc. Đọc kết quả dừng các thông báo trúng bia đến lần reset bài tiếp theo để không chồng giọng.
 - `test.bat` đạt 218 test, bao phủ cả 16 tổ hợp bia, trúng lặp, đọc đủ 4 bệ/4 xếp loại, dừng giữa hai clip, lỗi file/decoder và vòng đời màn hình. Đã chạy decoder Qt thật với cả 8 file ở volume 0 và xem trạng thái nút trên widget Qt. Chưa nghe loa/kiểm tra súng thật hoặc build lại EXE trong khi chờ người dùng hoàn tất âm thanh.
