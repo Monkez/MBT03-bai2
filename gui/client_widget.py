@@ -121,6 +121,7 @@ class ClientWidget(QFrame):
         self._error_timer.timeout.connect(self.error_label.hide)
         self.sign_image.installEventFilter(self)
         self.score_speak_icon.clicked.connect(lambda: self.score_speak_requested.emit(self.id))
+        self.set_score_speak_ui_state("idle")
         self.review_btn.clicked.connect(lambda: self.review_requested.emit(self.id))
         self.review_btn.setToolTip("Xem lại các phát bắn của phiên vừa kết thúc")
         self.review_btn.setEnabled(False)
@@ -311,7 +312,31 @@ class ClientWidget(QFrame):
         )
 
     def _rank_text(self):
-        return {4: "Giỏi", 3: "Khá", 2: "Đạt"}.get(len(self.hit_targets), "Không đạt")
+        count = len(self.hit_targets)
+        if count == 4:
+            return "Giỏi"
+        if count == 3 and 3 in self.hit_targets:  # class 3 is target number 8.
+            return "Khá"
+        return "Đạt" if count >= 2 else "Không đạt"
+
+    def set_score_speak_ui_state(self, state):
+        speaking = state == "speaking"
+        self.score_speak_icon.setEnabled(state in ("idle", "speaking"))
+        tooltip = {
+            "idle": "Đọc kết quả bệ này",
+            "speaking": "Đang đọc — bấm để dừng",
+            "disabled": "Đang đọc kết quả bệ khác",
+            "testing": "Kết thúc bài bắn để đọc kết quả",
+        }[state]
+        self.score_speak_icon.setToolTip(tooltip)
+        self.score_speak_icon.setAccessibleName(tooltip)
+        self.score_speak_icon.setStyleSheet(
+            "QPushButton { background: white; border: "
+            + ("2px solid #dc2626;" if speaking else "1px solid #9ca3af;")
+            + "border-radius: 4px; }"
+            "QPushButton:disabled { background: #e5e7eb; }"
+            "QPushButton:focus { border: 2px solid #2563eb; }"
+        )
 
     def show_target_simulation(self):
         self.sign_image.set_image(self.compose_target_image())

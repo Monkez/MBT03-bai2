@@ -36,9 +36,19 @@ Khi mở ứng dụng, chọn số bệ bắn rồi bấm `CHẤP NHẬN`.
 
 Màn hình chính hiện các bệ đã chọn. Mỗi bệ có 4 bia được ghép bằng OpenCV. Khi chọn 2 bệ, bố cục bia chuyển sang dạng dọc để mỗi bệ dễ quan sát hơn. Viền đỏ là mục tiêu chưa trúng, viền xanh lá là mục tiêu đã trúng. Nhãn kết quả hiển thị số đạn đã bắn trên 16 viên, số mục tiêu đã trúng trên 4 mục tiêu và xếp loại.
 
-Xếp loại cập nhật theo số mục tiêu khác nhau đã bắn trúng: **Giỏi: 4**, **Khá: 3**,
-**Đạt: 2**, **Không đạt: 0–1**. Trúng nhiều viên vào cùng một bia vẫn chỉ tính một
+Xếp loại cập nhật theo số mục tiêu khác nhau đã bắn trúng: **Giỏi: 4**,
+**Khá: 3 và phải có bia số 8**, **Đạt: 2 hoặc 3 nhưng thiếu bia số 8**,
+**Không đạt: 0–1**. Trúng nhiều viên vào cùng một bia vẫn chỉ tính một
 mục tiêu; không cần bắn hết 16 viên mới hiển thị xếp loại.
+
+Sau khi kết thúc bài, bấm nút loa của bệ để đọc kết quả đang hiển thị, ví dụ
+**“Bệ số 1, Khá”**. Bấm lại nút đang đọc để dừng; trong lúc đó nút loa của các
+bệ khác bị khóa. Bắt đầu bài mới hoặc đóng ứng dụng sẽ dừng đọc. Nút loa bị khóa
+trong khi bắn. Ứng dụng gửi `0P000\n` đến súng của bệ được chọn như dự án wireless,
+rồi phát `assets/sounds/Beso1.mp3`–`Beso4.mp3` và `GIOI.mp3`/`KHA.mp3`/`DAT.mp3`/
+`KDAT.mp3` ở tốc độ gốc. Thiếu hoặc lỗi file sẽ báo lỗi và mở lại nút loa.
+Khi bắt đầu đọc kết quả, các thông báo trúng bia còn chờ được dừng đến bài mới
+để tránh chồng giọng. Có thể bấm đọc lại để lấy xếp loại mới nếu còn ảnh đang chấm.
 
 Bố cục thường: bia 6 trên trái, bia 10 dưới trái, bia 7B ở cột giữa và bia 8 bên phải.
 Khi chọn 2 bệ, bố cục dọc lần lượt là bia 6, bia 10, rồi hàng cuối gồm bia 7B bên trái

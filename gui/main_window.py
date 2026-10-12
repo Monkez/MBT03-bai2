@@ -25,6 +25,7 @@ from gui.review_window import ShotReviewDialog
 from gui.setting_window import SettingWindow
 from gui.shot_sound import ShotSound
 from gui.hit_sound import HitSound
+from gui.result_sound import ResultSound
 from gui.uart_debug_dialog import UartDebugDialog
 from gui.shooting_session import (
     MAX_DURATION_SECONDS, TARGET_CLASS_SEQUENCE, TARGET_VISIBLE_SECONDS_BY_CLASS,
@@ -130,6 +131,11 @@ class MainWindow(QMainWindow):
         self._shooting_session = None
         self._shot_sound = ShotSound(self)
         self._hit_sound = HitSound(self)
+        self._result_sound = ResultSound(self)
+        self._result_sound.changed.connect(self._update_score_speak_buttons)
+        self._result_sound.failed.connect(
+            lambda message: QMessageBox.warning(self, "Đọc kết quả", message)
+        )
         self._test_timeout_timer = QTimer(self)
         self._test_timeout_timer.setSingleShot(True)
         self._test_timeout_timer.setTimerType(Qt.PreciseTimer)
@@ -719,6 +725,7 @@ class MainWindow(QMainWindow):
                 "Chờ gửi lệnh hoặc đổi Wi-Fi hoàn tất trước khi bắt đầu bài bắn.",
             )
             return
+        self._result_sound.stop()
         self._play_start_announcement()
         self._begin_review_session()
         self._hit_sound.reset()
@@ -736,6 +743,7 @@ class MainWindow(QMainWindow):
         self.update_app()
         for widget in self.client_widgets:
             widget.start_test()
+        self._update_score_speak_buttons()
 
     def _send_start_uart_command(self):
         for server in self.servers:
@@ -777,6 +785,7 @@ class MainWindow(QMainWindow):
         self.start_btn.setText(self._start_button_text)
         for widget in self.client_widgets:
             widget.stop_test()
+        self._update_score_speak_buttons()
 
     def update_app(self):
         if not self.testing:
@@ -811,7 +820,27 @@ class MainWindow(QMainWindow):
             self.lora.send_command(cf.config_str("calibration.target_lower_command", "@112#"))
 
     def request_score_speak(self, port_id):
-        return
+        if self.testing or self._closing or not (1 <= port_id <= len(self.client_widgets)):
+            return
+        if self._result_sound.port_id == port_id:
+            self._result_sound.stop()
+            return
+        if self._result_sound.port_id is not None:
+            return
+        self._hit_sound.stop()
+        self._shot_sound.stop()
+        # Match the wireless project's preparation command for the selected gun.
+        if port_id <= len(self.servers):
+            self.servers[port_id - 1].send_uart_command("0P000\n")
+        self._result_sound.start(port_id, self.client_widgets[port_id - 1]._rank_text())
+
+    def _update_score_speak_buttons(self):
+        active = self._result_sound.port_id
+        for widget in self.client_widgets:
+            state = "testing" if self.testing else (
+                "idle" if active is None else "speaking" if widget.id == active else "disabled"
+            )
+            widget.set_score_speak_ui_state(state)
 
     def _play_start_announcement(self):
         """Reserved for the future 'Bat dau tap ban AK bai 2' audio file."""
@@ -869,6 +898,7 @@ class MainWindow(QMainWindow):
         self._test_timeout_timer.stop()
         self._shot_sound.stop()
         self._hit_sound.stop()
+        self._result_sound.stop()
         self._start_followup_timer.stop()
         for server in self.servers:
             try:
