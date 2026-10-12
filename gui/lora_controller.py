@@ -19,6 +19,7 @@ class LoraController(QObject):
 
     connection_changed = pyqtSignal(bool, str)
     command_finished = pyqtSignal(str, bool, int)
+    command_sent = pyqtSignal(str, float, float)  # command, queued_at, sent_at
 
     DEFAULT_PORT_DESCRIPTION = cf.config_str(
         "lora.port_description", "USB Serial Port"
@@ -111,9 +112,10 @@ class LoraController(QObject):
 
     def send_command(self, command):
         if not self._closing:
-            self._executor.submit(self._send_with_retry, command)
+            self._executor.submit(self._send_with_retry, command, time.monotonic())
 
-    def _send_with_retry(self, command):
+    def _send_with_retry(self, command, queued_at=None):
+        queued_at = time.monotonic() if queued_at is None else queued_at
         payload = command.encode("ascii")
         attempts = 0
         success = False
@@ -145,6 +147,8 @@ class LoraController(QObject):
                     device.reset_input_buffer()
                     device.write(payload)
                     device.flush()
+                    if attempts == 1:
+                        self.command_sent.emit(command, queued_at, time.monotonic())
                     if self._wait_for_echo(device, payload):
                         success = True
                         break

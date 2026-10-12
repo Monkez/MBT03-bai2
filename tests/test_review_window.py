@@ -164,7 +164,7 @@ class ReviewWindowTests(unittest.TestCase):
         window = SimpleNamespace(
             _store_review_shot=MagicMock(), testing=True, _active_review_session_id=1,
             client_widgets=[widget], _reference_images={0: np.zeros((100, 200, 3))},
-            _maybe_close_hit_target=MagicMock(),
+            _maybe_close_hit_target=MagicMock(), automatic_close_target_enabled=True,
         )
         MainWindow._on_scoring_done(window, {
             "ok": True, "session_id": 1, "port_id": 1,

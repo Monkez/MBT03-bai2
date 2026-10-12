@@ -186,6 +186,7 @@ class MainWindow(QMainWindow):
         self.lora = LoraController(self)
         self.lora.connection_changed.connect(self._on_lora_connection_changed)
         self.lora.command_finished.connect(self._on_lora_command_finished)
+        self.lora.command_sent.connect(self._on_lora_command_sent)
 
         self._configure_main_ui()
         self._create_client_widgets()
@@ -397,7 +398,12 @@ class MainWindow(QMainWindow):
             bullet_point = (float(q0[0]), float(q0[1]))
         except (TypeError, ValueError, IndexError):
             bullet_point = (0.5, 0.5)
-        self.process_shot(port_id, frame, bullet_point)
+        received_at = (q0_data or {}).get("_server_received_at")
+        if (isinstance(received_at, (int, float)) and not isinstance(received_at, bool)
+                and math.isfinite(received_at)):
+            self.process_shot(port_id, frame, bullet_point, received_at=received_at)
+        else:
+            self.process_shot(port_id, frame, bullet_point)
 
     def _queue_raw_camera_image(self, port_id, frame):
         """Snapshot an untouched shoot frame and queue a lossless PNG write."""
@@ -435,16 +441,18 @@ class MainWindow(QMainWindow):
             return None
         return path
 
-    def process_shot(self, port_id, frame, bullet_point):
+    def process_shot(self, port_id, frame, bullet_point, received_at=None):
         """Public entry point for scoring one pedestal image and impact."""
-        if not self.testing or not (1 <= port_id <= len(self.client_widgets)):
+        if not (1 <= port_id <= len(self.client_widgets)):
             return False
-        session_id = self._active_review_session_id
-        if session_id is None:
+        session_id = (self._active_review_session_id if self.testing
+                      else self._previous_review_session_id)
+        if session_id is None or self._shooting_session is None:
             return False
-        received_at = time.monotonic()
-        if self._shooting_session.expired(received_at):
-            self.stop_test()
+        received_at = time.monotonic() if received_at is None else received_at
+        if not self._shooting_session.accepts_receipt(received_at):
+            if self.testing and self._shooting_session.expired(received_at):
+                self.stop_test()
             return False
         exposure = self._shooting_session.active_target(received_at)
         self._shot_sound.play()
@@ -558,6 +566,13 @@ class MainWindow(QMainWindow):
         if result.get("ok") and metadata is not None:
             exposure = result.get("exposure")
             received_at = result.get("received_at")
+            current_id = (self._active_review_session_id if self.testing
+                          else self._previous_review_session_id)
+            session = (getattr(self, "_shooting_session", None)
+                       if result.get("session_id") == current_id else None)
+            if session is not None and received_at is not None:
+                # Serial confirmation may have corrected the window while scoring.
+                exposure = session.active_target(received_at)
             eligible = (
                 exposure is not None and received_at is not None
                 and exposure.contains(received_at)
@@ -571,6 +586,14 @@ class MainWindow(QMainWindow):
                     if exposure is None or received_at is None or not exposure.contains(received_at)
                     else "Không tính trúng: nhận diện khác bia đang được hiện"
                 )
+                if session is not None and received_at is not None:
+                    metadata["status"] += f" · Nhận ảnh: {received_at - session.started_at:.2f}s"
+                    target_window = session.window_for_target(metadata.get("class_id"))
+                    if target_window is not None:
+                        metadata["status"] += (
+                            f" · Khoảng nhận: {target_window.opened_at - session.started_at:.2f}"
+                            f"–{target_window.closed_at - session.started_at:.2f}s"
+                        )
                 result = dict(result, metadata=metadata)
         self._store_review_shot(result)
         if not result.get("ok"):
@@ -611,7 +634,7 @@ class MainWindow(QMainWindow):
             y_ratio,
             hit,
         )
-        if hit and len(self.client_widgets) > 1:
+        if hit and (len(self.client_widgets) > 1 or not self.automatic_close_target_enabled):
             self._hit_sound.announce(port_id, class_id)
         self._maybe_close_hit_target(class_id, hit)
         print(
@@ -773,6 +796,7 @@ class MainWindow(QMainWindow):
     def stop_test(self):
         if not self.testing:
             return
+        self._shooting_session.stop(time.monotonic())
         self.testing = False
         self._test_timeout_timer.stop()
         self._start_followup_timer.stop()
@@ -886,6 +910,19 @@ class MainWindow(QMainWindow):
             print(f"[LoRa] {command} da duoc xac nhan sau {attempts} lan gui")
         else:
             print(f"[LoRa] {command} khong co phan hoi hop le sau {attempts} lan gui")
+
+    def _on_lora_command_sent(self, command, queued_at, sent_at):
+        session = self._shooting_session
+        if session is None or not session.accepts_receipt(queued_at) or self._closing:
+            return
+        for class_id, (_, raise_command, _) in zip(TARGET_CLASS_SEQUENCE, self.LORA_SCRIPT):
+            if command == raise_command:
+                session.confirm_command_sent(class_id, sent_at, raised=True)
+                return
+        for class_id, (close_command, _) in self.AUTO_CLOSE_TARGET_COMMANDS.items():
+            if command == close_command:
+                session.confirm_command_sent(class_id, sent_at, raised=False)
+                return
 
     def closeEvent(self, event):
         if self._closing:

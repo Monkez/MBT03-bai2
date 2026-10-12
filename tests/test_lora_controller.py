@@ -51,6 +51,8 @@ class LoraControllerTests(unittest.TestCase):
         controller._serial = device
         controller._port_name = "COM7"
         results = []
+        sent = []
+        controller.command_sent.connect(lambda *args: sent.append(args))
         controller.command_finished.connect(
             lambda command, success, attempts: results.append((command, success, attempts))
         )
@@ -59,6 +61,9 @@ class LoraControllerTests(unittest.TestCase):
 
         self.assertEqual(device.write_count, 2)
         self.assertEqual(results, [("@111#", True, 2)])
+        self.assertEqual(len(sent), 1, "Retries must not restart the target window")
+        self.assertEqual(sent[0][0], "@111#")
+        self.assertLessEqual(sent[0][1], sent[0][2])
         controller.close()
 
     def test_stops_after_three_attempts_without_an_echo(self):

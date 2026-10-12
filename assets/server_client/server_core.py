@@ -794,6 +794,7 @@ class MBT03ServerCore(QObject):
                     continue
                 
                 frames = self.data_socket.recv_multipart()
+                received_at = time.monotonic()
                 if len(frames) < 2:
                     self._log(
                         f"Drop malformed data message: frames={len(frames)}")
@@ -837,6 +838,7 @@ class MBT03ServerCore(QObject):
                             payload,
                             q0_meta,
                             data_generation,
+                            received_at,
                         )
                     except RuntimeError as e:
                         with self._decode_lock:
@@ -848,8 +850,9 @@ class MBT03ServerCore(QObject):
             except Exception as e:
                 self._log(f"Data loop error: {e}")
     
-    def _decode_shoot_image(self, data, q0_meta=None, session_generation=None):
+    def _decode_shoot_image(self, data, q0_meta=None, session_generation=None, received_at=None):
         """Async decode shoot image + Q0 metadata."""
+        received_at = time.monotonic() if received_at is None else received_at
         try:
             nparr = np.frombuffer(data, np.uint8)
             frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
@@ -861,6 +864,11 @@ class MBT03ServerCore(QObject):
                         q0_data = Protocol.decode_payload(q0_meta)
                     except Exception as exc:
                         self._log(f"Shoot image Q0 metadata decode failed: {exc}")
+                if not isinstance(q0_data, dict):
+                    q0_data = {}
+                # Local monotonic time, captured before the decode/UI queues.
+                # Always overwrite any same-named field supplied by the client.
+                q0_data["_server_received_at"] = received_at
                 
                 q0_str = ""
                 if q0_data.get('q0'):

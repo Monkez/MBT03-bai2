@@ -24,10 +24,13 @@ class ShootingSession:
     def __init__(self, started_at, target_delays=()):
         self.started_at = started_at
         self.deadline = started_at + MAX_DURATION_SECONDS
+        self.stopped_at = None
         self.exposure = None
         self.next_target = 0
         self._raised_at = None
         self._visible_until = None
+        self._raised_times = {}
+        self._lowered_times = {}
         self._scheduled = {
             class_id: TargetExposure(
                 class_id, max(started_at, started_at + delay - TARGET_EARLY_SECONDS),
@@ -40,23 +43,57 @@ class ShootingSession:
     def expired(self, now):
         return now >= self.deadline
 
+    def stop(self, now):
+        if self.stopped_at is None:
+            self.stopped_at = min(now, self.deadline)
+
+    def accepts_receipt(self, received_at):
+        end = self.deadline if self.stopped_at is None else self.stopped_at
+        return self.started_at <= received_at < end
+
+    def window_for_target(self, class_id):
+        return self._scheduled.get(class_id)
+
     def open_target(self, class_id, now):
         if (self.expired(now) or self.next_target >= len(TARGET_CLASS_SEQUENCE)
                 or class_id != TARGET_CLASS_SEQUENCE[self.next_target]):
             return False
-        if self.exposure is not None:
-            self.exposure.closed_at = min(self.exposure.closed_at, now - TARGET_EARLY_SECONDS)
         opened_at = max(self.started_at, now - TARGET_EARLY_SECONDS)
         # Reuse the object already attached to shots received before the command.
         self.exposure = self._scheduled.get(class_id) or TargetExposure(class_id, opened_at, now)
+        self._scheduled[class_id] = self.exposure
         self.exposure.opened_at = min(self.exposure.opened_at, opened_at)
-        self.exposure.closed_at = min(
-            now + TARGET_VISIBLE_SECONDS_BY_CLASS[class_id] + TARGET_LATE_SECONDS,
-            self.deadline,
-        )
-        self._raised_at = now
-        self._visible_until = min(now + TARGET_VISIBLE_SECONDS_BY_CLASS[class_id], self.deadline)
+        self._raised_times[class_id] = now
         self.next_target += 1
+        self._update_windows()
+        return True
+
+    def _update_windows(self):
+        raised = list(self._raised_times)
+        for index, class_id in enumerate(raised):
+            raised_at = self._raised_times[class_id]
+            visible_until = min(raised_at + TARGET_VISIBLE_SECONDS_BY_CLASS[class_id], self.deadline)
+            visible_until = min(visible_until, self._lowered_times.get(class_id, visible_until))
+            closed_at = min(visible_until + TARGET_LATE_SECONDS, self.deadline)
+            if index + 1 < len(raised):
+                closed_at = min(closed_at, self._raised_times[raised[index + 1]] - TARGET_EARLY_SECONDS)
+            self._scheduled[class_id].closed_at = closed_at
+            if self.exposure.class_id == class_id:
+                self._raised_at = raised_at
+                self._visible_until = visible_until
+
+    def confirm_command_sent(self, class_id, sent_at, *, raised):
+        """Align the window with the first serial write, not executor queueing."""
+        if class_id not in self._raised_times or not self.started_at <= sent_at < self.deadline:
+            return False
+        if raised:
+            self._raised_times[class_id] = sent_at
+            self._scheduled[class_id].opened_at = max(self.started_at, sent_at - TARGET_EARLY_SECONDS)
+        elif class_id in self._lowered_times:
+            self._lowered_times[class_id] = sent_at
+        else:
+            return False
+        self._update_windows()
         return True
 
     def active_target(self, now):
@@ -67,8 +104,11 @@ class ShootingSession:
             upcoming = self._scheduled.get(class_id)
             if upcoming is not None and upcoming.contains(now):
                 return upcoming
-        if self.exposure is not None and self.exposure.contains(now):
-            return self.exposure
+        # Decoding/UI dispatch can finish after the next target has been raised.
+        for class_id in reversed(self._raised_times):
+            exposure = self._scheduled[class_id]
+            if exposure.contains(now):
+                return exposure
         return None
 
     def close_target(self, class_id, now):
@@ -76,6 +116,6 @@ class ShootingSession:
         if (exposure is None or exposure.class_id != class_id
                 or not self._raised_at <= now < self._visible_until):
             return False
-        self._visible_until = now
-        exposure.closed_at = min(exposure.closed_at, now + TARGET_LATE_SECONDS, self.deadline)
+        self._lowered_times[class_id] = now
+        self._update_windows()
         return True

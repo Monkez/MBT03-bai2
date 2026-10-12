@@ -1,5 +1,12 @@
 # Trạng thái dự án
 
+## Nhận trúng và báo trúng một bệ (2026-10-12)
+
+- PC đóng dấu `_server_received_at` bằng monotonic ngay sau nhận gói ảnh, trước decode/UI; trường này luôn ghi đè metadata từ client. MainWindow dùng dấu thời gian đó, giữ cửa sổ các bia trước và nhận ảnh chờ decode/UI của bài vừa dừng nếu nhận trước mốc dừng. Ảnh trước bài mới/sau mốc dừng không được tính.
+- LoRa phát `command_sent(command, queued_at, sent_at)` sau lần ghi serial đầu tiên, không cập nhật lại khi retry. ShootingSession hiệu chỉnh mốc dựng/gập theo thời điểm gửi, giữ giới hạn 85 giây, nhận sớm 1 giây/muộn 2 giây; bỏ qua lệnh được xếp hàng ngoài phiên. Kết quả chấm đang chờ được xét lại theo cửa sổ đã hiệu chỉnh. Review thêm giây nhận ảnh/khoảng nhận khi loại vì thời gian.
+- Một bệ tắt gập cũng báo số bệ khi trúng; vẫn một lần mỗi cặp bia–bệ. Một bệ bật gập giữ chế độ không đọc số.
+- `test.bat` đạt 235 test. Chưa thử bia/súng thật. Người dùng xác nhận các ảnh bị loại lúc bia còn dựng; đã sửa hai nguồn lệch mốc trong PC, vẫn cần đối chiếu thời lượng bộ điều khiển của bia 6/10/7B (phần mềm hiện 7 giây, bia 8 là 18 giây). Chưa build EXE, đang chờ hoàn tất âm thanh.
+
 ## Chuyển cụm âm thanh kết quả (2026-10-12)
 
 - `ResultSound` dùng SoundFile giải mã hai MP3, đổi về PCM 44.1 kHz stereo, thêm 120 ms im lặng và fade mép 5 ms, rồi phát một WAV tạm duy nhất. File gốc giữ nguyên; dọn file tạm khi dừng/kết thúc/lỗi. `DAT.mp3` hiện là 22.05 kHz mono, các cụm khác là 44.1 kHz stereo.

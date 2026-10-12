@@ -36,8 +36,14 @@ class PcBurstCountingTests(unittest.TestCase):
         server._decode_pool = _DeferredExecutor()
         server.data_socket = MagicMock()
         received = []
+        receipt_times = []
+        submitted_times = []
         server.shoot_image_signal.connect(
             lambda frame, meta: received.append(int(frame[0, 0, 0])),
+            type=Qt.DirectConnection,
+        )
+        server.shoot_image_signal.connect(
+            lambda frame, meta: receipt_times.append(meta["_server_received_at"]),
             type=Qt.DirectConnection,
         )
         messages = deque(
@@ -51,6 +57,7 @@ class PcBurstCountingTests(unittest.TestCase):
         def complete_one(*_args):
             if server._decode_pool.jobs:
                 worker, args = server._decode_pool.jobs.pop(0)
+                submitted_times.append(args[-1])
                 worker(*args)
 
         def poll(_timeout):
@@ -68,6 +75,21 @@ class PcBurstCountingTests(unittest.TestCase):
             server._data_loop()
         self.assertEqual(received, [20, 40, 60])
         self.assertEqual(server._decode_inflight, 0)
+        self.assertEqual(receipt_times, submitted_times)
+        self.assertTrue(all(isinstance(value, float) for value in receipt_times))
+
+    def test_decoder_preserves_receipt_time_and_overwrites_client_timing_field(self):
+        server = _make_server_harness()
+        server._decode_lock = threading.Lock()
+        server._decode_inflight = 1
+        received = []
+        server.shoot_image_signal.connect(lambda frame, meta: received.append(meta),
+                                         type=Qt.DirectConnection)
+        encoded = cv2.imencode(".png", np.zeros((8, 8, 3), dtype=np.uint8))[1].tobytes()
+        metadata = Protocol.encode_payload({"q0": [.4, .6], "_server_received_at": 999})
+        server._decode_shoot_image(encoded, metadata, received_at=123.5)
+        self.assertEqual(received[0]["_server_received_at"], 123.5)
+        self.assertEqual(received[0]["q0"], [.4, .6])
 
     def test_three_images_count_even_when_two_scoring_jobs_fail(self):
         self.assert_burst_count(failed_jobs=2)
@@ -85,6 +107,7 @@ class PcBurstCountingTests(unittest.TestCase):
             _maybe_close_hit_target=MagicMock(), scoring_done_signal=MagicMock(),
             _setting_window=None, _queue_raw_camera_image=MagicMock(),
             _shot_sound=MagicMock(), _shooting_session=ShootingSession(time.monotonic()),
+            automatic_close_target_enabled=True,
         )
         now = time.monotonic()
         window._shooting_session.open_target(1, now)

@@ -102,12 +102,13 @@ class HitSoundTests(unittest.TestCase):
         self.app.processEvents()
         self.assertEqual([os.path.basename(path) for path in self.played], ["1.mp3", "2.mp3"])
 
-    def window(self, count=4):
+    def window(self, count=4, auto_close=True):
         return SimpleNamespace(
             testing=True, _active_review_session_id=1, _previous_review_session_id=None,
             client_widgets=[MagicMock() for _ in range(count)],
             _store_review_shot=MagicMock(), _reference_images={},
             _maybe_close_hit_target=MagicMock(), _hit_sound=self.sound,
+            automatic_close_target_enabled=auto_close,
         )
 
     def result(self, port=1, target=1, hit=True, **changes):
@@ -132,9 +133,18 @@ class HitSoundTests(unittest.TestCase):
         self.assertEqual([os.path.basename(path) for path in self.played],
                          ["3.mp3", "1.mp3", "2.mp3", "4.mp3"])
 
-    def test_single_pedestal_does_not_read_number(self):
+    def test_single_pedestal_with_auto_close_does_not_read_number(self):
         MainWindow._on_scoring_done(self.window(count=1), self.result())
         self.assertEqual(self.played, [])
+
+    def test_single_pedestal_without_auto_close_announces_each_target_once(self):
+        window = self.window(count=1, auto_close=False)
+        for target in (1, 0, 2, 3):
+            for _ in range(3):
+                MainWindow._on_scoring_done(window, self.result(
+                    target=target, exposure=TargetExposure(target, 115, 122)))
+        self.drain()
+        self.assertEqual([os.path.basename(path) for path in self.played], ["1.mp3"] * 4)
 
     def test_pending_valid_result_after_end_still_announces_once(self):
         window = self.window(count=2)

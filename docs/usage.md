@@ -94,8 +94,10 @@ Khi kết thúc bài (thủ công, hết giờ hoặc thoát ứng dụng trong 
 Esc hoặc nút X cũng gửi lệnh này đến tất cả súng.
 Bia hiện theo thứ tự **6 → 10 → 7B → 8**, mặc định tại giây **15 / 32 / 42 / 64**.
 Bia 6, 10 và 7B có thời lượng cơ sở **7 giây**; riêng bia 8 là **18 giây**.
-Cửa sổ nhận trúng mở **sớm 1 giây** so với lịch dựng và đóng **muộn 2 giây** so
-với thời điểm kết thúc cơ sở. Theo lịch mặc định, khi không gập sớm:
+Cửa sổ nhận trúng mở **sớm 1 giây** so với lúc gửi lệnh dựng và đóng **muộn 2 giây** so
+với thời điểm kết thúc cơ sở. Mốc được cập nhật khi lệnh thực sự gửi ra cổng LoRa,
+không tính thời gian chờ trong hàng đợi gửi. Theo lịch mặc định, khi không gập sớm
+và lệnh được gửi đúng lịch:
 
 | Bia | Khoảng nhận trúng từ lúc bắt đầu bài |
 | --- | --- |
@@ -107,7 +109,10 @@ với thời điểm kết thúc cơ sở. Theo lịch mặc định, khi không
 Nếu bật `Gập bia` và có lệnh gập sớm do trúng, vẫn nhận thêm **2 giây sau lệnh gập**.
 Phát nhận sớm không gửi lệnh gập trước khi bia được dựng. Chỉ tính trúng khi nhận
 diện đúng bia trong cửa sổ nhận tại thời điểm PC nhận ảnh; ngoài cửa sổ hoặc nhận
-nhầm bia vẫn tính đạn nhưng không tính trúng. `Xem lại` ghi lý do loại kết quả.
+nhầm bia vẫn tính đạn nhưng không tính trúng. Thời điểm nhận ảnh được ghi ngay
+tại luồng nhận mạng trên PC, trước hàng đợi giải mã và giao diện; không dùng đồng
+hồ của Orange Pi để so mốc. `Xem lại` ghi lý do loại, giây nhận ảnh và khoảng nhận
+của bia để đối chiếu nếu lịch phần mềm khác thời lượng cài trên bộ điều khiển bia.
 Các ảnh đã nhận trước khi kết thúc vẫn được chấm tiếp; kết quả đến muộn không làm
 gập bia của lượt sau. Ảnh nhận từ mốc 85 giây trở đi không được nhận vào bài.
 
@@ -116,7 +121,7 @@ Mỗi phát nhận trong bài hoặc khi bắn Q0 phát tiếng nổ `assets/sou
 các phát liên tiếp. Trong bài, nút cài đặt thiết bị bị khóa để không dựng bia Q0 xen
 vào lịch. Phím thử `D` ghi điểm ngẫu nhiên đã được bỏ.
 
-Khi chọn từ **2 bệ trở lên**, mỗi lần một bệ trúng một bia lần đầu trong bài,
+Khi chọn từ **2 bệ trở lên**, hoặc **1 bệ và Gập bia: TẮT**, mỗi lần một bệ trúng một bia lần đầu trong bài,
 ứng dụng đọc số bệ bằng `assets/sounds/noti/1.mp3` đến `4.mp3`, mặc định **1.75×**.
 Chỉnh `shooting.hit_announcement_playback_rate` trong `assets/configurations/config.json`
 (ví dụ `1.5` hoặc `2.0`), rồi mở lại ứng dụng để áp dụng.

@@ -16,6 +16,34 @@ from gui.shooting_session import ShootingSession
 
 
 class ShootingSessionTests(unittest.TestCase):
+    def test_serial_queue_delay_moves_window_to_actual_raise(self):
+        session = ShootingSession(100, (15, 32, 42, 64))
+        session.open_target(1, 115)
+        exposure = session.active_target(116)
+        self.assertTrue(session.confirm_command_sent(1, 118, raised=True))
+        self.assertIsNone(session.active_target(116.999))
+        self.assertIs(session.active_target(117), exposure)
+        self.assertIs(session.active_target(126.999), exposure)
+        self.assertIsNone(session.active_target(127))
+
+    def test_serial_queue_delay_moves_early_close_without_extending_natural_duration(self):
+        session = ShootingSession(100)
+        session.open_target(1, 115)
+        session.close_target(1, 116)
+        session.confirm_command_sent(1, 119, raised=False)
+        self.assertEqual(session.active_target(120.999).class_id, 1)
+        self.assertIsNone(session.active_target(121))
+        session.confirm_command_sent(1, 130, raised=False)
+        self.assertIsNone(session.active_target(124))
+
+    def test_receipt_before_previous_target_closed_remains_available_after_next_raise(self):
+        session = ShootingSession(100)
+        session.open_target(1, 115)
+        previous = session.active_target(120)
+        session.open_target(0, 132)
+        self.assertIs(session.active_target(120), previous)
+        self.assertIsNone(session.active_target(125))
+
     def test_invalid_timeline_falls_back_without_shifting_target_identity(self):
         defaults = cf.DEFAULT_CONFIG["shooting"]["lora_timeline"]
         expected = tuple((item["delay_seconds"], item["command"], item["description"])
@@ -34,7 +62,12 @@ class ShootingSessionTests(unittest.TestCase):
         for seconds, class_id, duration in ((15, 1, 7), (32, 0, 7), (42, 2, 7), (64, 3, 18)):
             now = 100 + seconds
             self.assertTrue(session.open_target(class_id, now))
-            self.assertIsNone(session.active_target(now - 1.001))
+            if class_id == 2:
+                # A delayed image from 40.999s still belongs to the prior target.
+                self.assertEqual(session.active_target(now - 1.001).class_id, 0)
+            else:
+                self.assertIsNone(session.active_target(now - 1.001))
+            self.assertFalse(session.window_for_target(class_id).contains(now - 1.001))
             self.assertEqual(session.active_target(now - 1).class_id, class_id)
             self.assertEqual(session.active_target(now).class_id, class_id)
             self.assertEqual(session.active_target(now + duration + 1.999).class_id, class_id)
@@ -132,6 +165,77 @@ class ShootingFlowTests(unittest.TestCase):
         seconds, command, description = self.window.LORA_SCRIPT[index]
         self.clock.return_value = 100 + seconds
         self.window._send_lora_script_command(command, description, (1, 0, 2, 3)[index])
+
+    def test_delayed_image_dispatch_uses_server_receipt_before_target_change(self):
+        self.open_target(0)
+        self.open_target(1)
+        self.clock.return_value = 134
+        with patch.object(self.window, "_queue_raw_camera_image"):
+            self.window._on_shoot_image(1, np.zeros((8, 8, 3), dtype=np.uint8),
+                                       {"q0": [.5, .5], "_server_received_at": 123.5})
+        self.complete(1)
+        self.assertEqual(self.window.client_widgets[0].hit_targets, {1})
+        self.assertEqual(self.window._scoring_pool.submit.call_args.args[-2], 123.5)
+        self.assertEqual(self.window.lora.send_command.call_count, 2)
+
+    def test_late_serial_confirmation_corrects_a_pending_scoring_result(self):
+        self.open_target(0)
+        self.receive(125)
+        self.assertIsNone(self.window._scoring_pool.submit.call_args.args[-1])
+        self.window._on_lora_command_sent("@111#", 115, 118)
+        self.complete(1)
+        self.assertEqual(self.window.client_widgets[0].hit_targets, {1})
+
+    def test_previous_session_serial_command_does_not_shift_current_window(self):
+        self.open_target(0)
+        self.window._on_lora_command_sent("@111#", 99, 118)
+        self.assertIsNone(self.window._shooting_session.active_target(125))
+        self.clock.return_value = 117
+        self.window.stop_test()
+        self.window._on_lora_command_sent("@111#", 118, 119)
+        self.assertIsNone(self.window._shooting_session.active_target(125))
+
+    def test_previous_session_image_does_not_consume_current_round(self):
+        with patch.object(self.window, "_queue_raw_camera_image"):
+            self.window._on_shoot_image(1, np.zeros((8, 8, 3), dtype=np.uint8),
+                                       {"_server_received_at": 99.5})
+        self.window._scoring_pool.submit.assert_not_called()
+
+    def test_rejected_hit_reports_receipt_and_target_window_in_review(self):
+        self.open_target(0)
+        self.receive(125)
+        self.complete(1)
+        status = self.window._review_sessions[1][1][0]["status"]
+        self.assertIn("Nhận ảnh: 25.00s", status)
+        self.assertIn("Khoảng nhận: 14.00–24.00s", status)
+
+    def test_image_received_before_stop_is_scored_after_late_ui_dispatch(self):
+        self.open_target(0)
+        self.clock.return_value = 116
+        self.window.stop_test()
+        self.clock.return_value = 120
+        with patch.object(self.window, "_queue_raw_camera_image"):
+            self.window._on_shoot_image(1, np.zeros((8, 8, 3), dtype=np.uint8),
+                                       {"_server_received_at": 115.5})
+        self.complete(1)
+        self.assertEqual(self.window.client_widgets[0].hit_targets, {1})
+        self.assertEqual(self.window._scoring_pool.submit.call_count, 1)
+        with patch.object(self.window, "_queue_raw_camera_image"):
+            self.window._on_shoot_image(1, np.zeros((8, 8, 3), dtype=np.uint8),
+                                       {"_server_received_at": 116.01})
+        self.assertEqual(self.window._scoring_pool.submit.call_count, 1)
+
+    def test_image_received_before_deadline_is_scored_after_timeout(self):
+        for index in range(4):
+            self.open_target(index)
+        self.clock.return_value = 185
+        self.window.stop_test()
+        self.clock.return_value = 188
+        with patch.object(self.window, "_queue_raw_camera_image"):
+            self.window._on_shoot_image(1, np.zeros((8, 8, 3), dtype=np.uint8),
+                                       {"_server_received_at": 183.5})
+        self.complete(3)
+        self.assertEqual(self.window.client_widgets[0].hit_targets, {3})
 
     def test_start_sends_followup_once_after_delay_to_each_server(self):
         self.window.stop_test()
