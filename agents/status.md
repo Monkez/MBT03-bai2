@@ -1,5 +1,10 @@
 # Trạng thái dự án
 
+## Xếp loại (2026-10-12)
+
+- `ClientWidget._rank_text()` xếp loại theo số bia khác nhau đã trúng: 4 = Giỏi, 3 = Khá, 2 = Đạt, 0–1 = Không đạt. Cập nhật ngay theo kết quả, không chờ hết 16 viên.
+- Đã kiểm tra luồng widget đủ 5 mức số bia, trúng lặp, trượt, hết đạn, dừng và bắt đầu lại; `test.bat` đạt 199 test. Chưa build lại EXE trong khi chờ người dùng hoàn tất âm thanh.
+
 ## Bố cục bia mô phỏng (2026-10-11)
 
 - Bố cục đã chỉnh theo ảnh người dùng: bia 6 trên trái, bia 10 dưới trái, bia 7B ở cột giữa cao và bia 8 bên phải. Chế độ 2 bệ dùng thứ tự dọc 6, 10, rồi hàng 7B/8. Bia 7B được phóng vừa ô đứng, giữ cơ chế fit đúng tỉ lệ và ánh xạ dấu đạn theo vùng ảnh đã vẽ.

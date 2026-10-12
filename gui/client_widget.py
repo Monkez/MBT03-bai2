@@ -311,13 +311,7 @@ class ClientWidget(QFrame):
         )
 
     def _rank_text(self):
-        if self.bullet_count == 0 and not self.hit_targets:
-            return "-"
-        if len(self.hit_targets) == 4:
-            return "Đạt"
-        if self.bullet_count >= self.bullet_limit:
-            return "Không đạt"
-        return "-"
+        return {4: "Giỏi", 3: "Khá", 2: "Đạt"}.get(len(self.hit_targets), "Không đạt")
 
     def show_target_simulation(self):
         self.sign_image.set_image(self.compose_target_image())
