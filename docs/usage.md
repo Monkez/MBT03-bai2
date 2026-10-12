@@ -46,7 +46,11 @@ Sau khi kết thúc bài, bấm nút loa của bệ để đọc kết quả đa
 bệ khác bị khóa. Bắt đầu bài mới hoặc đóng ứng dụng sẽ dừng đọc. Nút loa bị khóa
 trong khi bắn. Ứng dụng gửi `0P000\n` đến súng của bệ được chọn như dự án wireless,
 rồi phát `assets/sounds/Beso1.mp3`–`Beso4.mp3` và `GIOI.mp3`/`KHA.mp3`/`DAT.mp3`/
-`KDAT.mp3` ở tốc độ gốc. Thiếu hoặc lỗi file sẽ báo lỗi và mở lại nút loa.
+`KDAT.mp3` ở tốc độ gốc. Hai cụm được giải mã về cùng PCM 44.1 kHz stereo,
+ghép thành một file WAV tạm và phát một lần để không đổi nguồn âm thanh giữa câu.
+Giữa hai cụm có khoảng nghỉ thêm 120 ms; đầu/cuối mỗi cụm được làm mềm trong 5 ms.
+File tạm được dọn khi đọc xong hoặc dừng; không sửa các MP3 gốc.
+Thiếu hoặc lỗi một trong hai file sẽ báo lỗi và mở lại nút loa, không đọc câu thiếu cụm.
 Khi bắt đầu đọc kết quả, các thông báo trúng bia còn chờ được dừng đến bài mới
 để tránh chồng giọng. Có thể bấm đọc lại để lấy xếp loại mới nếu còn ảnh đang chấm.
 

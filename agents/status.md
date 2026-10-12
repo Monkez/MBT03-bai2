@@ -1,5 +1,11 @@
 # Trạng thái dự án
 
+## Chuyển cụm âm thanh kết quả (2026-10-12)
+
+- `ResultSound` dùng SoundFile giải mã hai MP3, đổi về PCM 44.1 kHz stereo, thêm 120 ms im lặng và fade mép 5 ms, rồi phát một WAV tạm duy nhất. File gốc giữ nguyên; dọn file tạm khi dừng/kết thúc/lỗi. `DAT.mp3` hiện là 22.05 kHz mono, các cụm khác là 44.1 kHz stereo.
+- Không dùng QAudioDecoder: stress dừng/đọc lại tái hiện access violation của backend Windows. Không phát qua QBuffer vì thử nghiệm DirectShow bị treo; dùng WAV đã đóng file handle. Dependency `soundfile==0.13.1` có hook PyInstaller đi kèm DLL libsndfile trong môi trường build hiện tại.
+- `test.bat` đạt 223 test; 40 lượt stress hủy/đọc lại và lỗi giải mã đạt. Đã phát 4 câu qua Qt thật ở volume 0, kiểm tra dọn file, kiểm tra cả 16 tổ hợp bệ/xếp loại; chuẩn bị câu đo được 5.83–8.31 ms. Chưa xác nhận nghe loa thực tế hoặc build lại EXE trong khi chờ người dùng hoàn tất âm thanh.
+
 ## Khởi động Q0 (2026-10-12)
 
 - `SettingWindow` gửi `0F003\n` đến bệ đang chọn rồi timer Qt một lần gửi `calibration.uart_command` (mặc định `0Q000\n`) sau 300 ms. Chưa thu mẫu trong thời gian chuẩn bị; không gửi tiếp khi lệnh đầu thất bại hoặc bệ mất kết nối.
@@ -16,7 +22,7 @@
 
 - Hàng kết quả cách các nút 8 px, thêm lề phải 12 px để nút loa không sát khung; nút loa 28×28 với icon 20×20, nút Xem lại lấy kích thước theo nội dung thay vì giới hạn 50 px. Đã xem widget ở DPI 100%/200%, đo khoảng cách tại ba chiều rộng; bộ 218 test đạt.
 - `ClientWidget._rank_text()` xếp loại theo số bia khác nhau đã trúng: 4 = Giỏi; 3 và có bia số 8 (class 3) = Khá; 2 hoặc 3 thiếu bia 8 = Đạt; 0–1 = Không đạt. Cập nhật ngay theo kết quả, không chờ hết 16 viên.
-- Nút loa đọc kết quả đang hiển thị bằng `ResultSound`: `Beso{port}.mp3` rồi `GIOI/KHA/DAT/KDAT.mp3`, tốc độ 1×. Qt phát tuần tự, chỉ một bệ đọc; bấm lại để dừng, lỗi file mở lại nút và báo lỗi. Gửi `0P000\n` đến súng được chọn như wireless. Khóa nút loa trong bài; bắt đầu bài/đóng cửa sổ hủy đọc. Đọc kết quả dừng các thông báo trúng bia đến lần reset bài tiếp theo để không chồng giọng.
+- Nút loa đọc kết quả đang hiển thị bằng `ResultSound`: `Beso{port}.mp3` rồi `GIOI/KHA/DAT/KDAT.mp3`, tốc độ 1×. Hai cụm được ghép thành một lượt phát như mục trên; chỉ một bệ đọc, bấm lại để dừng, lỗi file mở lại nút và báo lỗi. Gửi `0P000\n` đến súng được chọn như wireless. Khóa nút loa trong bài; bắt đầu bài/đóng cửa sổ hủy đọc. Đọc kết quả dừng các thông báo trúng bia đến lần reset bài tiếp theo để không chồng giọng.
 - `test.bat` đạt 218 test, bao phủ cả 16 tổ hợp bia, trúng lặp, đọc đủ 4 bệ/4 xếp loại, dừng giữa hai clip, lỗi file/decoder và vòng đời màn hình. Đã chạy decoder Qt thật với cả 8 file ở volume 0 và xem trạng thái nút trên widget Qt. Chưa nghe loa/kiểm tra súng thật hoặc build lại EXE trong khi chờ người dùng hoàn tất âm thanh.
 
 ## Bố cục bia mô phỏng (2026-10-11)

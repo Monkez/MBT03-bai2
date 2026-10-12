@@ -2,6 +2,10 @@
 
 Chạy `setup.bat` để tạo môi trường Python 3.11 trong thư mục `.venv` và cài dependencies.
 
+Sau khi cập nhật mã nguồn, chạy lại `setup.bat` nếu dependencies thay đổi.
+Phần đọc kết quả dùng `soundfile==0.13.1` để giải mã MP3 trước khi ghép câu;
+wheel Windows kèm libsndfile, không cần cài FFmpeg.
+
 Sau khi cài xong, chạy ứng dụng bằng `run.bat`.
 
 Để tạo bản EXE portable có phiên bản tự tăng, dùng `build.bat`; cài công cụ build
