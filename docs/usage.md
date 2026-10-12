@@ -66,7 +66,13 @@ Trong lúc bắn Q0, camera tiếp tục hiển thị stream trực tiếp sau m
 
 Trải nghiệm Quy không được đồng bộ với `MBT03-wireless`: các chấm xanh ở góc trên ảnh camera biểu thị số phát hợp lệ còn thiếu; mỗi phát hợp lệ được đánh dấu bằng chữ thập vàng. Nút `CHẤP NHẬN` chỉ lưu giá trị trung bình và đóng cửa sổ sau khi đã nhận đủ số phát cấu hình. Khi không bắn Quy không, chữ thập xanh hiển thị vị trí Q0 đã lưu của bệ đang chọn.
 
-Khi nhấn `BẮT ĐẦU`, ứng dụng gửi lệnh UART `0F016` đến súng ở mỗi bệ, sau khoảng **300 ms** gửi tiếp `0A000` (cả hai kèm ký tự xuống dòng). Lệnh thứ hai được hủy nếu kết thúc bài hoặc đóng ứng dụng trước khi hết thời gian chờ. Riêng nút bắn Q0 trong cửa sổ cài đặt vẫn gửi `0Q000`.
+Khi nhấn `BẮT ĐẦU`, ứng dụng gửi lệnh UART `0F016` đến súng ở mỗi bệ, sau khoảng **300 ms** gửi tiếp `0A000` (cả hai kèm ký tự xuống dòng). Lệnh thứ hai được hủy nếu kết thúc bài hoặc đóng ứng dụng trước khi hết thời gian chờ.
+
+Khi bật **Q0**, phần mềm gửi `0F003` đến súng của bệ đang chọn, chờ **300 ms** rồi
+gửi `0Q000` (cả hai kèm xuống dòng). Trong thời gian chờ chưa thu mẫu quy không.
+Tắt Q0, đổi bệ hoặc đóng cửa sổ sẽ hủy lệnh còn chờ; đổi bệ cũng xóa mẫu Q0 của
+bệ trước. Nếu gửi `0F003` thất bại hoặc bệ mất kết nối trước khi hết thời gian chờ,
+phần mềm không gửi tiếp `0Q000`.
 
 Bài bắn tự kết thúc sau **85 giây**; vẫn có thể kết thúc sớm bằng nút trên màn hình.
 Khi kết thúc bài (thủ công, hết giờ hoặc thoát ứng dụng trong bài), phần mềm gửi

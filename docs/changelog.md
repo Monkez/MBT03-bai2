@@ -2,6 +2,7 @@
 
 ## 2026-10-12
 
+- Khi bật Q0, gửi `0F003` rồi `0Q000` sau 300 ms đến bệ đang chọn; hủy lệnh chờ khi tắt Q0, đổi bệ hoặc đóng cửa sổ. Không thu mẫu trong thời gian chuẩn bị.
 - Mở cửa sổ nhận trúng sớm 1 giây trước lịch dựng và muộn 2 giây sau thời lượng cơ sở hoặc lệnh gập sớm; giới hạn bài vẫn 85 giây, không đổi lịch lệnh dựng.
 - Tăng khoảng chờ giữa lệnh bắt đầu `0F016` và `0A000` từ 100 ms lên 300 ms; vẫn hủy lệnh đang chờ khi dừng bài hoặc đóng ứng dụng.
 

@@ -35,6 +35,11 @@ class SettingWindow(QDialog):
         self.Q0_values = []
         self.Q0_sizes = []
         self._q0_processing = False
+        self._q0_pending_server = None
+        self._q0_start_timer = QTimer(self)
+        self._q0_start_timer.setSingleShot(True)
+        self._q0_start_timer.setTimerType(Qt.PreciseTimer)
+        self._q0_start_timer.timeout.connect(self._send_q0_command)
 
         self._configure_ui()
         self._configure_lora_ports()
@@ -96,14 +101,13 @@ class SettingWindow(QDialog):
 
     def _on_client_changed(self, index):
         self._stop_stream()
+        self._reset_controls()
         if index <= 0 or index > len(self.servers):
-            self._reset_controls()
             self._show_offline_image()
             return
 
         server = self.servers[index - 1]
         if not server.is_connected:
-            self._reset_controls()
             self._show_offline_image()
             return
 
@@ -136,16 +140,33 @@ class SettingWindow(QDialog):
         self.adjust_btn.setChecked(self._adjusting_camera)
 
     def _toggle_q0(self):
+        self._cancel_q0_start()
         self.Q0 = not self.Q0
         self.Q0_btn.setChecked(self.Q0)
         self.Q0_values = []
         self.Q0_sizes = []
         self._q0_processing = False
         if self.Q0 and self._stream_server is not None:
-            self._stream_server.send_uart_command(self.Q0_UART_COMMAND)
+            if not self._stream_server.send_uart_command("0F003\n"):
+                self.Q0 = False
+                self.Q0_btn.setChecked(False)
+                return
+            self._q0_pending_server = self._stream_server
+            self._q0_start_timer.start(300)
+
+    def _cancel_q0_start(self):
+        self._q0_start_timer.stop()
+        self._q0_pending_server = None
+
+    def _send_q0_command(self):
+        server = self._q0_pending_server
+        self._q0_pending_server = None
+        if self.Q0 and server is not None and server is self._stream_server and server.is_connected:
+            server.send_uart_command(self.Q0_UART_COMMAND)
 
     def _on_q0_shoot_image(self, frame, _q0_data):
-        if not self.Q0 or self._q0_processing or len(self.Q0_values) >= self.Q0_SAMPLE_COUNT:
+        if (not self.Q0 or self._q0_pending_server is not None
+                or self._q0_processing or len(self.Q0_values) >= self.Q0_SAMPLE_COUNT):
             return
         parent = self.parent()
         if parent is None or not hasattr(parent, "process_q0_calibration"):
@@ -274,6 +295,7 @@ class SettingWindow(QDialog):
         self.Q0_btn.setStyleSheet("color: #666666;")
 
     def _stop_stream(self):
+        self._cancel_q0_start()
         server = self._stream_server
         self._stream_server = None
         self._current_stream_frame = None

@@ -1,5 +1,11 @@
 # Trạng thái dự án
 
+## Khởi động Q0 (2026-10-12)
+
+- `SettingWindow` gửi `0F003\n` đến bệ đang chọn rồi timer Qt một lần gửi `calibration.uart_command` (mặc định `0Q000\n`) sau 300 ms. Chưa thu mẫu trong thời gian chuẩn bị; không gửi tiếp khi lệnh đầu thất bại hoặc bệ mất kết nối.
+- Timer gắn với dialog, bị hủy khi tắt Q0, đổi bệ hoặc `done()`; đổi bệ reset mẫu/trạng thái Q0 để không lẫn dữ liệu. Không đổi chuỗi bắt đầu bài `0F016` → 300 ms → `0A000`.
+- `test.bat` đạt 210 test; đã thử timer Qt thật với server giả lập, bật/tắt lại, đổi bệ, các đường đóng dialog, lỗi gửi và mất kết nối. Chưa thử súng thật hoặc build lại EXE trong khi chờ người dùng hoàn tất âm thanh.
+
 ## Cửa sổ nhận bia (2026-10-12)
 
 - `ShootingSession` nhận lịch dựng từ MainWindow, tạo trước cửa sổ để chấm được ảnh đến sớm 1 giây. Kết thúc nhận sau thời lượng cơ sở/lệnh gập sớm thêm 2 giây, không vượt hạn bài 85 giây. Giữ object cửa sổ khi gửi lệnh dựng để job đến sớm vẫn được kiểm tra đúng.

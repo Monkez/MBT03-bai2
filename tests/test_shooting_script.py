@@ -9,7 +9,7 @@ import numpy as np
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PyQt5.QtCore import QTimer, Qt
-from PyQt5.QtTest import QTest
+from PyQt5.QtTest import QSignalSpy, QTest
 from PyQt5.QtWidgets import QApplication
 
 from gui.main_window import MainWindow
@@ -91,13 +91,90 @@ class ShootingScriptTests(unittest.TestCase):
         for server in servers:
             server.send_uart_command.assert_called_once_with("0S000\n")
 
-    def test_q0_still_sends_its_own_uart_command(self):
-        server = MagicMock()
-        window = SimpleNamespace(Q0=False, Q0_btn=MagicMock(),
-                                 _stream_server=server,
-                                 Q0_UART_COMMAND=SettingWindow.Q0_UART_COMMAND)
-        SettingWindow._toggle_q0(window)
-        server.send_uart_command.assert_called_once_with("0Q000\n")
+    def q0_dialog(self):
+        servers = [MagicMock(), MagicMock()]
+        dialog = SettingWindow(p_num=2, servers=servers)
+        self.addCleanup(dialog.deleteLater)
+        self.addCleanup(dialog._frame_timer.stop)
+        self.addCleanup(dialog.reject)
+        dialog.client_combo.setCurrentIndex(1)
+        return dialog, servers
+
+    def test_q0_prepares_selected_gun_then_sends_q0_after_300_ms_once(self):
+        dialog, servers = self.q0_dialog()
+        dialog.Q0_btn.click()
+        servers[0].send_uart_command.assert_called_once_with("0F003\n")
+        self.assertEqual(dialog._q0_start_timer.interval(), 300)
+        self.assertTrue(QSignalSpy(dialog._q0_start_timer.timeout).wait(1000))
+        self.assertEqual(servers[0].send_uart_command.call_args_list,
+                         [call("0F003\n"), call("0Q000\n")])
+        self.assertFalse(dialog._q0_start_timer.isActive())
+        dialog._send_q0_command()
+        self.assertEqual(servers[0].send_uart_command.call_count, 2)
+        servers[1].send_uart_command.assert_not_called()
+
+    def test_q0_toggle_off_cancels_and_restart_uses_new_delay(self):
+        dialog, servers = self.q0_dialog()
+        dialog.Q0_btn.click()
+        dialog.Q0_btn.click()
+        self.assertFalse(dialog._q0_start_timer.isActive())
+        dialog._send_q0_command()
+        servers[0].send_uart_command.assert_called_once_with("0F003\n")
+        dialog.Q0_btn.click()
+        self.assertTrue(QSignalSpy(dialog._q0_start_timer.timeout).wait(1000))
+        self.assertEqual(servers[0].send_uart_command.call_args_list,
+                         [call("0F003\n"), call("0F003\n"), call("0Q000\n")])
+
+    def test_q0_does_not_collect_shots_during_preparation_delay(self):
+        dialog, _servers = self.q0_dialog()
+        parent = SimpleNamespace(process_q0_calibration=MagicMock(return_value=True))
+        frame = np.zeros((8, 8, 3), dtype=np.uint8)
+        with patch.object(dialog, "parent", return_value=parent):
+            dialog.Q0_btn.click()
+            dialog._on_q0_shoot_image(frame, {})
+            parent.process_q0_calibration.assert_not_called()
+            self.assertTrue(QSignalSpy(dialog._q0_start_timer.timeout).wait(1000))
+            dialog._on_q0_shoot_image(frame, {})
+            parent.process_q0_calibration.assert_called_once_with(1, frame)
+
+    def test_q0_switch_pedestal_cancels_pending_command_and_clears_samples(self):
+        dialog, servers = self.q0_dialog()
+        dialog.Q0_btn.click()
+        dialog.Q0_values = [(0.4, 0.5)]
+        dialog.client_combo.setCurrentIndex(2)
+        self.assertFalse(dialog._q0_start_timer.isActive())
+        self.assertFalse(dialog.Q0)
+        self.assertEqual(dialog.Q0_values, [])
+        dialog._send_q0_command()
+        servers[0].send_uart_command.assert_called_once_with("0F003\n")
+        servers[1].send_uart_command.assert_not_called()
+
+    def test_q0_close_paths_cancel_pending_command(self):
+        for action in ("accept", "reject", "close", "escape"):
+            with self.subTest(action=action):
+                dialog, servers = self.q0_dialog()
+                dialog.show()
+                dialog.Q0_btn.click()
+                if action == "escape":
+                    QTest.keyClick(dialog, Qt.Key_Escape)
+                else:
+                    getattr(dialog, action)()
+                self.assertFalse(dialog._q0_start_timer.isActive())
+                dialog._send_q0_command()
+                servers[0].send_uart_command.assert_called_once_with("0F003\n")
+
+    def test_q0_does_not_follow_failed_preparation_or_disconnect(self):
+        dialog, servers = self.q0_dialog()
+        servers[0].send_uart_command.return_value = False
+        dialog.Q0_btn.click()
+        self.assertFalse(dialog._q0_start_timer.isActive())
+        self.assertFalse(dialog.Q0)
+        servers[0].send_uart_command.return_value = True
+        dialog.Q0_btn.click()
+        servers[0].is_connected = False
+        self.assertTrue(QSignalSpy(dialog._q0_start_timer.timeout).wait(1000))
+        self.assertEqual(servers[0].send_uart_command.call_args_list,
+                         [call("0F003\n"), call("0F003\n")])
 
     def test_q0_display_keeps_live_stream_and_overlays_previous_shot(self):
         live_frame = np.full((120, 160, 3), 10, dtype=np.uint8)

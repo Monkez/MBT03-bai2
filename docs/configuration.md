@@ -84,7 +84,7 @@ Nhóm `calibration`:
 
 | Khóa | Ý nghĩa |
 | --- | --- |
-| `uart_command` | Lệnh UART chuyển súng sang chế độ quy không. |
+| `uart_command` | Lệnh UART chuyển súng sang chế độ quy không, mặc định `0Q000\n`; gửi 300 ms sau lệnh chuẩn bị `0F003\n`. |
 | `target_raise_command` | Lệnh LoRa khi mở cửa sổ cài đặt, mặc định `@114#` dựng bia 6. |
 | `target_lower_command` | Lệnh LoRa khi đóng cửa sổ cài đặt, mặc định `@112#` gập bia 6. |
 | `sample_count` | Số phát dùng để lấy trung bình quy không. |
