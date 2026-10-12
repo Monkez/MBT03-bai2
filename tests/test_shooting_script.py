@@ -44,7 +44,7 @@ class ShootingScriptTests(unittest.TestCase):
         self.assertEqual(MainWindow.START_UART_COMMAND, "0F016\n")
         for server in servers:
             server.send_uart_command.assert_called_once_with("0F016\n")
-        window._start_followup_timer.start.assert_called_once_with(100)
+        window._start_followup_timer.start.assert_called_once_with(300)
 
     def test_settings_raises_target_and_lowers_on_every_close_path(self):
         for close_action in ("confirm_btn", "cancel_btn", "close", "escape"):

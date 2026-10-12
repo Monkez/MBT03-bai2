@@ -1,5 +1,9 @@
 # Lịch sử thay đổi
 
+## 2026-10-12
+
+- Tăng khoảng chờ giữa lệnh bắt đầu `0F016` và `0A000` từ 100 ms lên 300 ms; vẫn hủy lệnh đang chờ khi dừng bài hoặc đóng ứng dụng.
+
 ## 2026-10-10
 
 - Hiển thị lỗi súng E1 (giữ cò quá lâu) và E2 (bắn quá nhanh) trên đúng bệ, tự ẩn sau 7 giây như MBT03-wireless; không ảnh hưởng điểm hoặc số đạn.

@@ -111,7 +111,7 @@ class ShootingFlowTests(unittest.TestCase):
         self.window.servers = [MagicMock(), MagicMock()]
         self.window.start_test()
         timer = self.window._start_followup_timer
-        self.assertEqual(timer.interval(), 100)
+        self.assertEqual(timer.interval(), 300)
         for server in self.window.servers:
             server.send_uart_command.assert_called_once_with("0F016\n")
         self.assertTrue(QSignalSpy(timer.timeout).wait(1000))

@@ -736,7 +736,7 @@ class MainWindow(QMainWindow):
     def _send_start_uart_command(self):
         for server in self.servers:
             server.send_uart_command(self.START_UART_COMMAND)
-        self._start_followup_timer.start(100)
+        self._start_followup_timer.start(300)
 
     def _send_start_followup_command(self):
         if not self.testing or self._closing:
