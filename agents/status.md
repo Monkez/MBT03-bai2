@@ -1,5 +1,11 @@
 # Trạng thái dự án
 
+## Tìm súng và gập bia đầu bài (2026-10-13)
+
+- Bấm trái nhãn bệ (hoặc Enter/Space) bật/tắt tìm súng bằng `0LR01\n` / `0LG00\n`, theo giao thức MBT03-wireless. Nhãn nhấp nháy mỗi 500 ms, ưu tiên màu cảnh báo mạng. Chỉ đổi trạng thái khi gửi thành công; ngắt kết nối xóa trạng thái, thoát app trả đèn xanh cho súng đang tìm còn kết nối.
+- Mỗi lần bắt đầu bài gửi thêm `@661#` qua LoRa trước khi lập lịch dựng bia; giữ UART `0F016\n` → 300 ms → `0A000\n`.
+- `test.bat` đạt 242 test; đã mở giao diện Qt trên Windows, bấm nhãn và kiểm tra ảnh nhãn đỏ đang tìm súng/cảnh báo kết nối màu cam. Chưa thử súng/cơ cấu bia thật. Chưa build EXE trong khi chờ hoàn tất âm thanh.
+
 ## Thông báo loại phát bắn (2026-10-12)
 
 - Review thay cụm “ngoài cửa sổ nhận” bằng “ảnh nhận ngoài thời gian cho phép tính điểm”, ghi mốc PC nhận ảnh từ đầu bài, khoảng mở/đóng và độ sớm/muộn; nhận diện sai ghi cả bia nhận diện và bia được phép tính điểm. Không đổi quy tắc chấm.

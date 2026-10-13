@@ -223,9 +223,26 @@ class MainWindow(QMainWindow):
             widget = ClientWidget(index + 1, self, target_layout_mode=target_layout_mode)
             widget.score_speak_requested.connect(self.request_score_speak)
             widget.review_requested.connect(self.open_shot_review)
+            widget.locate_requested.connect(self._toggle_pedestal_locate)
             self.client_widgets.append(widget)
             row, col = positions[index]
             self.client_grid_layout.addWidget(widget, row, col)
+
+    def _toggle_pedestal_locate(self, port_id):
+        if self._closing or not (1 <= port_id <= min(len(self.servers), len(self.client_widgets))):
+            return
+        server = self.servers[port_id - 1]
+        if not server.is_connected:
+            return
+        widget = self.client_widgets[port_id - 1]
+        active = not widget.locating
+        command = "0LR01\n" if active else "0LG00\n"
+        if server.send_uart_command(command):
+            widget.set_locating(active)
+            logging.getLogger("mbt03_server").info("[Locate] Bệ %s: gửi %s", port_id, command.strip())
+        else:
+            logging.getLogger("mbt03_server").warning("[Locate] Bệ %s: không gửi được %s", port_id, command.strip())
+            QMessageBox.warning(self, "Tìm súng", f"Không gửi được lệnh đến súng bệ {port_id}. Vui lòng thử lại.")
 
     def _load_reference_images(self):
         images = {}
@@ -788,6 +805,7 @@ class MainWindow(QMainWindow):
         )
         self._test_timeout_timer.start(MAX_DURATION_SECONDS * 1000)
         self.setting_btn.setEnabled(False)
+        self.lora.send_command("@661#")
         self._send_start_uart_command()
         self._schedule_lora_script()
         self._set_start_button_active(True)
@@ -965,6 +983,11 @@ class MainWindow(QMainWindow):
         self._hit_sound.stop()
         self._result_sound.stop()
         self._start_followup_timer.stop()
+        for widget, server in zip(self.client_widgets, self.servers):
+            if widget.locating:
+                if server.is_connected:
+                    server.send_uart_command("0LG00\n")
+                widget.set_locating(False)
         for server in self.servers:
             try:
                 server.stop()

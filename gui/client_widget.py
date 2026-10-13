@@ -37,6 +37,7 @@ TWO_PEDESTAL_TARGET_LAYOUT = {
 class ClientWidget(QFrame):
     score_speak_requested = pyqtSignal(int)
     review_requested = pyqtSignal(int)
+    locate_requested = pyqtSignal(int)
 
     def __init__(self, pedestal_id, parent=None, target_layout_mode="default"):
         super().__init__(parent)
@@ -53,6 +54,18 @@ class ClientWidget(QFrame):
         self.connected = False
         self.connection_info = ""
         self._pedestal_default_style = self.pedestal_name_label.styleSheet()
+        self._pedestal_connection_style = self._pedestal_default_style
+        self._connection_healthy = False
+        self.locating = False
+        self._locate_blink_on = False
+        self._locate_timer = QTimer(self)
+        self._locate_timer.setInterval(500)
+        self._locate_timer.timeout.connect(self._blink_locate_label)
+        self.pedestal_name_label.installEventFilter(self)
+        self.pedestal_name_label.setFocusPolicy(Qt.StrongFocus)
+        self.pedestal_name_label.setAccessibleDescription(
+            "Bấm hoặc nhấn Enter để bật/tắt nhấp nháy đèn tìm súng của bệ"
+        )
 
         self.name_label.setTextFormat(Qt.RichText)
         self.result_label.setTextFormat(Qt.RichText)
@@ -150,6 +163,16 @@ class ClientWidget(QFrame):
         )
 
     def eventFilter(self, watched, event):
+        if watched is self.pedestal_name_label:
+            clicked = (event.type() == QEvent.MouseButtonRelease
+                       and event.button() == Qt.LeftButton)
+            keyed = (event.type() == QEvent.KeyPress
+                     and event.key() in (Qt.Key_Return, Qt.Key_Enter, Qt.Key_Space)
+                     and not event.isAutoRepeat())
+            if clicked or keyed:
+                if self.connected:
+                    self.locate_requested.emit(self.id)
+                return True
         if watched is self.sign_image and event.type() == QEvent.Resize:
             self._position_error_label()
         return super().eventFilter(watched, event)
@@ -187,14 +210,16 @@ class ClientWidget(QFrame):
 
     def set_connection_state(self, connected, info=""):
         """Update connection text while only changing color when connected."""
+        self._connection_healthy = bool(connected)
+        if not connected:
+            self.set_locating(False)
         if connected is None:
             self.connected = False
             self.connection_info = str(info or "")
             self.pedestal_name_label.setText(
                 f"B\u1ec6 S\u1ed0 {self.id}  \u2022  \u0110ANG X\u00c1C NH\u1eacN"
             )
-            self.pedestal_name_label.setStyleSheet(self._pedestal_default_style)
-            self.pedestal_name_label.setToolTip(self.connection_info)
+            self._set_pedestal_connection_style(self._pedestal_default_style)
             return
 
         self.connected = bool(connected)
@@ -203,17 +228,44 @@ class ClientWidget(QFrame):
             self.pedestal_name_label.setText(
                 f"B\u1ec6 S\u1ed0 {self.id}  \u2022  \u0110\u00c3 K\u1ebeT N\u1ed0I"
             )
-            self.pedestal_name_label.setStyleSheet(
+            self._set_pedestal_connection_style(
                 "background-color: rgb(0, 153, 0);\n"
                 "color: rgb(255, 255, 255);"
             )
-            self.pedestal_name_label.setToolTip(self.connection_info)
         else:
             self.pedestal_name_label.setText(
                 f"B\u1ec6 S\u1ed0 {self.id}  \u2022  CH\u01afA K\u1ebeT N\u1ed0I"
             )
-            self.pedestal_name_label.setStyleSheet(self._pedestal_default_style)
-            self.pedestal_name_label.setToolTip("")
+            self._set_pedestal_connection_style(self._pedestal_default_style)
+
+    def set_locating(self, active):
+        self.locating = bool(active)
+        self._locate_blink_on = self.locating
+        if self.locating:
+            self._locate_timer.start()
+        else:
+            self._locate_timer.stop()
+        self._render_locate_label()
+
+    def _blink_locate_label(self):
+        self._locate_blink_on = not self._locate_blink_on
+        self._render_locate_label()
+
+    def _set_pedestal_connection_style(self, style):
+        self._pedestal_connection_style = style
+        self._render_locate_label()
+
+    def _render_locate_label(self):
+        style = self._pedestal_connection_style
+        if self._connection_healthy and self.locating and self._locate_blink_on:
+            style = "background-color: rgb(220, 0, 0); color: white;"
+        self.pedestal_name_label.setStyleSheet(style)
+        hint = ("Đang nhấp nháy đèn tìm súng. Bấm để tắt."
+                if self.locating else "Bấm để nhấp nháy đèn tìm súng của bệ.")
+        if not self.connected:
+            hint = "Kết nối súng để sử dụng chức năng nhấp nháy đèn."
+        self.pedestal_name_label.setToolTip("\n".join(filter(None, (self.connection_info, hint))))
+        self.pedestal_name_label.setCursor(Qt.PointingHandCursor if self.connected else Qt.ArrowCursor)
 
     def set_connection_metrics(self, ping_ms=None, battery_percent=None):
         if not self.connected:
@@ -242,6 +294,7 @@ class ClientWidget(QFrame):
             self.set_connection_metrics(ping_ms, battery_percent)
             return
 
+        self._connection_healthy = False
         details = []
         if ping_ms is not None:
             details.append(f"Ping {float(ping_ms):.0f}ms")
@@ -254,12 +307,13 @@ class ClientWidget(QFrame):
             color = "rgb(217, 119, 6)"
         else:
             self.connected = False
+            self.set_locating(False)
             label = "MẤT TÍN HIỆU"
             color = "rgb(185, 28, 28)"
         self.pedestal_name_label.setText(
             f"BỆ SỐ {self.id}  •  {label}{suffix}"
         )
-        self.pedestal_name_label.setStyleSheet(
+        self._set_pedestal_connection_style(
             f"background-color: {color};\ncolor: rgb(255, 255, 255);"
         )
 

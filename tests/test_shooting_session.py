@@ -159,6 +159,8 @@ class ShootingFlowTests(unittest.TestCase):
         self.window._scoring_pool = MagicMock()
         self.window.start_test()
         self.window._cancel_lora_script()
+        self.window.lora.send_command.assert_called_once_with("@661#")
+        self.window.lora.send_command.reset_mock()
         self.addCleanup(self.window.close)
 
     def open_target(self, index):
@@ -254,6 +256,8 @@ class ShootingFlowTests(unittest.TestCase):
         self.window.stop_test()
         self.window.servers = [MagicMock(), MagicMock()]
         self.window.start_test()
+        self.window.start_test()  # Repeated start while running sends nothing extra.
+        self.window.lora.send_command.assert_called_once_with("@661#")
         timer = self.window._start_followup_timer
         self.assertEqual(timer.interval(), 300)
         for server in self.window.servers:
@@ -263,6 +267,15 @@ class ShootingFlowTests(unittest.TestCase):
             self.assertEqual(server.send_uart_command.call_args_list,
                              [call("0F016\n"), call("0A000\n")])
         self.assertFalse(timer.isActive())
+
+    def test_start_lowers_all_targets_before_scheduling_raises(self):
+        self.window.stop_test()
+        order = MagicMock()
+        order.attach_mock(self.window.lora.send_command, "lora")
+        with patch.object(self.window, "_schedule_lora_script") as schedule:
+            order.attach_mock(schedule, "schedule")
+            self.window.start_test()
+        self.assertEqual(order.mock_calls, [call.lora("@661#"), call.schedule()])
 
     def test_stop_cancels_followup_and_restart_schedules_new_one(self):
         self.window.servers = [MagicMock()]

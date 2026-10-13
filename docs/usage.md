@@ -80,7 +80,17 @@ Trong lúc bắn Q0, camera tiếp tục hiển thị stream trực tiếp sau m
 
 Trải nghiệm Quy không được đồng bộ với `MBT03-wireless`: các chấm xanh ở góc trên ảnh camera biểu thị số phát hợp lệ còn thiếu; mỗi phát hợp lệ được đánh dấu bằng chữ thập vàng. Nút `CHẤP NHẬN` chỉ lưu giá trị trung bình và đóng cửa sổ sau khi đã nhận đủ số phát cấu hình. Khi không bắn Quy không, chữ thập xanh hiển thị vị trí Q0 đã lưu của bệ đang chọn.
 
-Khi nhấn `BẮT ĐẦU`, ứng dụng gửi lệnh UART `0F016` đến súng ở mỗi bệ, sau khoảng **300 ms** gửi tiếp `0A000` (cả hai kèm ký tự xuống dòng). Lệnh thứ hai được hủy nếu kết thúc bài hoặc đóng ứng dụng trước khi hết thời gian chờ.
+Bấm chuột trái vào nhãn **BỆ SỐ …** để súng của bệ đó nhấp nháy đèn đỏ tìm súng
+(`0LR01\n`); bấm lại để trở về đèn xanh (`0LG00\n`). Có thể dùng Tab chọn nhãn rồi
+nhấn Enter hoặc Space. Nhãn nhấp nháy đỏ/xanh khi đang tìm súng; màu cảnh báo kết
+nối vẫn được ưu tiên. Chỉ gửi đến súng đang kết nối, không đổi trạng thái nếu gửi
+thất bại. Mất kết nối sẽ xóa trạng thái tìm súng trên giao diện; đóng ứng dụng gửi
+lệnh trở về đèn xanh tới các súng đang tìm và còn kết nối.
+
+Khi nhấn `BẮT ĐẦU`, ứng dụng gửi **`@661#` qua LoRa để gập tất cả bia**, một lần mỗi
+lượt bắt đầu, trước lịch dựng bia. Đồng thời ứng dụng gửi lệnh UART `0F016` đến súng
+ở mỗi bệ, sau khoảng **300 ms** gửi tiếp `0A000` (cả hai kèm ký tự xuống dòng).
+Lệnh thứ hai được hủy nếu kết thúc bài hoặc đóng ứng dụng trước khi hết thời gian chờ.
 
 Khi bật **Q0**, phần mềm gửi `0F003` đến súng của bệ đang chọn, chờ **300 ms** rồi
 gửi `0Q000` (cả hai kèm xuống dòng). Trong thời gian chờ chưa thu mẫu quy không.
