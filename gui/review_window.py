@@ -2,7 +2,7 @@ import os
 
 import cv2
 import numpy as np
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QFont, QImage, QKeySequence, QPixmap
 from PyQt5.QtWidgets import (
     QComboBox,
@@ -115,6 +115,10 @@ class ShotReviewDialog(QDialog):
         self.resize(1180, 740)
         self.setModal(True)
         self._build_ui()
+        self._raw_file_timer = QTimer(self)
+        self._raw_file_timer.setInterval(250)
+        self._raw_file_timer.timeout.connect(self._update_raw_file_label)
+        self.finished.connect(self._raw_file_timer.stop)
         self._bind_shortcuts()
         self._show_current_shot()
 
@@ -178,6 +182,13 @@ class ShotReviewDialog(QDialog):
             '<span style="color:#b91c1c">+ Sau offset · dùng chấm điểm</span>',
         )
         root.addLayout(panels, 1)
+
+        self.raw_file_label = QLabel()
+        self.raw_file_label.setTextFormat(Qt.PlainText)
+        self.raw_file_label.setTextInteractionFlags(Qt.TextSelectableByMouse | Qt.TextSelectableByKeyboard)
+        self.raw_file_label.setWordWrap(True)
+        self.raw_file_label.setStyleSheet("color: #334155; font-size: 13px;")
+        root.addWidget(self.raw_file_label)
 
         self.details_label = QLabel()
         self.details_label.setObjectName("shotDetails")
@@ -268,6 +279,7 @@ class ShotReviewDialog(QDialog):
             self._show_current_shot()
 
     def _show_current_shot(self):
+        self._update_raw_file_label()
         if not self.shots:
             self.counter_label.setText("0 / 0")
             self.status_label.setText("Chưa có dữ liệu phát bắn")
@@ -314,6 +326,29 @@ class ShotReviewDialog(QDialog):
         at_end = self.current_index == len(self.shots) - 1
         self.previous_btn.setEnabled(not at_start)
         self.next_btn.setEnabled(not at_end)
+
+    def _update_raw_file_label(self):
+        self._raw_file_timer.stop()
+        self.raw_file_label.setToolTip("")
+        if not self.shots:
+            self.raw_file_label.clear()
+            return
+        save = self.shots[self.current_index].get("raw_image_save")
+        if save is None:
+            self.raw_file_label.setText("Ảnh gốc: Không lưu file ảnh")
+        elif not save.done():
+            self.raw_file_label.setText("Ảnh gốc: Đang lưu…")
+            self._raw_file_timer.start()
+        else:
+            try:
+                path = save.result()
+            except Exception:
+                path = None
+            if path:
+                self.raw_file_label.setText(f"File ảnh gốc: {os.path.basename(path)}")
+                self.raw_file_label.setToolTip(path)
+            else:
+                self.raw_file_label.setText("Ảnh gốc: Lưu file thất bại")
 
     def _camera_preview(self, shot):
         frame = shot.get("frame")

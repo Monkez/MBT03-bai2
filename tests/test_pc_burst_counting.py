@@ -3,6 +3,7 @@ import threading
 import time
 import unittest
 from collections import deque
+from concurrent.futures import Future
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
@@ -99,13 +100,14 @@ class PcBurstCountingTests(unittest.TestCase):
 
     def assert_burst_count(self, failed_jobs):
         widget = ClientWidget(1)
+        saves = [Future() for _ in range(3)]
         window = SimpleNamespace(
             testing=True, _active_review_session_id=1, _previous_review_session_id=None,
             client_widgets=[widget], _reference_images={0: np.zeros((100, 200, 3))},
             _review_sessions={1: {1: []}}, _review_shot_counters={},
             _scoring_pool=_DeferredExecutor(), _get_scoring_session=lambda: None,
             _maybe_close_hit_target=MagicMock(), scoring_done_signal=MagicMock(),
-            _setting_window=None, _queue_raw_camera_image=MagicMock(),
+            _setting_window=None, _queue_raw_camera_image=MagicMock(side_effect=saves),
             _shot_sound=MagicMock(), _shooting_session=ShootingSession(time.monotonic()),
             automatic_close_target_enabled=True,
         )
@@ -115,7 +117,7 @@ class PcBurstCountingTests(unittest.TestCase):
         window._store_review_shot = lambda result: MainWindow._store_review_shot(window, result)
         window._next_review_shot_number = lambda sid, pid: MainWindow._next_review_shot_number(window, sid, pid)
         window._score_shot_worker = lambda *args: MainWindow._score_shot_worker(window, *args)
-        window.process_shot = lambda *args: MainWindow.process_shot(window, *args)
+        window.process_shot = lambda *args, **kwargs: MainWindow.process_shot(window, *args, **kwargs)
         window.scoring_done_signal.emit.side_effect = lambda result: MainWindow._on_scoring_done(window, result)
         try:
             for value in (20, 40, 60):
@@ -134,6 +136,13 @@ class PcBurstCountingTests(unittest.TestCase):
             self.assertEqual(widget.hit_targets, {0})
             review = window._review_sessions[1][1]
             self.assertEqual([shot["shot_number"] for shot in review], [1, 2, 3])
+            # Saving and scoring may finish in different orders; keep the exact
+            # save associated with its shot, including inference failures.
+            for index in (2, 0, 1):
+                saves[index].set_result(f"image_{index + 1}_be_01.png")
+            for index, shot in enumerate(review):
+                self.assertIs(shot["raw_image_save"], saves[index])
+                self.assertEqual(shot["raw_image_save"].result(), f"image_{index + 1}_be_01.png")
             if failed_jobs:
                 self.assertEqual(review[0]["status"], "injected inference failure")
         finally:

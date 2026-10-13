@@ -1,5 +1,11 @@
 # Trạng thái dự án
 
+## Tên file ảnh gốc trong Xem lại (2026-10-13)
+
+- Mỗi phát mang Future của tác vụ lưu ảnh từ luồng nhận qua chấm điểm (kể cả chấm lỗi) tới dữ liệu review, giữ đúng file khi các tác vụ hoàn thành khác thứ tự. Không chờ ghi đĩa trong luồng giao diện/chấm.
+- Review có dòng tên PNG chọn/copy được, tooltip đường dẫn; chỉ hiển thị tên khi lưu thành công. Nếu đang lưu, timer 250 ms cập nhật riêng dòng này; dừng khi xong/chuyển sang phát khác/đóng dialog. Không lưu/lưu lỗi có trạng thái riêng.
+- `test.bat` đạt 247 test. Đã mở Qt trên Windows và kiểm tra tên file ở cửa sổ 1180×740 và 920×600. Chưa build EXE trong khi chờ hoàn tất âm thanh.
+
 ## Tìm súng và gập bia đầu bài (2026-10-13)
 
 - Bấm trái nhãn bệ (hoặc Enter/Space) bật/tắt tìm súng bằng `0LR01\n` / `0LG00\n`, theo giao thức MBT03-wireless. Nhãn nhấp nháy mỗi 500 ms, ưu tiên màu cảnh báo mạng. Chỉ đổi trạng thái khi gửi thành công; ngắt kết nối xóa trạng thái, thoát app trả đèn xanh cho súng đang tìm còn kết nối.

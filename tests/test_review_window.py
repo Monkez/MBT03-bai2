@@ -1,5 +1,6 @@
 import os
 import unittest
+from concurrent.futures import Future
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
@@ -9,6 +10,7 @@ import numpy as np
 from PyQt5.QtWidgets import QApplication
 
 import scoring
+from PyQt5.QtTest import QSignalSpy
 from gui.shooting_session import TargetExposure
 from gui.main_window import MainWindow
 from gui.review_window import REVIEW_CAMERA_ZOOM, ShotReviewDialog, draw_impact_marker
@@ -18,6 +20,48 @@ class ReviewWindowTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.app = QApplication.instance() or QApplication([])
+
+    def test_saved_filename_follows_selected_shot_and_pending_write(self):
+        pending = Future()
+        saved = Future()
+        path = os.path.join(os.getcwd(), "raw_camera_images", "20261011_201504_645194_be_01.png")
+        saved.set_result(path)
+        dialog = ShotReviewDialog(1, [
+            {"shot_number": 1, "raw_image_save": pending},
+            {"shot_number": 2, "raw_image_save": saved},
+        ])
+        self.addCleanup(dialog.close)
+        self.assertEqual(dialog.raw_file_label.text(), "Ảnh gốc: Đang lưu…")
+        dialog.show_next()
+        self.assertEqual(dialog.raw_file_label.text(), "File ảnh gốc: 20261011_201504_645194_be_01.png")
+        self.assertEqual(dialog.raw_file_label.toolTip(), path)
+        self.assertFalse(dialog._raw_file_timer.isActive())
+        dialog.show_previous()
+        pending.set_result(os.path.join(os.getcwd(), "first.png"))
+        self.assertTrue(QSignalSpy(dialog._raw_file_timer.timeout).wait(1000))
+        self.assertEqual(dialog.raw_file_label.text(), "File ảnh gốc: first.png")
+        self.assertFalse(dialog._raw_file_timer.isActive())
+
+    def test_missing_failed_and_cancelled_saves_do_not_show_a_filename(self):
+        failed = Future()
+        failed.set_result(None)
+        cancelled = Future()
+        cancelled.cancel()
+        for save, text in ((None, "Không lưu file ảnh"), (failed, "Lưu file thất bại"),
+                           (cancelled, "Lưu file thất bại")):
+            with self.subTest(state=text):
+                dialog = ShotReviewDialog(1, [{"shot_number": 1, "raw_image_save": save}])
+                self.addCleanup(dialog.close)
+                self.assertIn(text, dialog.raw_file_label.text())
+                self.assertEqual(dialog.raw_file_label.toolTip(), "")
+                self.assertFalse(dialog._raw_file_timer.isActive())
+
+    def test_close_stops_pending_save_refresh(self):
+        dialog = ShotReviewDialog(1, [{"shot_number": 1, "raw_image_save": Future()}])
+        dialog.show()
+        self.assertTrue(dialog._raw_file_timer.isActive())
+        dialog.close()
+        self.assertFalse(dialog._raw_file_timer.isActive())
 
     def test_impact_marker_changes_pixels_around_point(self):
         image = np.full((240, 320, 3), 255, dtype=np.uint8)

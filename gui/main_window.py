@@ -5,7 +5,7 @@ import os
 import threading
 import time
 import uuid
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import Future, ThreadPoolExecutor
 from datetime import datetime
 
 import cv2
@@ -407,7 +407,7 @@ class MainWindow(QMainWindow):
 
     def _on_shoot_image(self, port_id, frame, q0_data):
         """Queue scoring for an image received from a physical pedestal."""
-        self._queue_raw_camera_image(port_id, frame)
+        raw_image_save = self._queue_raw_camera_image(port_id, frame)
         if self._setting_window is not None and self._setting_window.Q0:
             self._shot_sound.play()
             return
@@ -419,19 +419,20 @@ class MainWindow(QMainWindow):
         received_at = (q0_data or {}).get("_server_received_at")
         if (isinstance(received_at, (int, float)) and not isinstance(received_at, bool)
                 and math.isfinite(received_at)):
-            self.process_shot(port_id, frame, bullet_point, received_at=received_at)
+            self.process_shot(port_id, frame, bullet_point, received_at=received_at,
+                              raw_image_save=raw_image_save)
         else:
-            self.process_shot(port_id, frame, bullet_point)
+            self.process_shot(port_id, frame, bullet_point, raw_image_save=raw_image_save)
 
     def _queue_raw_camera_image(self, port_id, frame):
         """Snapshot an untouched shoot frame and queue a lossless PNG write."""
         if not self._save_raw_data_enabled or self._raw_image_pool is None:
-            return False
+            return None
         if frame is None or not hasattr(frame, "copy"):
-            return False
+            return None
         captured_at = datetime.now()
         try:
-            self._raw_image_pool.submit(
+            return self._raw_image_pool.submit(
                 self._save_raw_camera_image,
                 self._raw_data_dir,
                 port_id,
@@ -440,8 +441,9 @@ class MainWindow(QMainWindow):
             )
         except RuntimeError as exc:
             print(f"[RawData] Cannot queue image from pedestal {port_id}: {exc}")
-            return False
-        return True
+            failed_save = Future()
+            failed_save.set_result(None)
+            return failed_save
 
     @staticmethod
     def _save_raw_camera_image(output_dir, port_id, frame, captured_at=None):
@@ -459,7 +461,7 @@ class MainWindow(QMainWindow):
             return None
         return path
 
-    def process_shot(self, port_id, frame, bullet_point, received_at=None):
+    def process_shot(self, port_id, frame, bullet_point, received_at=None, raw_image_save=None):
         """Public entry point for scoring one pedestal image and impact."""
         if not (1 <= port_id <= len(self.client_widgets)):
             return False
@@ -482,6 +484,7 @@ class MainWindow(QMainWindow):
             port_id,
             frame.copy(),
             (float(bullet_point[0]), float(bullet_point[1])),
+            raw_image_save,
             received_at,
             exposure,
         )
@@ -522,7 +525,7 @@ class MainWindow(QMainWindow):
         return session
 
     def _score_shot_worker(self, session_id, shot_number, port_id, frame, bullet_point,
-                           received_at, exposure):
+                           raw_image_save, received_at, exposure):
         try:
             _, metadata = scoring.scoring(
                 frame,
@@ -538,6 +541,7 @@ class MainWindow(QMainWindow):
                 "metadata": metadata,
                 "bullet_point": bullet_point,
                 "frame": frame,
+                "raw_image_save": raw_image_save,
                 "received_at": received_at,
                 "exposure": exposure,
             })
@@ -550,6 +554,7 @@ class MainWindow(QMainWindow):
                 "error": str(exc),
                 "bullet_point": bullet_point,
                 "frame": frame,
+                "raw_image_save": raw_image_save,
                 "received_at": received_at,
                 "exposure": exposure,
             })
@@ -715,6 +720,7 @@ class MainWindow(QMainWindow):
         shot = {
             "shot_number": int(result.get("shot_number", 0)),
             "frame": result.get("frame"),
+            "raw_image_save": result.get("raw_image_save"),
             "camera_point": result.get("bullet_point"),
             "target_index": target_index,
             "target_name": metadata.get("target_name"),

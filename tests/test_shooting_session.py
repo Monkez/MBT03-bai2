@@ -319,11 +319,12 @@ class ShootingFlowTests(unittest.TestCase):
 
     def complete(self, class_id, hit=True, job_index=-1):
         args = self.window._scoring_pool.submit.call_args_list[job_index].args
-        worker, session_id, number, port, frame, point, received_at, exposure = args
+        worker, session_id, number, port, frame, point, raw_image_save, received_at, exposure = args
         result = {
             "ok": True, "session_id": session_id, "shot_number": number,
             "port_id": port, "frame": frame, "bullet_point": point,
             "received_at": received_at, "exposure": exposure,
+            "raw_image_save": raw_image_save,
             "metadata": {"class_id": class_id, "hit": hit,
                          "transformed_point": (100, 100)},
         }

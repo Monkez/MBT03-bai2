@@ -151,6 +151,11 @@ bắt đầu bài mới hủy thông báo còn chờ của bài cũ.
 
 Sau khi kết thúc bài bắn, nhấn `Xem lại` tại từng bệ để duyệt các phát bắn của phiên vừa kết thúc. Cửa sổ hiển thị ảnh camera được zoom mặc định 1.5x quanh điểm chạm bên trái, ảnh bia mô phỏng bên phải. Chọn trực tiếp một phát trong danh sách bên dưới hoặc dùng `Phát trước`, `Phát sau` và phím mũi tên. Home/End chuyển đến phát đầu/cuối, Esc đóng cửa sổ.
 
+Dòng **File ảnh gốc** hiển thị đúng tên PNG đã lưu cho phát đang xem, ví dụ
+`20261011_201504_645194_be_01.png`. Có thể bôi đen để sao chép tên, rê chuột để xem
+đường dẫn đầy đủ. Nếu ảnh đang chờ ghi, dòng này báo **Đang lưu…** và tự cập nhật
+khi xong; khi không lưu hoặc lưu thất bại sẽ ghi rõ trạng thái thay vì hiện tên file.
+
 Trong cửa sổ xem lại, trên ảnh bia, dấu thập xanh dương biểu thị điểm trước offset, dấu thập đỏ là điểm sau offset dùng để xét trúng/trượt. Một đường thẳng vàng nối hai điểm; hai dấu thập vẫn đơn giản, không viền hay mũi tên. Khi offset bằng 0, dấu xanh dài hơn một chút để phân biệt hai dấu trùng tâm. Điểm ngoài ảnh bia được giữ đúng tọa độ trên vùng nền mở rộng. Dữ liệu hai điểm được lưu theo từng phát, không tính lại theo cấu hình mới khi xem lại. Với phát không đủ dữ liệu, màn hình thông báo không thể so sánh hai điểm. Bia mô phỏng ở màn hình chính chỉ vẽ điểm sau offset của mỗi phát.
 
 Trên ảnh camera, khung vàng là bia hệ thống đã chọn để tính điểm, các khung xanh là những bia khác được nhận diện trong cùng ảnh. Điểm sau offset chỉ hiển thị trên ảnh bia chuẩn. Nhãn trên khung cho biết mã lớp, tên bia và độ tin cậy để tiện kiểm tra trường hợp nhận nhầm. Khi bắt đầu bài bắn mới, dữ liệu xem lại của phiên cũ được xóa.
