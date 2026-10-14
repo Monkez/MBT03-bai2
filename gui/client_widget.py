@@ -5,7 +5,7 @@ import numpy as np
 from PyQt5 import uic
 from PyQt5.QtCore import QEvent, QTimer, Qt, pyqtSignal
 from PyQt5.QtGui import QColor
-from PyQt5.QtWidgets import QLabel, QPushButton, QWidget, QFrame
+from PyQt5.QtWidgets import QLabel, QPushButton, QWidget, QFrame, QSizePolicy
 
 import config as cf
 from gui.styles import TARGET_GREEN, TARGET_RED
@@ -32,6 +32,15 @@ TWO_PEDESTAL_TARGET_LAYOUT = {
     2: (32, 612, 224, 468),
     3: (264, 612, 224, 468),
 }
+
+
+def classify_hits(hit_targets):
+    count = len(hit_targets)
+    if count == 4:
+        return "Giỏi"
+    if count == 3 and 3 in hit_targets:
+        return "Khá"
+    return "Đạt" if count >= 2 else "Không đạt"
 
 
 class ClientWidget(QFrame):
@@ -68,6 +77,9 @@ class ClientWidget(QFrame):
         )
 
         self.name_label.setTextFormat(Qt.RichText)
+        self._shooter_text = ""
+        self.name_label.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Fixed)
+        self.name_label.installEventFilter(self)
         self.result_label.setTextFormat(Qt.RichText)
 
         self._target_images = self._load_target_images()
@@ -163,6 +175,8 @@ class ClientWidget(QFrame):
         )
 
     def eventFilter(self, watched, event):
+        if watched is self.name_label and event.type() == QEvent.Resize and self._shooter_text:
+            self._update_shooter_label()
         if watched is self.pedestal_name_label:
             clicked = (event.type() == QEvent.MouseButtonRelease
                        and event.button() == Qt.LeftButton)
@@ -201,12 +215,27 @@ class ClientWidget(QFrame):
         self.show_target_simulation()
 
     def reset_shooter(self):
+        self._shooter_text = ""
+        self.name_label.setTextFormat(Qt.RichText)
+        self.name_label.setToolTip("")
+        self.name_label.setAccessibleName("Người bắn: chưa chọn")
         self.name_label.setText(
             '<html><head/><body><p align="center">'
             'Người bắn: <span style="color:#ff0000;">-</span>'
             "</p></body></html>"
         )
         self.update_result_label()
+
+    def set_shooter(self, text):
+        self._shooter_text = text
+        self.name_label.setTextFormat(Qt.PlainText)
+        self.name_label.setToolTip(text)
+        self.name_label.setAccessibleName(f"Người bắn: {text}")
+        self._update_shooter_label()
+
+    def _update_shooter_label(self):
+        self.name_label.setText(self.name_label.fontMetrics().elidedText(
+            self._shooter_text, Qt.ElideRight, max(1, self.name_label.contentsRect().width())))
 
     def set_connection_state(self, connected, info=""):
         """Update connection text while only changing color when connected."""
@@ -318,11 +347,14 @@ class ClientWidget(QFrame):
         )
 
     def start_test(self):
+        self.reset_results()
+        self.testing = True
+
+    def reset_results(self):
         self.clear_error()
         self.bullet_count = 0
         self.hit_targets.clear()
         self.shots.clear()
-        self.testing = True
         self.update_result_label()
         self.show_target_simulation()
 
@@ -366,12 +398,7 @@ class ClientWidget(QFrame):
         )
 
     def _rank_text(self):
-        count = len(self.hit_targets)
-        if count == 4:
-            return "Giỏi"
-        if count == 3 and 3 in self.hit_targets:  # class 3 is target number 8.
-            return "Khá"
-        return "Đạt" if count >= 2 else "Không đạt"
+        return classify_hits(self.hit_targets)
 
     def set_score_speak_ui_state(self, state):
         speaking = state == "speaking"

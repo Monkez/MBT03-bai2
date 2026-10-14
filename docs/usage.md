@@ -1,5 +1,27 @@
 # Sử dụng
 
+## Nạp danh sách bắn từ Excel
+
+1. Bấm **Chọn danh sách bắn**, chọn file `.xlsx` theo định dạng MBT03-wireless.
+   Sheet đang được chọn trong Excel có dòng 1 là tiêu đề; bốn cột A–D lần lượt
+   là **STT, Họ và tên, Đơn vị, Ngày sinh**. STT phải là số nguyên dương, không
+   trùng; họ tên bắt buộc, đơn vị và ngày sinh có thể để trống. Bỏ qua dòng trống.
+2. Chọn một người rồi bấm **Vào bệ N**, hoặc nhấp đúp/nhấn Enter trên người đó.
+   Bệ được phân theo `(STT - 1) % số bệ + 1`, giống bản wireless. Nút **x** cạnh
+   tên người tại bệ bỏ lựa chọn người đó.
+3. Bấm **Loạt bắn mới** để xếp người chưa bắn đầu tiên của từng bệ theo thứ tự
+   trong file. Loạt cuối thiếu người sẽ để trống các bệ còn lại.
+4. Bấm **BẮT ĐẦU**. Sau khi kết thúc, danh sách hiển thị số đạn, số mục tiêu trúng
+   và xếp loại của từng người. Người được chọn khi bắt đầu bài vẫn được đánh dấu
+   đã bắn nếu kết thúc mà chưa có phát nào. Có thể chọn lại người đã bắn để bắn
+   lại; kết quả của người đó được thay khi bắt đầu bài mới.
+
+Nạp file chạy ở nền; lỗi file/dữ liệu không xóa danh sách đang có. Trong lúc bắn
+hoặc còn ảnh chờ chấm, ứng dụng khóa nạp file, đổi người và chuyển loạt. Kết quả
+ảnh đến trễ vẫn gắn với người của bài trước, không cộng sang người mới. Danh sách
+và kết quả được giữ trong phiên mở ứng dụng; việc nạp không sửa file Excel gốc.
+Không nạp danh sách vẫn có thể bắn theo bệ như trước.
+
 ## Đối chiếu số phát bắn trên PC
 
 `Đạn` tăng sau khi chấm xong từng ảnh, kể cả không nhận diện được bia, trượt,

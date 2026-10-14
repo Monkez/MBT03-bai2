@@ -28,6 +28,7 @@ from gui.shot_sound import ShotSound
 from gui.hit_sound import HitSound
 from gui.result_sound import ResultSound
 from gui.uart_debug_dialog import UartDebugDialog
+from gui.shooting_roster import ShootingRoster
 from gui.shooting_session import (
     MAX_DURATION_SECONDS, TARGET_CLASS_SEQUENCE, TARGET_VISIBLE_SECONDS_BY_CLASS,
     ShootingSession,
@@ -189,6 +190,7 @@ class MainWindow(QMainWindow):
 
         self._configure_main_ui()
         self._create_client_widgets()
+        self._roster = ShootingRoster(self)
         self._start_servers()
         QTimer.singleShot(0, self.lora.auto_connect)
 
@@ -669,6 +671,9 @@ class MainWindow(QMainWindow):
         port_id = result["port_id"]
         if not (1 <= port_id <= len(self.client_widgets)):
             return
+        roster = getattr(self, "_roster", None)
+        if roster is not None and not roster.matches_session(session_id, port_id):
+            return
         if not result.get("ok"):
             # A received shot still consumes ammunition if inference fails.
             # Keep the error in review without inventing an impact or a hit.
@@ -754,7 +759,11 @@ class MainWindow(QMainWindow):
         }
         session[port_id].append(shot)
         session[port_id].sort(key=lambda item: item["shot_number"])
-        if session_id == self._previous_review_session_id:
+        roster = getattr(self, "_roster", None)
+        if roster is not None:
+            roster.update_results(session_id)
+        if (session_id == self._previous_review_session_id
+                and (roster is None or roster.matches_session(session_id, port_id))):
             self.client_widgets[port_id - 1].set_review_available(True)
 
     def _begin_review_session(self):
@@ -784,6 +793,8 @@ class MainWindow(QMainWindow):
             widget.set_review_available(bool(session.get(port_id)))
 
     def open_shot_review(self, port_id):
+        if not self._roster.matches_session(self._previous_review_session_id, port_id):
+            return
         session = self._review_sessions.get(self._previous_review_session_id, {})
         shots = session.get(port_id, [])
         if not shots:
@@ -813,12 +824,16 @@ class MainWindow(QMainWindow):
                 "Chờ gửi lệnh hoặc đổi Wi-Fi hoàn tất trước khi bắt đầu bài bắn.",
             )
             return
+        if self._roster.loading or (self._roster.people and
+                                    (self._roster.pending() or not self._roster.assignments)):
+            return
         self._result_sound.stop()
         self._play_start_announcement()
         self._begin_review_session()
         self._hit_sound.reset()
         self._auto_closed_target_classes.clear()
         self.testing = True
+        self._roster.begin_session(self._active_review_session_id)
         self._test_start_time = time.monotonic()
         self._shooting_session = ShootingSession(
             self._test_start_time, tuple(item[0] for item in self.LORA_SCRIPT)
@@ -887,6 +902,7 @@ class MainWindow(QMainWindow):
         self.start_btn.setText(self._start_button_text)
         for widget in self.client_widgets:
             widget.stop_test()
+        self._roster.update_results(self._previous_review_session_id)
         self._update_score_speak_buttons()
 
     def update_app(self):
@@ -1007,6 +1023,7 @@ class MainWindow(QMainWindow):
             event.accept()
             return
         self._closing = True
+        self._roster.shutdown()
         self.stop_test()
         if self._uart_debug_dialog is not None:
             self._uart_debug_dialog.shutdown()

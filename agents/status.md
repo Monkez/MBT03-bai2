@@ -1,5 +1,12 @@
 # Trạng thái dự án
 
+## Danh sách bắn Excel (2026-10-14)
+
+- `gui/shooting_roster.py` đọc sheet active `.xlsx`, bỏ tiêu đề dòng 1; A–D là STT/họ tên/đơn vị/ngày sinh như MBT03-wireless. Dùng `openpyxl==3.1.5`, đóng workbook sau đọc, kiểm tra STT nguyên dương/không trùng và họ tên; lỗi giữ nguyên danh sách cũ. Đọc nền qua executor một worker; đóng cửa sổ bỏ kết quả nạp còn chờ.
+- Nút Chọn danh sách bắn nạp file; danh sách hỗ trợ chọn + Vào bệ, double-click hoặc Enter. Phân bệ `(STT - 1) % p_num + 1`; Loạt bắn mới lấy người chưa bắn đầu tiên từng bệ theo thứ tự file. Hiển thị tên/đơn vị tại bệ, rút gọn tên dài và tooltip đầy đủ; nút x bỏ người. Giữ nguyên trạng thái kết nối/đèn tìm súng khi đổi người.
+- Khóa nạp/đổi người/chuyển loạt trong bài và khi còn kết quả chấm đang chờ. Đã nạp danh sách thì cần chọn ít nhất một người trước khi bắt đầu. Snapshot người–bệ theo phiên; ảnh xử lý trễ cập nhật kết quả người cũ, không cộng vào bộ đếm/review của người mới. Dùng chung hàm xếp loại với ClientWidget; kết thúc không có phát nào vẫn đánh dấu đã bắn. Bắn lại thay kết quả người đó; kết quả chỉ giữ trong phiên ứng dụng, chưa xuất Excel (nút Lưu kết quả vốn chưa có xử lý được vô hiệu hóa kèm tooltip).
+- `test.bat` đạt 264 test. Đã nạp đủ 10 người từ `D3-HVKTQS.xlsx` của wireless, không sửa file nguồn. Đã kiểm tra UI Qt Windows bằng chuột/phím ở 2 bệ 1366×768 và 4 bệ 1600×785 (DPR 2); dùng dữ liệu mẫu, mock phần cứng. Chưa build EXE trong khi chờ hoàn tất âm thanh.
+
 ## Kiểm tra thiếu phát bắn phía PC (2026-10-14)
 
 - Giới hạn phạm vi theo yêu cầu: chỉ sửa PC, không đổi client/firmware. Trong đoạn `server.log` 09:56:16–09:57:41, bệ 1 có 13 thông báo/13 ảnh/13 kết quả chấm, bệ 2 có 16/16/16; chưa có bằng chứng PC làm mất ba ảnh trong lượt này. Log cũ chỉ ghi giờ nên không suy ra ngày của lượt từ timestamp.

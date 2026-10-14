@@ -1,4 +1,5 @@
 PyQt5==5.15.11
+openpyxl==3.1.5
 PyQt-Fluent-Widgets==1.11.2
 opencv-python==4.10.0.84
 numpy
