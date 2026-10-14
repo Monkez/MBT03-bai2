@@ -4,8 +4,8 @@ from dataclasses import dataclass
 MAX_DURATION_SECONDS = 85
 TARGET_VISIBLE_SECONDS_BY_CLASS = {1: 7, 0: 7, 2: 7, 3: 18}
 TARGET_CLASS_SEQUENCE = (1, 0, 2, 3)  # Bia 6, 10, 7B, 8.
-TARGET_EARLY_SECONDS = 1
-TARGET_LATE_SECONDS = 2
+TARGET_EARLY_SECONDS = 2
+TARGET_LATE_SECONDS = 4
 
 
 @dataclass
@@ -69,14 +69,11 @@ class ShootingSession:
         return True
 
     def _update_windows(self):
-        raised = list(self._raised_times)
-        for index, class_id in enumerate(raised):
+        for class_id in self._raised_times:
             raised_at = self._raised_times[class_id]
             visible_until = min(raised_at + TARGET_VISIBLE_SECONDS_BY_CLASS[class_id], self.deadline)
             visible_until = min(visible_until, self._lowered_times.get(class_id, visible_until))
             closed_at = min(visible_until + TARGET_LATE_SECONDS, self.deadline)
-            if index + 1 < len(raised):
-                closed_at = min(closed_at, self._raised_times[raised[index + 1]] - TARGET_EARLY_SECONDS)
             self._scheduled[class_id].closed_at = closed_at
             if self.exposure.class_id == class_id:
                 self._raised_at = raised_at
@@ -96,9 +93,18 @@ class ShootingSession:
         self._update_windows()
         return True
 
-    def active_target(self, now):
+    def active_target(self, now, preferred_class_id=None):
         if self.expired(now):
             return None
+        # Grace periods may overlap: retain each target's full allowance and
+        # select the detected target once inference has identified it.
+        upcoming_class = (TARGET_CLASS_SEQUENCE[self.next_target]
+                          if self.next_target < len(TARGET_CLASS_SEQUENCE) else None)
+        if preferred_class_id is not None and (
+                preferred_class_id in self._raised_times or preferred_class_id == upcoming_class):
+            preferred = self._scheduled.get(preferred_class_id)
+            if preferred is not None and preferred.contains(now):
+                return preferred
         if self.next_target < len(TARGET_CLASS_SEQUENCE):
             class_id = TARGET_CLASS_SEQUENCE[self.next_target]
             upcoming = self._scheduled.get(class_id)

@@ -18,12 +18,14 @@ Nhóm `shooting`:
 | `automatic_close_target.default_single_pedestal` | Mặc định bật/tắt gập bia tự động khi chọn 1 bệ. |
 | `automatic_close_target.default_multiple_pedestals` | Mặc định bật/tắt gập bia tự động khi chọn từ 2 bệ. |
 | `automatic_close_target.commands_by_class` | Lệnh gập/ẩn bia theo class mô hình. Để `command` thành chuỗi rỗng nếu muốn vô hiệu hóa một bia. |
-| `lora_timeline` | Đúng 4 lệnh LoRa theo thứ tự bia 6 → 10 → 7B → 8. Các mốc phải cách nhau ít nhất 10 giây để cửa sổ nhận không chồng nhau. Bia 8 phải dựng chậm nhất giây 65 để đủ 18 giây cơ sở và 2 giây nhận thêm trước hạn 85 giây; lịch sai dùng lại mặc định 15/32/42/64 giây. |
+| `lora_timeline` | Đúng 4 lệnh LoRa theo thứ tự bia 6 → 10 → 7B → 8. Các mốc phải cách nhau ít nhất 7 giây để thời lượng hiện cơ sở không chồng nhau. Bia 8 phải dựng chậm nhất giây 67 để đủ 18 giây cơ sở trước hạn 85 giây; phần nhận thêm được giới hạn tại giây 85. Lịch sai dùng lại mặc định 15/32/42/64 giây. |
 
 Bài bắn tự kết thúc sau 85 giây, độc lập với chu kỳ cập nhật giao diện. Thời lượng
-cơ sở của bia 6, 10, 7B là 7 giây, bia 8 là 18 giây. Cửa sổ nhận mở từ 1 giây trước
+cơ sở của bia 6, 10, 7B là 7 giây, bia 8 là 18 giây. Cửa sổ nhận mở từ 2 giây trước
 mốc dựng trong lịch, kết thúc sau thời lượng cơ sở tính từ lệnh dựng thực tế thêm
-2 giây; khi gập sớm thì kết thúc 2 giây sau lệnh gập. Không vượt thời hạn bài bắn.
+4 giây; khi gập sớm thì kết thúc 4 giây sau lệnh gập. Không vượt thời hạn bài bắn.
+Các khoảng nhận thêm được phép chồng nhau; kết quả chấm dùng khoảng của đúng bia
+được nhận diện, không tự cắt phần nhận muộn của bia trước khi bia sau dựng lên.
 Việc nới cửa sổ không đổi lịch lệnh LoRa. Đây là thời gian trên PC; giao thức hiện
 không trả trạng thái vị trí bia thực tế. Thời điểm xét phát bắn là lúc PC nhận ảnh
 để đưa vào hàng đợi chấm, không phải lúc model xử lý xong.

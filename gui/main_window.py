@@ -30,7 +30,7 @@ from gui.result_sound import ResultSound
 from gui.uart_debug_dialog import UartDebugDialog
 from gui.shooting_session import (
     MAX_DURATION_SECONDS, TARGET_CLASS_SEQUENCE, TARGET_VISIBLE_SECONDS_BY_CLASS,
-    TARGET_EARLY_SECONDS, TARGET_LATE_SECONDS, ShootingSession,
+    ShootingSession,
 )
 
 
@@ -82,15 +82,13 @@ def _configured_lora_script():
                     str(item.get("description") or command),
                 )
             )
-    # Never shift target identities after a malformed entry or overlap windows.
+    # Validate commanded visibility; grace periods may overlap or meet the deadline.
     if (len(script) != len(TARGET_CLASS_SEQUENCE)
             or not isinstance(configured, list) or len(configured) != len(script)
             or any(not math.isfinite(item[0]) or item[0] < 0
-                   or item[0] + TARGET_VISIBLE_SECONDS_BY_CLASS[class_id]
-                   + TARGET_LATE_SECONDS > MAX_DURATION_SECONDS
+                   or item[0] + TARGET_VISIBLE_SECONDS_BY_CLASS[class_id] > MAX_DURATION_SECONDS
                    for class_id, item in zip(TARGET_CLASS_SEQUENCE, script))
-            or any(right[0] - TARGET_EARLY_SECONDS < left[0]
-                   + TARGET_VISIBLE_SECONDS_BY_CLASS[class_id] + TARGET_LATE_SECONDS
+            or any(right[0] < left[0] + TARGET_VISIBLE_SECONDS_BY_CLASS[class_id]
                    for class_id, left, right in zip(TARGET_CLASS_SEQUENCE, script, script[1:]))):
         print("[Config] Lich bia khong hop le, dung lich mac dinh 6 -> 10 -> 7 -> 8")
         script = [
@@ -596,7 +594,7 @@ class MainWindow(QMainWindow):
                        if result.get("session_id") == current_id else None)
             if session is not None and received_at is not None:
                 # Serial confirmation may have corrected the window while scoring.
-                exposure = session.active_target(received_at)
+                exposure = session.active_target(received_at, metadata.get("class_id"))
             eligible = (
                 exposure is not None and received_at is not None
                 and exposure.contains(received_at)

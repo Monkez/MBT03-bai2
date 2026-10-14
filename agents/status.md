@@ -1,5 +1,11 @@
 # Trạng thái dự án
 
+## Nới thời gian nhận trúng (2026-10-14)
+
+- Tăng nhận sớm từ 1 lên 2 giây, nhận muộn từ 2 lên 4 giây (kể cả gập sớm tự động do trúng). Giữ thời lượng cơ sở 7/7/7/18 giây, lịch LoRa và giới hạn bài 85 giây. Lịch mặc định nhận bia 6: [13,26), bia 10: [30,43), bia 7B: [40,53), bia 8: [62,85).
+- Khoảng nhận được phép chồng nhau: `active_target` ưu tiên class đã nhận diện khi chấm xong, giữ đủ khoảng của bia trước sau khi bia sau dựng. Kiểm tra cấu hình lịch dựa trên thời lượng cơ sở không chồng nhau/không vượt 85 giây; phần grace được giới hạn bởi deadline, không làm cấu hình lệnh LoRa hợp lệ bị thay bằng mặc định.
+- `test.bat` đạt 249 test, gồm biên thời gian/serial trễ/gập sớm/chồng cửa sổ/deadline. Đã xác nhận cấu hình LoRa hiện tại được giữ nguyên. Chưa thử phần cứng và chưa build EXE trong khi chờ hoàn tất âm thanh.
+
 ## Tên file ảnh gốc trong Xem lại (2026-10-13)
 
 - Mỗi phát mang Future của tác vụ lưu ảnh từ luồng nhận qua chấm điểm (kể cả chấm lỗi) tới dữ liệu review, giữ đúng file khi các tác vụ hoàn thành khác thứ tự. Không chờ ghi đĩa trong luồng giao diện/chấm.

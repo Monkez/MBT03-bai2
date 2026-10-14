@@ -104,19 +104,22 @@ Khi kết thúc bài (thủ công, hết giờ hoặc thoát ứng dụng trong 
 Esc hoặc nút X cũng gửi lệnh này đến tất cả súng.
 Bia hiện theo thứ tự **6 → 10 → 7B → 8**, mặc định tại giây **15 / 32 / 42 / 64**.
 Bia 6, 10 và 7B có thời lượng cơ sở **7 giây**; riêng bia 8 là **18 giây**.
-Cửa sổ nhận trúng mở **sớm 1 giây** so với lúc gửi lệnh dựng và đóng **muộn 2 giây** so
+Cửa sổ nhận trúng mở **sớm 2 giây** so với lúc gửi lệnh dựng và đóng **muộn 4 giây** so
 với thời điểm kết thúc cơ sở. Mốc được cập nhật khi lệnh thực sự gửi ra cổng LoRa,
 không tính thời gian chờ trong hàng đợi gửi. Theo lịch mặc định, khi không gập sớm
 và lệnh được gửi đúng lịch:
 
 | Bia | Khoảng nhận trúng từ lúc bắt đầu bài |
 | --- | --- |
-| 6 | Từ giây 14 đến trước giây 24 |
-| 10 | Từ giây 31 đến trước giây 41 |
-| 7B | Từ giây 41 đến trước giây 51 |
-| 8 | Từ giây 63 đến trước giây 84 |
+| 6 | Từ giây 13 đến trước giây 26 |
+| 10 | Từ giây 30 đến trước giây 43 |
+| 7B | Từ giây 40 đến trước giây 53 |
+| 8 | Từ giây 62 đến trước giây 85 (giới hạn toàn bài) |
 
-Nếu bật `Gập bia` và có lệnh gập sớm do trúng, vẫn nhận thêm **2 giây sau lệnh gập**.
+Nếu bật `Gập bia` và có lệnh gập sớm do trúng, vẫn nhận thêm **4 giây sau lệnh gập**.
+Trong khoảng chồng nhau (ví dụ giây 40 đến trước 43 của bia 10 và 7B), phần mềm
+xét thời gian riêng của bia được nhận diện; dựng bia tiếp theo không cắt mất phần
+nhận thêm của bia trước. Mọi khoảng nhận đều kết thúc chậm nhất tại giây 85.
 Phát nhận sớm không gửi lệnh gập trước khi bia được dựng. Chỉ tính trúng khi nhận
 diện đúng bia trong cửa sổ nhận tại thời điểm PC nhận ảnh; ngoài cửa sổ hoặc nhận
 nhầm bia vẫn tính đạn nhưng không tính trúng. Thời điểm nhận ảnh được ghi ngay
