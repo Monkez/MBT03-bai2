@@ -1,5 +1,16 @@
 # Sử dụng
 
+## Scale màn hình Windows
+
+Ứng dụng giữ đúng tỷ lệ Scale của Windows, gồm 100%, 125%, 150%, 175% và 200%,
+với cấu hình Qt `PassThrough` giống MBT03-wireless. Bản cũ có thể làm tròn 150% hoặc
+175% thành 200%, khiến nút, chữ và khoảng cách lớn hơn mong muốn; 125% có thể bị
+làm tròn xuống 100% khiến chữ và khung lệch tỷ lệ. Cấu hình mới giữ nguyên kích thước
+ở 100% và 200% thực. Khởi động lại ứng dụng sau khi cập nhật mã nguồn.
+
+Không cần tắt High DPI hoặc đổi Scale toàn Windows để áp dụng sửa lỗi này.
+Tham khảo [cơ chế DPI của Qt 5.15](https://doc.qt.io/archives/qt-5.15/highdpi.html).
+
 ## Nạp danh sách bắn từ Excel
 
 1. Bấm **Chọn danh sách bắn**, chọn file `.xlsx` theo mẫu `c351-d3-HVKTQS.xlsx`.

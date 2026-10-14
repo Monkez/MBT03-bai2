@@ -37,10 +37,14 @@ def _configure_server_logging():
 def run_app():
     _configure_server_logging()
     try:
+        # Match MBT03-wireless: preserve 125/150/175% instead of rounding to 100/200%.
+        QApplication.setHighDpiScaleFactorRoundingPolicy(
+            Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
+        )
         QApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
         QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
     except Exception:
-        pass
+        logging.getLogger("mbt03_server").exception("Failed to configure DPI scaling")
 
     app = QApplication(sys.argv)
     icon_path = os.path.join(cf.DATA_DIR, "assets", "images", "icon.png")

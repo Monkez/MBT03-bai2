@@ -1,5 +1,11 @@
 # Trạng thái dự án
 
+## DPI và Scale Windows (2026-10-14)
+
+- `main.run_app` dùng `HighDpiScaleFactorRoundingPolicy.PassThrough` trước khi tạo QApplication, giống MBT03-wireless; giữ hai cờ High DPI/Pixmaps. Lỗi cấu hình DPI được ghi log thay vì bỏ qua. Không đổi kích thước UI, cấu hình Scale Windows hay file `score_card.ui` người dùng đang chỉnh.
+- Tái hiện bằng Qt Windows 5.15.2: Windows báo 144 DPI (150%) nhưng mặc định Qt làm tròn thành DPR 2; cột trái 760 px, hàng danh sách 96 px. PassThrough trả DPR 1.5, tương ứng 570/72 px. 125% mặc định xuống 100%, 175% lên 200%; 100% và 200% thực không đổi sau sửa. Thử tắt High DPI gây chữ bị cắt nên không dùng.
+- Kiểm tra startup thực trong tiến trình riêng với `QT_FONT_DPI` 96/120/144/168/192 (giả lập DPI, không đổi thiết lập Windows): test mới thất bại ở 125/150/175% trước sửa, đạt cả năm mức sau sửa; toàn bộ `test.bat` đạt 276 test. Quan sát Qt thực và thao tác chuột/phím 2 bệ ở 1366×768, 100%; 2/4 bệ ở 150%, 4 bệ ở 200%. Phần cứng giả lập; chưa thử chuyển giữa hai màn hình khác DPI, chưa build EXE.
+
 ## Danh sách bắn Excel (2026-10-14)
 
 - `gui/shooting_roster.py` đọc sheet active `.xlsx`, bỏ tiêu đề dòng 1; Theo mẫu `c351-d3-HVKTQS.xlsx`: A–E là STT/họ tên/đơn vị/ngày sinh/cấp bậc; F–I là bia 6/10/7b/8c (0/1), J xếp loại. Nạp lại kết quả có sẵn, giữ dòng chưa bắn trống; kết quả đủ bốn bia tự tính xếp loại nếu J trống. Kiểm tra tiêu đề có chuẩn hóa dấu Unicode, dữ liệu 0/1 và xếp loại khớp; báo rõ dòng/cột lỗi. Vẫn nhận danh sách A–D chưa có kết quả. Dùng `openpyxl==3.1.5`, đóng workbook sau đọc, kiểm tra STT nguyên dương/không trùng và họ tên; lỗi giữ nguyên danh sách cũ. Đọc nền qua executor một worker; đóng cửa sổ bỏ kết quả nạp còn chờ.
