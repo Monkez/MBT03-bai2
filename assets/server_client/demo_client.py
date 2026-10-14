@@ -26,7 +26,7 @@ from PyQt5.QtWidgets import (
     QSpinBox, QComboBox
 )
 from PyQt5.QtCore import Qt, QTimer, pyqtSlot
-from PyQt5.QtGui import QFont, QImage, QPixmap
+from PyQt5.QtGui import QColor, QFont, QImage, QPainter, QPen, QPixmap
 
 from server_client.client_core import MBT03ClientCore
 from server_client.protocol import PortMapping, Protocol
@@ -43,6 +43,7 @@ class ClientDemoWindow(QMainWindow):
         self.setWindowTitle("MBT03 Client Demo")
         self.setMinimumSize(520, 500)
         self.resize(560, 560)
+        self._preview_source_pixmap = None
         
         self._setup_ui()
         self._setup_style()
@@ -124,6 +125,10 @@ class ClientDemoWindow(QMainWindow):
         self.camera_preview.setFixedSize(480, 320)
         self.camera_preview.setAlignment(Qt.AlignCenter)
         self.camera_preview.setObjectName("camView")
+        self.camera_preview.setToolTip(
+            "Dấu ngắm xanh: Q0 hiện tại của súng. Offset là độ lệch so với tâm ảnh, "
+            "tính theo % chiều rộng/cao; X dương sang phải, Y dương xuống dưới."
+        )
         cam_col.addWidget(self.camera_preview, 0, Qt.AlignCenter)
         
         # Controls row under camera
@@ -370,17 +375,75 @@ class ClientDemoWindow(QMainWindow):
             h, w = frame.shape[:2]
             rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             qimg = QImage(rgb.data, w, h, 3 * w, QImage.Format_RGB888).copy()
-            pix = QPixmap.fromImage(qimg)
-            self.camera_preview.setPixmap(
-                pix.scaled(self.camera_preview.size(), Qt.KeepAspectRatio, Qt.FastTransformation)
-            )
+            self._preview_source_pixmap = QPixmap.fromImage(qimg)
+            self._render_preview()
         except Exception:
             pass
+
+    def _render_preview(self):
+        """Paint Q0 only on the local preview, never on a capture shared with transport."""
+        if self._preview_source_pixmap is None:
+            return
+        size = self.camera_preview.contentsRect().size()
+        dpr = self.camera_preview.devicePixelRatioF()
+        canvas = QPixmap(round(size.width() * dpr), round(size.height() * dpr))
+        canvas.setDevicePixelRatio(dpr)
+        canvas.fill(QColor("#11111b"))
+        image = self._preview_source_pixmap.scaled(
+            canvas.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation
+        )
+        image.setDevicePixelRatio(dpr)
+        image_width = round(image.width() / dpr)
+        image_height = round(image.height() / dpr)
+        left = (size.width() - image_width) // 2
+        top = (size.height() - image_height) // 2
+        try:
+            qx, qy = self.client.q0_value
+            qx, qy = float(qx), float(qy)
+            if not (np.isfinite(qx) and np.isfinite(qy) and 0 <= qx <= 1 and 0 <= qy <= 1):
+                raise ValueError("Invalid Q0")
+        except (AttributeError, TypeError, ValueError):
+            qx = qy = None
+
+        painter = QPainter(canvas)
+        try:
+            painter.drawPixmap(left, top, image)
+            if qx is not None:
+                x = left + min(image_width - 1, round(qx * image_width))
+                y = top + min(image_height - 1, round(qy * image_height))
+                # Clip the reticle to the actual camera image, including at Q0=0/1.
+                painter.save()
+                painter.setClipRect(left, top, image_width, image_height)
+                for color, width in ((QColor("black"), 4), (QColor("#00ff80"), 2)):
+                    painter.setPen(QPen(color, width))
+                    painter.drawLine(x - 9, y, x + 9, y)
+                    painter.drawLine(x, y - 9, x, y + 9)
+                painter.restore()
+                lines = [f"Q0: X={qx:.4f}  Y={qy:.4f}",
+                         f"Offset: dX={(qx - 0.5) * 100:+.2f}%  dY={(qy - 0.5) * 100:+.2f}%"]
+            else:
+                lines = ["Q0: không hợp lệ", "Offset: chưa xác định"]
+            painter.setFont(QFont("Consolas", 9))
+            metrics = painter.fontMetrics()
+            padding = 6
+            box_height = 2 * metrics.height() + 2 * padding
+            box_width = max(metrics.horizontalAdvance(line) for line in lines) + 2 * padding
+            box_top = size.height() - box_height
+            painter.fillRect(0, box_top, box_width, box_height, QColor(0, 0, 0, 200))
+            painter.setPen(QColor("white"))
+            for index, line in enumerate(lines):
+                painter.drawText(padding, box_top + padding + metrics.ascent() + index * metrics.height(), line)
+        finally:
+            painter.end()
+        self.camera_preview.setAccessibleDescription("; ".join(lines))
+        self.camera_preview.setPixmap(canvas)
     
     def _update_local_preview(self):
         if not hasattr(self, 'client'):
             return
         if self.client.is_streaming:
+            # Q0 can change while streaming owns the camera; repaint without a second capture.
+            self._render_preview()
             return
         try:
             frame = self.client._capture_frame(480, 320)
@@ -395,6 +458,7 @@ class ClientDemoWindow(QMainWindow):
     def _on_camera_index_changed(self, camera_index):
         if hasattr(self, 'client'):
             self.client.set_camera_index(camera_index)
+            self._preview_source_pixmap = None
             self.camera_preview.setPixmap(QPixmap())
             self.camera_preview.setText(f"📷 Camera {camera_index} ({self.client.camera_backend})")
 
@@ -402,6 +466,7 @@ class ClientDemoWindow(QMainWindow):
         if hasattr(self, 'client'):
             backend = self.combo_camera_backend.currentData()
             self.client.set_camera_backend(backend)
+            self._preview_source_pixmap = None
             self.camera_preview.setPixmap(QPixmap())
             self.camera_preview.setText(f"📷 Camera {self.client.camera_index} ({backend})")
     

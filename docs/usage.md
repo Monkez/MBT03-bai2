@@ -244,6 +244,14 @@ chạy `client_demo.bat [so_be]` (hoặc `python client_demo.py [so_be]`). Có t
 `--camera-backend=auto|dshow|msmf|default`. Demo dùng trực tiếp lõi ba kênh trong
 `assets/server_client`, không duy trì một bản giao thức riêng.
 
+Ảnh xem trước trong client demo hiển thị dấu ngắm xanh tại **Q0 hiện tại của súng**,
+kèm tọa độ X/Y chuẩn hóa và **Offset dX/dY** so với tâm ảnh `(0.5, 0.5)`.
+Offset tính theo phần trăm chiều rộng/cao: X dương sang phải, Y dương xuống dưới.
+Ví dụ Q0 `(0.4861, 0.4405)` hiển thị `dX=-1.39%, dY=-5.95%`.
+Thông tin đọc từ `q0_value` của client, cập nhật khi Q0 thay đổi; chỉ vẽ trên ảnh
+xem trước, không ghi vào ảnh chụp/stream gửi server. Đây là hiệu chỉnh Q0 của súng,
+khác với offset từng loại bia bên dưới.
+
 Điểm chạm dùng để tính trúng/trượt có offset riêng theo từng loại bia vì cự ly và chuyển động
 khác nhau. Bia 6 là mốc không offset; các giá trị tạm của bia 10, 7B và 8 có thể chỉnh trong
 `scoring.target_offsets_by_class`. Trên ảnh camera, công cụ `LAB/score_test.py` chỉ đánh dấu

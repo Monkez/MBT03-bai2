@@ -1,5 +1,10 @@
 # Trạng thái dự án
 
+## Offset trên ảnh client demo (2026-10-15)
+
+- `client_demo.py` vẫn là entry point; `assets/server_client/demo_client.py` vẽ Q0 hiện tại từ `client.q0_value`, dX/dY theo % so với tâm `(0.5, 0.5)` và dấu ngắm xanh. Chỉ vẽ trên QPixmap riêng của preview, giữ nguyên ảnh capture gửi stream/chấm điểm. Cache ảnh gốc để cập nhật Q0 lúc streaming mà không tranh camera; đổi camera/backend xóa cache. Q0 sai/không hữu hạn/ngoài [0,1] hiển thị thông báo, không giả làm tâm.
+- Canvas theo DPR để chữ/dấu ngắm rõ ở High DPI; giữ vị trí đúng khi ảnh có khoảng đệm hai bên. Đã kiểm tra UI Qt Windows ở DPR 1.5 bằng ảnh mẫu và client giả lập; `test.bat` đạt 282 test, gồm offset cập nhật, pixel ảnh gốc không đổi, Q0 lỗi, vị trí biên và DPR 2. Chưa thử Q0 từ súng thật; không đổi core/giao thức hay build EXE.
+
 ## DPI và Scale Windows (2026-10-14)
 
 - `main.run_app` dùng `HighDpiScaleFactorRoundingPolicy.PassThrough` trước khi tạo QApplication, giống MBT03-wireless; giữ hai cờ High DPI/Pixmaps. Lỗi cấu hình DPI được ghi log thay vì bỏ qua. Không đổi kích thước UI, cấu hình Scale Windows hay file `score_card.ui` người dùng đang chỉnh.
