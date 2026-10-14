@@ -824,8 +824,7 @@ class MainWindow(QMainWindow):
                 "Chờ gửi lệnh hoặc đổi Wi-Fi hoàn tất trước khi bắt đầu bài bắn.",
             )
             return
-        if self._roster.loading or (self._roster.people and
-                                    (self._roster.pending() or not self._roster.assignments)):
+        if self._roster.loading or self._roster.saving or (self._roster.people and self._roster.pending()):
             return
         self._result_sound.stop()
         self._play_start_announcement()

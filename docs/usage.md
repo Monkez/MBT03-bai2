@@ -6,21 +6,30 @@
    Sheet đang được chọn trong Excel có dòng 1 là tiêu đề; bốn cột A–D lần lượt
    là **STT, Họ và tên, Đơn vị, Ngày sinh**. STT phải là số nguyên dương, không
    trùng; họ tên bắt buộc, đơn vị và ngày sinh có thể để trống. Bỏ qua dòng trống.
-2. Chọn một người rồi bấm **Vào bệ N**, hoặc nhấp đúp/nhấn Enter trên người đó.
+2. Mỗi người hiển thị bằng `assets/qt/score_card.ui`, có nút **Vào bắn** riêng.
+   Bấm nút này để đưa người vào bệ; nút chuyển xanh như bản wireless.
    Bệ được phân theo `(STT - 1) % số bệ + 1`, giống bản wireless. Nút **x** cạnh
-   tên người tại bệ bỏ lựa chọn người đó.
+   tên người tại bệ bỏ lựa chọn người đó và trả nút về trắng. Dòng tên trên danh sách
+   có họ tên và đơn vị; chế độ một bệ thêm ngày sinh. Rê chuột để đọc tên đầy đủ.
 3. Bấm **Loạt bắn mới** để xếp người chưa bắn đầu tiên của từng bệ theo thứ tự
    trong file. Loạt cuối thiếu người sẽ để trống các bệ còn lại.
-4. Bấm **BẮT ĐẦU**. Sau khi kết thúc, danh sách hiển thị số đạn, số mục tiêu trúng
-   và xếp loại của từng người. Người được chọn khi bắt đầu bài vẫn được đánh dấu
+4. Bấm **BẮT ĐẦU**. Ô `targets_label` cập nhật số mục tiêu trúng dạng **3/4**,
+   riêng số **3** màu đỏ. Xếp loại sau khi kết thúc hiển thị `GIOI`, `KHA`, `DAT`,
+   `KDAT` như wireless; rê chuột để xem tên đầy đủ. Người được chọn khi bắt đầu bài vẫn được đánh dấu
    đã bắn nếu kết thúc mà chưa có phát nào. Có thể chọn lại người đã bắn để bắn
    lại; kết quả của người đó được thay khi bắt đầu bài mới.
 
-Nạp file chạy ở nền; lỗi file/dữ liệu không xóa danh sách đang có. Trong lúc bắn
+5. Bấm **Lưu kết quả** để tạo file **Kết quả - tên danh sách.xlsx** cùng thư mục.
+   Giữ các cột thông tin và định dạng; cột **O** ghi số mục tiêu trúng (0–4), cột
+   **P** ghi xếp loại đầy đủ của Bài 2. Ghi theo đúng dòng người bắn, kể cả STT
+   không liên tiếp hoặc có dòng trống. File danh sách gốc không bị sửa. Lưu lần
+   tiếp theo cập nhật file kết quả; nếu đang mở file đó trong Excel, đóng rồi thử lại.
+
+Nạp và lưu file chạy ở nền; lỗi file/dữ liệu không xóa danh sách đang có. Trong lúc bắn
 hoặc còn ảnh chờ chấm, ứng dụng khóa nạp file, đổi người và chuyển loạt. Kết quả
 ảnh đến trễ vẫn gắn với người của bài trước, không cộng sang người mới. Danh sách
-và kết quả được giữ trong phiên mở ứng dụng; việc nạp không sửa file Excel gốc.
-Không nạp danh sách vẫn có thể bắn theo bệ như trước.
+và kết quả được giữ trong phiên mở ứng dụng; bấm Lưu kết quả trước khi thoát để giữ
+kết quả vào Excel. Vẫn có thể bắn theo bệ khi chưa chọn người, như bản wireless.
 
 ## Đối chiếu số phát bắn trên PC
 

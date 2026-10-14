@@ -1,12 +1,15 @@
 """Excel roster and pedestal assignments, independent of the scoring workers."""
+import os
+import tempfile
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import date, datetime
+from pathlib import Path
 
 from openpyxl import load_workbook
-from PyQt5.QtCore import QObject, Qt, pyqtSignal
-from PyQt5.QtGui import QColor
-from PyQt5.QtWidgets import QFileDialog, QListWidget, QListWidgetItem, QMessageBox, QPushButton
+from PyQt5 import uic
+from PyQt5.QtCore import QEvent, QObject, Qt, pyqtSignal
+from PyQt5.QtWidgets import QFileDialog, QMessageBox, QSizePolicy, QWidget
 
 import config as cf
 from gui.client_widget import classify_hits
@@ -19,6 +22,7 @@ class Shooter:
     unit: str
     birthday: str
     pedestal: int
+    excel_row: int
 
 
 def read_roster(path, pedestal_count):
@@ -45,7 +49,7 @@ def read_roster(path, pedestal_count):
             birthday = (birthday.strftime("%d/%m/%Y") if isinstance(birthday, (date, datetime))
                         else str(birthday or "").strip())
             people.append(Shooter(parsed, str(name).strip(), str(unit or "").strip(),
-                                  birthday, (parsed - 1) % pedestal_count + 1))
+                                  birthday, (parsed - 1) % pedestal_count + 1, row_number))
             numbers.add(parsed)
     finally:
         workbook.close()
@@ -54,8 +58,86 @@ def read_roster(path, pedestal_count):
     return people
 
 
+def save_roster_results(path, people, results):
+    """Save a sibling workbook, keeping the input and previous output intact on failure."""
+    source = Path(path)
+    destination = source.with_name("Kết quả - " + source.name)
+    workbook = load_workbook(source)
+    temporary = None
+    try:
+        sheet = workbook.active
+        for person in people:
+            row = person.excel_row
+            number = sheet.cell(row, 1).value
+            try:
+                same_number = (not isinstance(number, bool) and int(number) == person.number
+                               and float(number) == person.number)
+            except (TypeError, ValueError, OverflowError):
+                same_number = False
+            if not same_number or str(sheet.cell(row, 2).value).strip() != person.name:
+                raise ValueError("Danh sách trong file đã thay đổi. Nạp lại danh sách trước khi lưu kết quả.")
+            result = results.get(person.number)
+            # Match wireless's summary columns O/P; Bài 2 totals targets, not points.
+            sheet.cell(row, 15).value = result[1] if result else 0
+            sheet.cell(row, 16).value = result[2] if result else None
+        sheet.cell(1, 15).value = "Số mục tiêu trúng"
+        sheet.cell(1, 16).value = "Xếp loại"
+        with tempfile.NamedTemporaryFile(dir=source.parent, suffix=".xlsx", delete=False) as handle:
+            temporary = Path(handle.name)
+        workbook.save(temporary)
+        workbook.close()
+        os.replace(temporary, destination)
+        return str(destination)
+    finally:
+        workbook.close()
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
+
+
+RANK_CODES = {"Giỏi": "GIOI", "Khá": "KHA", "Đạt": "DAT", "Không đạt": "KDAT"}
+
+
+class ScoreCard(QWidget):
+    def __init__(self, person, pedestal_count, parent=None):
+        super().__init__(parent)
+        uic.loadUi(os.path.join(cf.DATA_DIR, "assets", "qt", "score_card.ui"), self)
+        self.stt_label.setText(f"{person.number}.")
+        self._name_text = f"{person.name} - {person.unit}"
+        if pedestal_count == 1 and person.birthday:
+            self._name_text += f" - {person.birthday}"
+        self.name_label.setTextFormat(Qt.PlainText)
+        self.name_label.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Fixed)
+        self.name_label.setToolTip(self._name_text)
+        self.name_label.setAccessibleName(self._name_text)
+        self.name_label.installEventFilter(self)
+        self._inactive_style = self.shoot_btn.styleSheet()
+        self._active_style = self._inactive_style.replace("color: black;", "color: white;").replace(
+            "background-color: rgb(255, 255, 255);", "background-color: rgb(0, 153, 0);").replace(
+            "background-color: rgb(73, 220, 0);", "background-color: rgb(0, 184, 0);")
+        self.shoot_btn.setToolTip(f"Vào bắn tại bệ {person.pedestal}")
+        self.shoot_btn.setAccessibleName(f"{person.name}: vào bắn tại bệ {person.pedestal}")
+        self.classify_label.setStyleSheet(self.classify_label.styleSheet() + "\npadding: 0;")
+        self.classify_label.setFocusPolicy(Qt.NoFocus)
+        self.update_result(0, None, False)
+
+    def eventFilter(self, watched, event):
+        if watched is self.name_label and event.type() == QEvent.Resize:
+            self.name_label.setText(self.name_label.fontMetrics().elidedText(
+                self._name_text, Qt.ElideRight, max(1, self.name_label.width())))
+        return super().eventFilter(watched, event)
+
+    def update_result(self, targets, rank, selected):
+        self.targets_label.setText(
+            f'<span style="color:#ff0000;">{targets}</span><span style="color:#000000;">/4</span>')
+        self.targets_label.setToolTip(f"Bắn trúng {targets}/4 mục tiêu")
+        self.classify_label.setText(RANK_CODES.get(rank, ""))
+        self.classify_label.setToolTip(rank or "Chưa có xếp loại")
+        self.shoot_btn.setStyleSheet(self._active_style if selected else self._inactive_style)
+
+
 class ShootingRoster(QObject):
     loaded = pyqtSignal(object)
+    saved = pyqtSignal(object)
 
     def __init__(self, window):
         super().__init__(window)
@@ -66,46 +148,23 @@ class ShootingRoster(QObject):
         self.session_id = None
         self.session_assignments = {}
         self.loading = False
+        self.saving = False
         self.closed = False
         self.file_path = ""
         self._pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="Roster")
         self.loaded.connect(self._finish_load)
-        self.list = QListWidget(window)
-        self.list.setAccessibleName("Danh sách người bắn")
-        self.list.setWordWrap(True)
-        self.list.setStyleSheet(
-            "QListWidget { background: white; border: 1px solid #d1d5db; font-size: 14px; }"
-            "QListWidget::item { padding: 10px 8px; border-bottom: 1px solid #e5e7eb; }"
-            "QListWidget::item:selected { background: #dbeafe; color: #111827; }"
-        )
-        window.verticalLayout_2.replaceWidget(window.scrollArea, self.list)
-        window.scrollArea.hide()
-        self.assign_button = QPushButton("Chọn người để vào bệ", window)
-        self.assign_button.setMinimumHeight(36)
-        self.assign_button.setStyleSheet(
-            "QPushButton { background: #008d00; color: white; border: 1px solid #007500;"
-            "border-radius: 8px; padding: 6px; font-size: 15px; font-weight: bold; }"
-            "QPushButton:hover { background: #007500; }"
-            "QPushButton:focus { border: 2px solid #111827; }"
-            "QPushButton:disabled { background: #e5e7eb; color: #6b7280; border-color: #d1d5db; }"
-        )
-        window.verticalLayout_2.insertWidget(
-            window.verticalLayout_2.indexOf(self.list) + 1, self.assign_button)
-        self.assign_button.clicked.connect(self.assign_selected)
-        self.list.itemActivated.connect(lambda _item: self.assign_selected())
-        self.list.currentItemChanged.connect(lambda *_args: self.refresh_controls())
+        self.saved.connect(self._finish_save)
         window.select_file_btn.clicked.connect(self.choose_file)
         window.excel_file_option.triggered.connect(self.choose_file)
         window.new_route_btn.clicked.connect(self.next_group)
         window.new_route_btn.setToolTip("Xếp người chưa bắn tiếp theo vào mỗi bệ, theo thứ tự trong file")
-        # This pre-existing UI placeholder has no Excel export implementation in Bài 2.
-        window.save_result_btn.setEnabled(False)
-        window.save_result_btn.setToolTip("Chưa hỗ trợ xuất kết quả Excel trong Bài 2")
+        window.save_result_btn.clicked.connect(self.save_results)
+        window.save_result_btn.setToolTip("Lưu file Kết quả - …xlsx cùng thư mục danh sách")
         for widget in window.client_widgets:
             widget.go_out_btn.clicked.disconnect(widget.reset_shooter)
             widget.go_out_btn.clicked.connect(lambda _checked=False, port=widget.id: self.clear(port))
             widget.go_out_btn.setToolTip("Bỏ người đang được chọn ở bệ này")
-        self._items = {}
+        self.cards = {}
         self._rebuild_list()
 
     def pending(self):
@@ -115,7 +174,7 @@ class ShootingRoster(QObject):
                    for (session, port), count in window._review_shot_counters.items() if session == sid)
 
     def locked(self):
-        return self.loading or self.window.testing or self.pending()
+        return self.loading or self.saving or self.window.testing or self.pending()
 
     def choose_file(self):
         if self.locked():
@@ -167,20 +226,21 @@ class ShootingRoster(QObject):
         self._rebuild_list()
 
     def _rebuild_list(self):
-        self.list.clear()
-        self._items.clear()
+        layout = self.window.score_card_layout
+        while layout.count():
+            item = layout.takeAt(0)
+            if item.widget() is not None:
+                item.widget().deleteLater()
+        self.cards.clear()
         for person in self.people.values():
-            item = QListWidgetItem()
-            item.setData(Qt.UserRole, person.number)
-            self.list.addItem(item)
-            self._items[person.number] = item
+            card = ScoreCard(person, self.window.p_num)
+            layout.addWidget(card)
+            self.cards[person.number] = card
+            card.shoot_btn.clicked.connect(lambda _checked=False, number=person.number: self.assign(number))
             self._refresh_item(person.number)
-        if not self.people:
-            item = QListWidgetItem("Chưa có danh sách bắn.\nChọn file Excel để nạp người bắn.")
-            item.setFlags(Qt.NoItemFlags)
-            self.list.addItem(item)
-        self.window.label_17.setText(f"Danh sách bắn · {len(self.people)} người" if self.people else "Danh sách bắn")
-        self.window.label_17.setToolTip(self.file_path)
+        layout.setAlignment(Qt.AlignTop)
+        self.window.label_17.setText("Danh sách bắn")
+        self.window.label_17.setToolTip(f"{len(self.people)} người\n{self.file_path}")
         self.window.select_file_btn.setToolTip(self.file_path or "Nạp STT, Họ tên, Đơn vị, Ngày sinh từ Excel")
         self.refresh_controls()
 
@@ -188,40 +248,32 @@ class ShootingRoster(QObject):
         person = self.people[number]
         selected = self.assignments.get(person.pedestal) == number
         result = self.results.get(number)
-        state = (f"{result[0]}/16 viên · {result[1]}/4 mục tiêu · {result[2]}"
-                 if result is not None else "Chưa bắn")
+        targets = result[1] if result else 0
         if self.window.testing and self.session_assignments.get(person.pedestal) == number:
-            state = "Đang bắn"
-        item = self._items[number]
-        detail = " · ".join(value for value in (person.unit, person.birthday) if value)
-        item.setText(f"{number}. {person.name}\n{detail + ' · ' if detail else ''}Bệ {person.pedestal}"
-                     f"{' · Đã vào bệ' if selected else ''}\n{state}")
-        item.setToolTip(item.text())
-        item.setBackground(QColor("#e8f5e9" if selected else "#ffffff"))
+            targets = self._session_result(person.pedestal)[1]
+        self.cards[number].update_result(targets, result[2] if result else None, selected)
 
     def refresh_controls(self):
         enabled = not self.locked()
         window = self.window
-        reason = ("Đang đọc danh sách Excel" if self.loading else "Đang thực hiện bài bắn" if window.testing
+        reason = ("Đang đọc danh sách Excel" if self.loading else "Đang lưu kết quả" if self.saving
+                  else "Đang thực hiện bài bắn" if window.testing
                   else "Đang chấm nốt ảnh của bài vừa kết thúc" if self.pending() else "")
         window.select_file_btn.setEnabled(enabled)
         window.select_file_btn.setText("Đang đọc Excel…" if self.loading else "Chọn danh sách bắn")
         window.excel_file_option.setEnabled(enabled)
-        window.new_route_btn.setEnabled(enabled and any(n not in self.results for n in self.people))
+        window.new_route_btn.setEnabled(enabled and bool(self.people))
         window.new_route_btn.setToolTip(reason or "Xếp người chưa bắn tiếp theo vào mỗi bệ, theo thứ tự trong file")
-        item = self.list.currentItem()
-        number = item.data(Qt.UserRole) if item else None
-        person = self.people.get(number)
-        self.assign_button.setText(f"Vào bệ {person.pedestal}" if person else "Chọn người để vào bệ")
-        self.assign_button.setEnabled(enabled and person is not None)
-        self.assign_button.setToolTip(reason or "Chọn người trong danh sách rồi bấm để vào bệ tương ứng")
+        for card in self.cards.values():
+            card.shoot_btn.setEnabled(enabled)
+        window.save_result_btn.setEnabled(enabled and bool(self.file_path))
+        window.save_result_btn.setText("Đang lưu…" if self.saving else "Lưu kết quả")
         for widget in window.client_widgets:
             widget.go_out_btn.setEnabled(enabled)
         # The start button remains usable to stop an active exercise.
-        ready = not self.loading and (not self.people or (bool(self.assignments) and not self.pending()))
+        ready = not self.loading and not self.saving and (not self.people or not self.pending())
         window.start_btn.setEnabled(window.testing or ready)
-        window.start_btn.setToolTip(reason if not window.testing and reason else
-                                    "Chọn người vào bệ hoặc bấm Loạt bắn mới" if not ready else "")
+        window.start_btn.setToolTip(reason if not window.testing and reason else "")
 
     def _show_person(self, port, number):
         widget = self.window.client_widgets[port - 1]
@@ -230,21 +282,14 @@ class ShootingRoster(QObject):
         widget.reset_shooter()
         if number is not None:
             person = self.people[number]
-            widget.set_shooter(" — ".join(value for value in (person.name, person.unit) if value))
+            widget.set_shooter(f"{person.name} - {person.unit}")
         widget.set_review_available(False)
-
-    def assign_selected(self):
-        item = self.list.currentItem()
-        if item:
-            self.assign(item.data(Qt.UserRole))
 
     def assign(self, number):
         if self.locked() or number not in self.people:
             return False
         port = self.people[number].pedestal
         old = self.assignments.get(port)
-        if old == number:
-            return True
         self.assignments[port] = number
         self._show_person(port, number)
         if old is not None:
@@ -269,8 +314,6 @@ class ShootingRoster(QObject):
         for person in self.people.values():
             if person.number not in self.results:
                 selected.setdefault(person.pedestal, person.number)
-        if not selected:
-            return
         for widget in self.window.client_widgets:
             self.clear(widget.id)
         for number in selected.values():
@@ -292,13 +335,48 @@ class ShootingRoster(QObject):
         if session_id != self.session_id:
             return
         for port, number in self.session_assignments.items():
-            shots = self.window._review_sessions.get(session_id, {}).get(port, [])[:16]
-            hits = {shot["target_index"] for shot in shots if shot.get("hit") is True}
-            rank = classify_hits(hits)
             if not self.window.testing:
-                self.results[number] = (len(shots), len(hits), rank)
+                self.results[number] = self._session_result(port)
             self._refresh_item(number)
         self.refresh_controls()
+
+    def _session_result(self, port):
+        shots = self.window._review_sessions.get(self.session_id, {}).get(port, [])[:16]
+        hits = {shot["target_index"] for shot in shots if shot.get("hit") is True}
+        return len(shots), len(hits), classify_hits(hits)
+
+    def save_results(self):
+        if self.locked() or self.closed or not self.file_path:
+            return False
+        self.saving = True
+        self.refresh_controls()
+        future = self._pool.submit(save_roster_results, self.file_path,
+                                   tuple(self.people.values()), dict(self.results))
+
+        def done(job):
+            try:
+                payload = (job.result(), None)
+            except Exception as exc:
+                payload = (None, str(exc))
+            if not self.closed:
+                try:
+                    self.saved.emit(payload)
+                except RuntimeError:
+                    pass
+        future.add_done_callback(done)
+        return True
+
+    def _finish_save(self, payload):
+        if self.closed:
+            return
+        self.saving = False
+        self.refresh_controls()
+        path, error = payload
+        if error:
+            QMessageBox.warning(self.window, "Không lưu được kết quả",
+                                f"{error}\n\nNếu file kết quả đang mở trong Excel, hãy đóng file rồi thử lại.")
+        else:
+            QMessageBox.information(self.window, "Lưu kết quả", f"Đã lưu kết quả:\n{path}")
 
     def shutdown(self):
         self.closed = True

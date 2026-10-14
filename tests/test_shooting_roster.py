@@ -10,13 +10,15 @@ from unittest.mock import MagicMock, patch
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import numpy as np
-from openpyxl import Workbook
+from openpyxl import Workbook, load_workbook
+from openpyxl.styles import Font
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtTest import QTest
+from PyQt5.QtGui import QTextDocument
 from PyQt5.QtWidgets import QApplication
 
 from gui.main_window import MainWindow
-from gui.shooting_roster import read_roster
+from gui.shooting_roster import read_roster, save_roster_results
 
 
 def write_roster(path, rows):
@@ -66,6 +68,46 @@ class RosterReaderTests(unittest.TestCase):
         self.path.write_text("not an Excel workbook", encoding="utf-8")
         with self.assertRaises(Exception):
             read_roster(self.path, 1)
+
+    def test_export_preserves_source_and_writes_summary_to_actual_rows(self):
+        write_roster(self.path, [[3, "An", "Đại đội 1"], [], [8, "Bình", "Đại đội 2"]])
+        workbook = load_workbook(self.path)
+        workbook.active["B2"].font = Font(bold=True)
+        workbook.active["E2"] = "Trung sĩ"
+        workbook.create_sheet("Ghi chú")["A1"] = "Giữ nguyên"
+        workbook.save(self.path)
+        workbook.close()
+        original = self.path.read_bytes()
+        people = read_roster(self.path, 4)
+        output = Path(save_roster_results(self.path, people, {3: (16, 3, "Khá")}))
+        self.assertEqual(output.name, "Kết quả - Tiểu đoàn.xlsx")
+        self.assertEqual(self.path.read_bytes(), original)
+        workbook = load_workbook(output)
+        try:
+            sheet = workbook.active
+            self.assertEqual((sheet["O2"].value, sheet["P2"].value), (3, "Khá"))
+            self.assertEqual((sheet["O4"].value, sheet["P4"].value), (0, None))
+            self.assertIsNone(sheet["O3"].value)
+            self.assertEqual(sheet["E2"].value, "Trung sĩ")
+            self.assertTrue(sheet["B2"].font.bold)
+            self.assertEqual(workbook["Ghi chú"]["A1"].value, "Giữ nguyên")
+        finally:
+            workbook.close()
+
+    def test_export_failure_keeps_existing_output_and_removes_temporary_file(self):
+        write_roster(self.path, [[1, "An"]])
+        people = read_roster(self.path, 1)
+        output = Path(save_roster_results(self.path, people, {1: (16, 2, "Đạt")}))
+        original = output.read_bytes()
+        with patch("gui.shooting_roster.os.replace", side_effect=PermissionError("File is open")):
+            with self.assertRaises(PermissionError):
+                save_roster_results(self.path, people, {1: (16, 4, "Giỏi")})
+        self.assertEqual(output.read_bytes(), original)
+        self.assertEqual(set(self.path.parent.glob("*.xlsx")), {self.path, output})
+        write_roster(self.path, [[2, "Bình"]])
+        with self.assertRaisesRegex(ValueError, "đã thay đổi"):
+            save_roster_results(self.path, people, {})
+        self.assertEqual(output.read_bytes(), original)
 
 
 class ShootingRosterTests(unittest.TestCase):
@@ -127,15 +169,16 @@ class ShootingRosterTests(unittest.TestCase):
             self.window.select_file_btn.click()
         self.wait_loaded()
         self.assertEqual(len(self.roster.people), 5)
-        self.assertFalse(self.window.start_btn.isEnabled())
-        self.window.start_test()
-        self.assertFalse(self.window.testing)
-        self.roster.list.setCurrentRow(2)
-        self.roster.assign_button.click()
+        self.assertTrue(self.window.start_btn.isEnabled())
+        self.assertEqual(self.window.score_card_layout.count(), 5)
+        self.assertFalse(self.window.scrollArea.isHidden())
+        self.roster.cards[3].shoot_btn.click()
         self.assertEqual(self.roster.assignments, {1: 3})
-        self.assertEqual(self.window.client_widgets[0]._shooter_text, "Lê Chi — Đại đội 1")
+        self.assertEqual(self.window.client_widgets[0]._shooter_text, "Lê Chi - Đại đội 1")
+        self.assertEqual(self.roster.cards[3].shoot_btn.styleSheet(), self.roster.cards[3]._active_style)
         self.window.new_route_btn.click()
         self.assertEqual(self.roster.assignments, {1: 1, 2: 2})
+        self.assertEqual(self.roster.cards[3].shoot_btn.styleSheet(), self.roster.cards[3]._inactive_style)
         self.window.client_widgets[0].go_out_btn.click()
         self.assertEqual(self.roster.assignments, {2: 2})
         self.assertEqual(self.window.client_widgets[0]._shooter_text, "")
@@ -156,12 +199,12 @@ class ShootingRosterTests(unittest.TestCase):
     def test_keyboard_activation_and_literal_long_name(self):
         write_roster(self.path, [[1, "Nguyễn <An> & Bình " * 12, "Đại đội 1"]])
         self.load()
-        self.roster.list.setCurrentRow(0)
-        QTest.keyClick(self.roster.list, Qt.Key_Return)
+        QTest.keyClick(self.roster.cards[1].shoot_btn, Qt.Key_Space)
         self.assertEqual(self.roster.assignments, {1: 1})
         label = self.window.client_widgets[0].name_label
         self.assertEqual(label.textFormat(), Qt.PlainText)
         self.assertIn("<An> & Bình", label.toolTip())
+        self.assertIn("<An> & Bình", self.roster.cards[1].name_label.toolTip())
 
     def test_round_blocks_reassignment_then_advances_even_without_shots(self):
         self.load()
@@ -181,6 +224,10 @@ class ShootingRosterTests(unittest.TestCase):
         self.roster.next_group()
         self.assertEqual(self.roster.assignments, {1: 5})
         self.assertEqual(self.window.client_widgets[1]._shooter_text, "")
+        self.begin()
+        self.window.stop_test()
+        self.window.new_route_btn.click()
+        self.assertEqual(self.roster.assignments, {})
 
     def test_pending_scoring_blocks_new_people_and_new_exercise(self):
         self.load()
@@ -234,6 +281,55 @@ class ShootingRosterTests(unittest.TestCase):
         self.window._review_sessions[sid][1][2]["target_index"] = 3
         self.roster.update_results(sid)
         self.assertEqual(self.roster.results[1][2], "Khá")
+
+    def test_card_targets_update_live_with_only_numerator_red(self):
+        self.load()
+        self.roster.next_group()
+        self.begin()
+        sid = self.window._active_review_session_id
+        self.window._review_sessions[sid][1] = [
+            {"target_index": i, "hit": True} for i in (0, 1, 3)]
+        self.roster.update_results(sid)
+        card = self.roster.cards[1]
+        document = QTextDocument()
+        document.setHtml(card.targets_label.text())
+        self.assertEqual(document.toPlainText(), "3/4")
+        self.assertEqual(document.find("3").charFormat().foreground().color().name(), "#ff0000")
+        self.assertEqual(document.find("/4").charFormat().foreground().color().name(), "#000000")
+        self.assertFalse(card.shoot_btn.isEnabled())
+        self.window.stop_test()
+        self.assertEqual(card.classify_label.text(), "KHA")
+        self.assertTrue(card.shoot_btn.isEnabled())
+
+    def test_card_birthday_only_in_single_pedestal_mode(self):
+        self.load()
+        self.assertNotIn("02/01/2000", self.roster.cards[1].name_label.toolTip())
+        self.window.p_num = 1
+        self.roster._rebuild_list()
+        self.assertIn("02/01/2000", self.roster.cards[1].name_label.toolTip())
+
+    def test_save_button_exports_then_recovers_from_failure(self):
+        self.load()
+        self.roster.results[1] = (16, 3, "Khá")
+        with patch("gui.shooting_roster.QMessageBox.information") as message:
+            self.window.save_result_btn.click()
+            self.assertTrue(self.roster.saving)
+            self.assertFalse(self.window.start_btn.isEnabled())
+            deadline = time.monotonic() + 3
+            while self.roster.saving and time.monotonic() < deadline:
+                QTest.qWait(10)
+            self.assertFalse(self.roster.saving)
+            message.assert_called_once()
+        self.assertTrue(self.path.with_name("Kết quả - " + self.path.name).exists())
+        with (patch("gui.shooting_roster.save_roster_results", side_effect=PermissionError("Locked")),
+              patch("gui.shooting_roster.QMessageBox.warning") as warning):
+            self.window.save_result_btn.click()
+            deadline = time.monotonic() + 3
+            while self.roster.saving and time.monotonic() < deadline:
+                QTest.qWait(10)
+            self.assertFalse(self.roster.saving)
+            warning.assert_called_once()
+        self.assertTrue(self.window.save_result_btn.isEnabled())
 
     def test_background_load_keeps_ui_alive_and_close_discards_completion(self):
         started, release = threading.Event(), threading.Event()
