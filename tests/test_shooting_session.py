@@ -474,6 +474,23 @@ class ShootingFlowTests(unittest.TestCase):
         self.window._scoring_pool.submit.assert_not_called()
         self.window._shot_sound.play.assert_not_called()
 
+    def test_sixteen_received_shots_finish_counting_after_stop(self):
+        self.window.automatic_close_target_enabled = False
+        self.open_target(0)
+        for index in range(16):
+            self.assertTrue(self.receive(116 + index * .01))
+        for index in range(13):
+            self.complete(1, job_index=index)
+        self.assertEqual(self.window.client_widgets[0].bullet_count, 13)
+        with self.assertLogs("mbt03_server", level="INFO") as logs:
+            self.window.stop_test()
+        self.assertTrue(any("nhận=16, chấm xong=13, đang chờ=3, đạn hiển thị=13" in line
+                            for line in logs.output))
+        for index in range(13, 16):
+            self.complete(1, job_index=index)
+        self.assertEqual(self.window.client_widgets[0].bullet_count, 16)
+        self.assertEqual(len(self.window._review_sessions[1][1]), 16)
+
     def test_target_eight_scores_until_exercise_deadline_with_extended_late_grace(self):
         self.window.automatic_close_target_enabled = False
         for index in range(4):

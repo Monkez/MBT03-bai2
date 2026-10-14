@@ -462,19 +462,31 @@ class MainWindow(QMainWindow):
     def process_shot(self, port_id, frame, bullet_point, received_at=None, raw_image_save=None):
         """Public entry point for scoring one pedestal image and impact."""
         if not (1 <= port_id <= len(self.client_widgets)):
+            logging.getLogger("mbt03_server").warning("[ShotReceipt] Bệ %s: loại ảnh vì bệ không hợp lệ", port_id)
             return False
         session_id = (self._active_review_session_id if self.testing
                       else self._previous_review_session_id)
         if session_id is None or self._shooting_session is None:
+            logging.getLogger("mbt03_server").info("[ShotReceipt] Bệ %s: không đếm ảnh vì chưa có bài bắn", port_id)
             return False
         received_at = time.monotonic() if received_at is None else received_at
         if not self._shooting_session.accepts_receipt(received_at):
+            logging.getLogger("mbt03_server").info(
+                "[ShotReceipt] session=%s | Bệ %s | không đếm ảnh: thời điểm nhận %.3fs ngoài bài; mốc dừng %.3fs",
+                session_id, port_id, received_at - self._shooting_session.started_at,
+                (self._shooting_session.stopped_at if self._shooting_session.stopped_at is not None
+                 else self._shooting_session.deadline) - self._shooting_session.started_at,
+            )
             if self.testing and self._shooting_session.expired(received_at):
                 self.stop_test()
             return False
         exposure = self._shooting_session.active_target(received_at)
         self._shot_sound.play()
         shot_number = self._next_review_shot_number(session_id, port_id)
+        logging.getLogger("mbt03_server").info(
+            "[ShotReceipt] session=%s | Bệ %s | Phát %s | đã nhận để chấm lúc %.3fs",
+            session_id, port_id, shot_number, received_at - self._shooting_session.started_at,
+        )
         self._scoring_pool.submit(
             self._score_shot_worker,
             session_id,
@@ -646,6 +658,10 @@ class MainWindow(QMainWindow):
         self._store_review_shot(result)
         if not result.get("ok"):
             print(f"[Main] Cham bia loi tai be {result.get('port_id')}: {result.get('error')}")
+            logging.getLogger("mbt03_server").warning(
+                "[Scoring] session=%s | Bệ %s | Phát %s | lỗi chấm: %s",
+                result.get("session_id"), result.get("port_id"), result.get("shot_number"), result.get("error"),
+            )
         session_id = (self._active_review_session_id if self.testing
                       else self._previous_review_session_id)
         if session_id is None or result.get("session_id") != session_id:
@@ -807,6 +823,10 @@ class MainWindow(QMainWindow):
         self._shooting_session = ShootingSession(
             self._test_start_time, tuple(item[0] for item in self.LORA_SCRIPT)
         )
+        logging.getLogger("mbt03_server").info(
+            "[Exercise] session=%s | bắt đầu | %s bệ | giới hạn %ss",
+            self._active_review_session_id, self.p_num, MAX_DURATION_SECONDS,
+        )
         self._test_timeout_timer.start(MAX_DURATION_SECONDS * 1000)
         self.setting_btn.setEnabled(False)
         self.lora.send_command("@661#")
@@ -846,6 +866,14 @@ class MainWindow(QMainWindow):
     def stop_test(self):
         if not self.testing:
             return
+        session_id = self._active_review_session_id
+        for widget in self.client_widgets:
+            received = self._review_shot_counters.get((session_id, widget.id), 0)
+            completed = len(self._review_sessions.get(session_id, {}).get(widget.id, []))
+            logging.getLogger("mbt03_server").info(
+                "[Exercise] session=%s | Bệ %s | dừng bài: nhận=%s, chấm xong=%s, đang chờ=%s, đạn hiển thị=%s",
+                session_id, widget.id, received, completed, received - completed, widget.bullet_count,
+            )
         self._shooting_session.stop(time.monotonic())
         self.testing = False
         self._test_timeout_timer.stop()

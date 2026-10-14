@@ -20,6 +20,7 @@ import threading
 import time
 import json
 import logging
+import math
 import struct
 import queue
 import numpy as np
@@ -871,8 +872,20 @@ class MBT03ServerCore(QObject):
                 q0_data["_server_received_at"] = received_at
                 
                 q0_str = ""
-                if q0_data.get('q0'):
+                if 'q0' in q0_data:
                     q0 = q0_data['q0']
+                    try:
+                        if not isinstance(q0, (list, tuple)) or len(q0) != 2:
+                            raise ValueError("expected two coordinates")
+                        q0 = [float(value) for value in q0]
+                        if not all(math.isfinite(value) for value in q0):
+                            raise ValueError("non-finite coordinate")
+                    except (TypeError, ValueError, OverflowError):
+                        # Match the UI's existing fallback without losing a
+                        # valid shot image while formatting diagnostic text.
+                        self._log("Shoot warning: invalid Q0 metadata; using center (0.5, 0.5)")
+                        q0 = [0.5, 0.5]
+                    q0_data['q0'] = q0
                     q0_str = f" Q0=({q0[0]:.4f},{q0[1]:.4f})"
                 sent_at = q0_data.get('ts')
                 if isinstance(sent_at, (int, float)):
@@ -882,6 +895,9 @@ class MBT03ServerCore(QObject):
                     if not self._session_allows_operation_locked(
                         session_generation=session_generation
                     ):
+                        self._log(
+                            "Drop shoot image after decode: connection expired or changed; "
+                            f"generation={session_generation}, current={self._session_generation}")
                         return
                     # Keep the final validation and emit atomic relative to an
                     # offline/reconnect transition so a decoded, buffered

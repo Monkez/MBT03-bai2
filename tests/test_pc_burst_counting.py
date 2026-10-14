@@ -27,7 +27,7 @@ class PcBurstCountingTests(unittest.TestCase):
     def setUpClass(cls):
         cls.app = QApplication.instance() or QApplication([])
 
-    def test_full_decode_queue_preserves_three_received_images(self):
+    def test_full_decode_queue_preserves_sixteen_received_images(self):
         server = _make_server_harness()
         server.running = True
         server._decode_lock = threading.Lock()
@@ -47,11 +47,12 @@ class PcBurstCountingTests(unittest.TestCase):
             lambda frame, meta: receipt_times.append(meta["_server_received_at"]),
             type=Qt.DirectConnection,
         )
+        values = list(range(20, 36))
         messages = deque(
             [Protocol.MSG_SHOOT_IMAGE, cv2.imencode(
                 ".png", np.full((8, 8, 3), value, dtype=np.uint8)
             )[1].tobytes()]
-            for value in (20, 40, 60)
+            for value in values
         )
         server.data_socket.recv_multipart.side_effect = messages.popleft
 
@@ -74,7 +75,7 @@ class PcBurstCountingTests(unittest.TestCase):
         ):
             poller.return_value.poll.side_effect = poll
             server._data_loop()
-        self.assertEqual(received, [20, 40, 60])
+        self.assertEqual(received, values)
         self.assertEqual(server._decode_inflight, 0)
         self.assertEqual(receipt_times, submitted_times)
         self.assertTrue(all(isinstance(value, float) for value in receipt_times))
@@ -92,15 +93,33 @@ class PcBurstCountingTests(unittest.TestCase):
         self.assertEqual(received[0]["_server_received_at"], 123.5)
         self.assertEqual(received[0]["q0"], [.4, .6])
 
+    def test_valid_shot_image_survives_malformed_q0_metadata(self):
+        for q0 in ([.4], "invalid", {"x": .5}, [None, .5], [float("nan"), .5]):
+            with self.subTest(q0=q0):
+                server = _make_server_harness()
+                server._decode_lock = threading.Lock()
+                server._decode_inflight = 1
+                received = []
+                server.shoot_image_signal.connect(lambda frame, meta: received.append(meta),
+                                                 type=Qt.DirectConnection)
+                encoded = cv2.imencode(".png", np.zeros((8, 8, 3), dtype=np.uint8))[1].tobytes()
+                server._decode_shoot_image(encoded, Protocol.encode_payload({"q0": q0}))
+                self.assertEqual(len(received), 1)
+                self.assertEqual(received[0]["q0"], [.5, .5])
+                self.assertEqual(server._decode_inflight, 0)
+
     def test_three_images_count_even_when_two_scoring_jobs_fail(self):
         self.assert_burst_count(failed_jobs=2)
 
     def test_three_images_count_when_all_scoring_jobs_succeed(self):
         self.assert_burst_count(failed_jobs=0)
 
-    def assert_burst_count(self, failed_jobs):
+    def test_sixteen_images_count_despite_three_failed_scoring_jobs(self):
+        self.assert_burst_count(failed_jobs=3, count=16)
+
+    def assert_burst_count(self, failed_jobs, count=3):
         widget = ClientWidget(1)
-        saves = [Future() for _ in range(3)]
+        saves = [Future() for _ in range(count)]
         window = SimpleNamespace(
             testing=True, _active_review_session_id=1, _previous_review_session_id=None,
             client_widgets=[widget], _reference_images={0: np.zeros((100, 200, 3))},
@@ -120,25 +139,25 @@ class PcBurstCountingTests(unittest.TestCase):
         window.process_shot = lambda *args, **kwargs: MainWindow.process_shot(window, *args, **kwargs)
         window.scoring_done_signal.emit.side_effect = lambda result: MainWindow._on_scoring_done(window, result)
         try:
-            for value in (20, 40, 60):
+            for value in range(20, 20 + count):
                 MainWindow._on_shoot_image(window, 1, np.full((8, 8, 3), value, dtype=np.uint8), {})
-            self.assertEqual(len(window._scoring_pool.jobs), 3)
+            self.assertEqual(len(window._scoring_pool.jobs), count)
             results = [
                 (None, {"class_id": 0, "transformed_point": (100, 50), "hit": True})
-                for _ in range(3 - failed_jobs)
+                for _ in range(count - failed_jobs)
             ] + [RuntimeError("injected inference failure") for _ in range(failed_jobs)]
             with patch("gui.main_window.scoring.scoring", side_effect=results):
                 # Worker completion order must not change the number of shots.
                 for worker, args in reversed(window._scoring_pool.jobs):
                     worker(*args)
-            self.assertEqual(widget.bullet_count, 3)
-            self.assertEqual(len(widget.shots), 3 - failed_jobs)
+            self.assertEqual(widget.bullet_count, count)
+            self.assertEqual(len(widget.shots), count - failed_jobs)
             self.assertEqual(widget.hit_targets, {0})
             review = window._review_sessions[1][1]
-            self.assertEqual([shot["shot_number"] for shot in review], [1, 2, 3])
+            self.assertEqual([shot["shot_number"] for shot in review], list(range(1, count + 1)))
             # Saving and scoring may finish in different orders; keep the exact
             # save associated with its shot, including inference failures.
-            for index in (2, 0, 1):
+            for index in reversed(range(count)):
                 saves[index].set_result(f"image_{index + 1}_be_01.png")
             for index, shot in enumerate(review):
                 self.assertIs(shot["raw_image_save"], saves[index])

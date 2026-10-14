@@ -1,5 +1,28 @@
 # Sử dụng
 
+## Đối chiếu số phát bắn trên PC
+
+`Đạn` tăng sau khi chấm xong từng ảnh, kể cả không nhận diện được bia, trượt,
+ngoài thời gian tính điểm của bia hoặc chấm lỗi. Khi còn tác vụ chấm đang chờ,
+số này có thể tạm thấp hơn số ảnh đã nhận. Các ảnh nhận trong bài vẫn được xử lý
+sau khi dừng; bắt đầu bài mới sẽ bỏ kết quả còn chờ của bài trước.
+
+Trong `server.log`, đối chiếu cùng phiên (`session`) và bệ:
+
+- `SHOOT ACCEPTED`: thông báo phát bắn nhận qua kênh điều khiển, chưa đảm bảo có ảnh.
+- `Shoot image`: ảnh đã giải mã, chuẩn bị gửi sang giao diện.
+- `[ShotReceipt]`: ảnh được nhận để chấm, hoặc lý do không đếm (chưa có bài,
+  nhận ngoài thời gian bài, bệ không hợp lệ).
+- `[Scoring]`: kết quả chấm từng phát, kể cả lỗi.
+- `[Exercise] ... dừng bài`: tổng ảnh nhận để chấm, số chấm xong, số đang chờ
+  và số đạn đang hiển thị tại thời điểm dừng.
+
+Ví dụ `nhận=16, chấm xong=13, đang chờ=3, đạn hiển thị=13` nghĩa là còn ba ảnh
+chờ chấm. Đây là số liệu phía PC, không xác nhận số lần bóp cò trên súng.
+Log `invalid Q0 metadata` cho biết PC dùng tọa độ tâm mặc định `(0.5, 0.5)` do
+dữ liệu Q0 không hợp lệ; ảnh vẫn được giữ để xử lý. Lỗi giải mã ảnh hoặc loại ảnh
+do kết nối hết hạn/thay đổi được ghi riêng bằng `decode failed` / `Drop shoot image`.
+
 ## Kiểm tra UART và đổi Wi-Fi (Ctrl + S)
 
 Tại màn hình chính, nhấn **Ctrl + S** để mở `UART Debug`, tương tự MBT03-wireless.

@@ -144,7 +144,7 @@ class PedestalIsolationTests(unittest.TestCase):
                 # Hardware triggers already represent individual shots. Deliver
                 # bursts on both channels without waiting for earlier images.
                 for port in (2, 1):
-                    for _ in range(3):
+                    for _ in range(16):
                         clients[port - 1]._shoot_frame = np.full((48, 64, 3), 60 * port, dtype=np.uint8)
                         self.assertTrue(clients[port - 1].shoot(debounce=False))
                         expected_counts[port] += 1

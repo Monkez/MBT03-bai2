@@ -1,5 +1,12 @@
 # Trạng thái dự án
 
+## Kiểm tra thiếu phát bắn phía PC (2026-10-14)
+
+- Giới hạn phạm vi theo yêu cầu: chỉ sửa PC, không đổi client/firmware. Trong đoạn `server.log` 09:56:16–09:57:41, bệ 1 có 13 thông báo/13 ảnh/13 kết quả chấm, bệ 2 có 16/16/16; chưa có bằng chứng PC làm mất ba ảnh trong lượt này. Log cũ chỉ ghi giờ nên không suy ra ngày của lượt từ timestamp.
+- Tái hiện và sửa lỗi riêng ở PC: Q0 sai kiểu/thiếu tọa độ gây exception khi định dạng log, làm bỏ ảnh hợp lệ trước khi emit. Chuẩn hóa Q0 về cặp số hữu hạn, fallback tâm `(0.5, 0.5)` như quy ước GUI sẵn có và ghi cảnh báo. Chưa có bằng chứng lỗi này gây lượt 13 viên nói trên.
+- Bổ sung `[ShotReceipt]` nhận/loại ảnh, `[Exercise]` đầu bài và thống kê khi dừng (nhận/chấm xong/đang chờ/đạn hiển thị), lưu lỗi chấm và lý do loại sau decode khi kết nối hết hạn/đổi phiên. `Đạn` vẫn tăng sau chấm; ảnh nhận trong bài được hoàn tất sau dừng, bài mới bỏ kết quả cũ.
+- `test.bat` đạt 252 test. Mở rộng kiểm tra 16 ảnh khi decode bão hòa, hoàn thành chấm ngược thứ tự có 3 lỗi, 13 kết quả trước dừng + 3 sau dừng, hai kênh localhost nhận 16 ảnh burst/bệ (ngoài 3 ảnh ban đầu). Chưa thử thiết bị thật; chưa build EXE trong khi chờ hoàn tất âm thanh.
+
 ## Nới thời gian nhận trúng (2026-10-14)
 
 - Tăng nhận sớm từ 1 lên 2 giây, nhận muộn từ 2 lên 4 giây (kể cả gập sớm tự động do trúng). Giữ thời lượng cơ sở 7/7/7/18 giây, lịch LoRa và giới hạn bài 85 giây. Lịch mặc định nhận bia 6: [13,26), bia 10: [30,43), bia 7B: [40,53), bia 8: [62,85).
