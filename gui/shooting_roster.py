@@ -1,6 +1,7 @@
 """Excel roster and pedestal assignments, independent of the scoring workers."""
 import os
 import tempfile
+import unicodedata
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import date, datetime
@@ -15,6 +16,18 @@ import config as cf
 from gui.client_widget import classify_hits
 
 
+RESULT_COLUMNS = ((1, "Bia số 6"), (0, "Bia số 10"), (2, "Bia số 7b"), (3, "Bia số 8c"))
+
+
+@dataclass(frozen=True)
+class RosterResult:
+    hit_targets: frozenset[int]
+
+    @property
+    def rank(self):
+        return classify_hits(self.hit_targets)
+
+
 @dataclass(frozen=True)
 class Shooter:
     number: int
@@ -23,19 +36,53 @@ class Shooter:
     birthday: str
     pedestal: int
     excel_row: int
+    result: RosterResult | None = None
+
+
+def _blank(value):
+    return value is None or str(value).strip() == ""
+
+
+def _normalized(value):
+    text = unicodedata.normalize("NFD", str(value).strip().lower()).replace("đ", "d")
+    return "".join(c for c in text if not unicodedata.combining(c) and not c.isspace())
+
+
+def _validate_result_headers(sheet):
+    for column, title in enumerate([title for _, title in RESULT_COLUMNS] + ["Xếp loại"], start=6):
+        value = sheet.cell(1, column).value
+        if not _blank(value) and _normalized(value) != _normalized(title):
+            raise ValueError(f"Cột {chr(64 + column)} phải là '{title}', đang là '{value}'.")
+
+
+def _read_result(values, row_number):
+    if all(_blank(value) for value in values):
+        return None
+    hits = set()
+    for value, (target, title) in zip(values[:4], RESULT_COLUMNS):
+        if isinstance(value, bool) or str(value).strip() not in ("0", "1", "0.0", "1.0"):
+            raise ValueError(f"Dòng {row_number}: {title} phải là 0 hoặc 1; "
+                             "người chưa bắn để trống cả F–J.")
+        if float(value) == 1:
+            hits.add(target)
+    result = RosterResult(frozenset(hits))
+    if not _blank(values[4]) and _normalized(values[4]) != _normalized(result.rank):
+        raise ValueError(f"Dòng {row_number}: xếp loại phải là '{result.rank}' theo kết quả bốn bia.")
+    return result
 
 
 def read_roster(path, pedestal_count):
-    """Read the active sheet using the same A:D columns as MBT03-wireless."""
+    """Read identity A:E and optional target results F:J from the Bài 2 template."""
     workbook = load_workbook(path, read_only=True, data_only=True)
     people = []
     numbers = set()
     try:
+        _validate_result_headers(workbook.active)
         for row_number, row in enumerate(
-                workbook.active.iter_rows(min_row=2, max_col=4, values_only=True), start=2):
-            if all(value is None or str(value).strip() == "" for value in row):
+                workbook.active.iter_rows(min_row=2, max_col=10, values_only=True), start=2):
+            if all(_blank(value) for value in row):
                 continue
-            number, name, unit, birthday = row
+            number, name, unit, birthday = row[:4]
             try:
                 parsed = int(number)
                 if isinstance(number, bool) or parsed <= 0 or float(number) != parsed:
@@ -49,7 +96,8 @@ def read_roster(path, pedestal_count):
             birthday = (birthday.strftime("%d/%m/%Y") if isinstance(birthday, (date, datetime))
                         else str(birthday or "").strip())
             people.append(Shooter(parsed, str(name).strip(), str(unit or "").strip(),
-                                  birthday, (parsed - 1) % pedestal_count + 1, row_number))
+                                  birthday, (parsed - 1) % pedestal_count + 1, row_number,
+                                  _read_result(row[5:10], row_number)))
             numbers.add(parsed)
     finally:
         workbook.close()
@@ -66,6 +114,7 @@ def save_roster_results(path, people, results):
     temporary = None
     try:
         sheet = workbook.active
+        _validate_result_headers(sheet)
         for person in people:
             row = person.excel_row
             number = sheet.cell(row, 1).value
@@ -77,11 +126,12 @@ def save_roster_results(path, people, results):
             if not same_number or str(sheet.cell(row, 2).value).strip() != person.name:
                 raise ValueError("Danh sách trong file đã thay đổi. Nạp lại danh sách trước khi lưu kết quả.")
             result = results.get(person.number)
-            # Match wireless's summary columns O/P; Bài 2 totals targets, not points.
-            sheet.cell(row, 15).value = result[1] if result else 0
-            sheet.cell(row, 16).value = result[2] if result else None
-        sheet.cell(1, 15).value = "Số mục tiêu trúng"
-        sheet.cell(1, 16).value = "Xếp loại"
+            for column, (target, _) in enumerate(RESULT_COLUMNS, start=6):
+                sheet.cell(row, column).value = int(target in result.hit_targets) if result else None
+            sheet.cell(row, 10).value = result.rank if result else None
+        for column, title in enumerate([title for _, title in RESULT_COLUMNS] + ["Xếp loại"], start=6):
+            if _blank(sheet.cell(1, column).value):
+                sheet.cell(1, column).value = title
         with tempfile.NamedTemporaryFile(dir=source.parent, suffix=".xlsx", delete=False) as handle:
             temporary = Path(handle.name)
         workbook.save(temporary)
@@ -218,7 +268,7 @@ class ShootingRoster(QObject):
         self.people = {person.number: person for person in people}
         self.file_path = path
         self.assignments.clear()
-        self.results.clear()
+        self.results = {person.number: person.result for person in people if person.result is not None}
         self.session_id = None
         self.session_assignments.clear()
         for widget in self.window.client_widgets:
@@ -248,10 +298,10 @@ class ShootingRoster(QObject):
         person = self.people[number]
         selected = self.assignments.get(person.pedestal) == number
         result = self.results.get(number)
-        targets = result[1] if result else 0
+        targets = len(result.hit_targets) if result else 0
         if self.window.testing and self.session_assignments.get(person.pedestal) == number:
-            targets = self._session_result(person.pedestal)[1]
-        self.cards[number].update_result(targets, result[2] if result else None, selected)
+            targets = len(self._session_result(person.pedestal).hit_targets)
+        self.cards[number].update_result(targets, result.rank if result else None, selected)
 
     def refresh_controls(self):
         enabled = not self.locked()
@@ -343,7 +393,7 @@ class ShootingRoster(QObject):
     def _session_result(self, port):
         shots = self.window._review_sessions.get(self.session_id, {}).get(port, [])[:16]
         hits = {shot["target_index"] for shot in shots if shot.get("hit") is True}
-        return len(shots), len(hits), classify_hits(hits)
+        return RosterResult(frozenset(hits))
 
     def save_results(self):
         if self.locked() or self.closed or not self.file_path:

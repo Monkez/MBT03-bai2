@@ -3,6 +3,7 @@ import tempfile
 import threading
 import time
 import unittest
+import unicodedata
 from datetime import datetime
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -18,12 +19,15 @@ from PyQt5.QtGui import QTextDocument
 from PyQt5.QtWidgets import QApplication
 
 from gui.main_window import MainWindow
-from gui.shooting_roster import read_roster, save_roster_results
+from gui.shooting_roster import RosterResult, read_roster, save_roster_results
 
 
-def write_roster(path, rows):
+def write_roster(path, rows, template=False):
     book = Workbook()
-    book.active.append(["STT", "Họ tên", "Đơn vị", "Ngày sinh"])
+    headers = ["STT", "Họ tên", "Đơn vị", "Ngày sinh"]
+    if template:
+        headers += ["Cấp bậc", "Bia số 6", "Bia số 10", "Bia số 7b", "Bia số 8c", "Xếp loại"]
+    book.active.append([unicodedata.normalize("NFD", title) for title in headers])
     for row in rows:
         book.active.append(row)
     book.save(path)
@@ -69,6 +73,66 @@ class RosterReaderTests(unittest.TestCase):
         with self.assertRaises(Exception):
             read_roster(self.path, 1)
 
+    def test_template_loads_existing_results_and_distinguishes_unshot_from_zero(self):
+        write_roster(self.path, [
+            [1, "An", "C1", datetime(2000, 2, 3), "Trung sĩ", 0, 1, 1, 1, "Khá"],
+            [2, "Bình", "C1", None, "Binh nhất"],
+            [3, "Chi", "C1", None, None, 0, 0, 0, 0, "Không đạt"],
+        ], template=True)
+        people = read_roster(self.path, 4)
+        self.assertEqual(people[0].result, RosterResult(frozenset({0, 2, 3})))
+        self.assertEqual(people[0].result.rank, "Khá")
+        self.assertIsNone(people[1].result)
+        self.assertEqual(people[2].result, RosterResult(frozenset()))
+        self.assertEqual(people[2].result.rank, "Không đạt")
+
+    def test_each_target_column_roundtrips_without_losing_identity(self):
+        write_roster(self.path, [[i, f"Người {i}"] for i in range(1, 5)], template=True)
+        people = read_roster(self.path, 4)
+        results = {i + 1: RosterResult(frozenset({target})) for i, target in enumerate((1, 0, 2, 3))}
+        output = save_roster_results(self.path, people, results)
+        book = load_workbook(output)
+        try:
+            for i in range(4):
+                self.assertEqual([book.active.cell(i + 2, col).value for col in range(6, 10)],
+                                 [int(j == i) for j in range(4)])
+                self.assertEqual(book.active.cell(i + 2, 10).value, "Không đạt")
+            self.assertEqual(book.active.max_column, 10)
+            self.assertEqual(book.active["F1"].value, unicodedata.normalize("NFD", "Bia số 6"))
+        finally:
+            book.close()
+        loaded = read_roster(output, 4)
+        self.assertEqual({p.number: p.result for p in loaded}, results)
+
+    def test_invalid_or_incomplete_results_report_row_and_keep_source(self):
+        for flags, rank in [([None, 1, 1, 1], "Khá"), ([2, 1, 1, 1], "Giỏi"),
+                            ([True, 1, 1, 1], "Giỏi"), ([0.5, 1, 1, 1], "Khá"),
+                            ([None] * 4, "Đạt"), ([1, 1, 1, 0], "Khá")]:
+            with self.subTest(flags=flags, rank=rank):
+                write_roster(self.path, [[1, "An", None, None, None, *flags, rank]], template=True)
+                original = self.path.read_bytes()
+                with self.assertRaisesRegex(ValueError, "Dòng 2:"):
+                    read_roster(self.path, 2)
+                self.assertEqual(self.path.read_bytes(), original)
+
+    def test_complete_flags_can_supply_missing_rank(self):
+        write_roster(self.path, [[1, "An", None, None, None, "1", "1", "1", "0"]], template=True)
+        person = read_roster(self.path, 2)[0]
+        self.assertEqual(person.result.hit_targets, frozenset({0, 1, 2}))
+        self.assertEqual(person.result.rank, "Đạt")
+
+    def test_wrong_target_headers_rejected_on_load_and_save(self):
+        write_roster(self.path, [[1, "An"]], template=True)
+        people = read_roster(self.path, 2)
+        book = load_workbook(self.path)
+        book.active["F1"] = "Bia số 10"
+        book.save(self.path)
+        book.close()
+        with self.assertRaisesRegex(ValueError, "Cột F"):
+            read_roster(self.path, 2)
+        with self.assertRaisesRegex(ValueError, "Cột F"):
+            save_roster_results(self.path, people, {})
+
     def test_export_preserves_source_and_writes_summary_to_actual_rows(self):
         write_roster(self.path, [[3, "An", "Đại đội 1"], [], [8, "Bình", "Đại đội 2"]])
         workbook = load_workbook(self.path)
@@ -79,15 +143,16 @@ class RosterReaderTests(unittest.TestCase):
         workbook.close()
         original = self.path.read_bytes()
         people = read_roster(self.path, 4)
-        output = Path(save_roster_results(self.path, people, {3: (16, 3, "Khá")}))
+        output = Path(save_roster_results(self.path, people, {3: RosterResult(frozenset({0, 2, 3}))}))
         self.assertEqual(output.name, "Kết quả - Tiểu đoàn.xlsx")
         self.assertEqual(self.path.read_bytes(), original)
         workbook = load_workbook(output)
         try:
             sheet = workbook.active
-            self.assertEqual((sheet["O2"].value, sheet["P2"].value), (3, "Khá"))
-            self.assertEqual((sheet["O4"].value, sheet["P4"].value), (0, None))
-            self.assertIsNone(sheet["O3"].value)
+            self.assertEqual([cell.value for cell in sheet["F2:J2"][0]], [0, 1, 1, 1, "Khá"])
+            self.assertEqual([cell.value for cell in sheet["F4:J4"][0]], [None] * 5)
+            self.assertEqual(sheet.max_column, 10)
+            self.assertEqual([cell.value for cell in sheet["F3:J3"][0]], [None] * 5)
             self.assertEqual(sheet["E2"].value, "Trung sĩ")
             self.assertTrue(sheet["B2"].font.bold)
             self.assertEqual(workbook["Ghi chú"]["A1"].value, "Giữ nguyên")
@@ -97,11 +162,11 @@ class RosterReaderTests(unittest.TestCase):
     def test_export_failure_keeps_existing_output_and_removes_temporary_file(self):
         write_roster(self.path, [[1, "An"]])
         people = read_roster(self.path, 1)
-        output = Path(save_roster_results(self.path, people, {1: (16, 2, "Đạt")}))
+        output = Path(save_roster_results(self.path, people, {1: RosterResult(frozenset({0, 1}))}))
         original = output.read_bytes()
         with patch("gui.shooting_roster.os.replace", side_effect=PermissionError("File is open")):
             with self.assertRaises(PermissionError):
-                save_roster_results(self.path, people, {1: (16, 4, "Giỏi")})
+                save_roster_results(self.path, people, {1: RosterResult(frozenset({0, 1, 2, 3}))})
         self.assertEqual(output.read_bytes(), original)
         self.assertEqual(set(self.path.parent.glob("*.xlsx")), {self.path, output})
         write_roster(self.path, [[2, "Bình"]])
@@ -196,6 +261,29 @@ class ShootingRosterTests(unittest.TestCase):
         self.assertEqual(len(self.roster.people), 5)
         self.assertEqual(self.roster.assignments, {1: 1, 2: 2})
 
+    def test_loaded_results_display_and_next_group_skips_completed_people(self):
+        write_roster(self.path, [
+            [1, "An", None, None, None, 0, 1, 1, 1, "Khá"],
+            [2, "Bình"], [3, "Chi"],
+        ], template=True)
+        self.load()
+        self.assertEqual(self.roster.results, {1: RosterResult(frozenset({0, 2, 3}))})
+        card = self.roster.cards[1]
+        document = QTextDocument()
+        document.setHtml(card.targets_label.text())
+        self.assertEqual(document.toPlainText(), "3/4")
+        self.assertEqual(document.find("3").charFormat().foreground().color().name(), "#ff0000")
+        self.assertEqual(card.classify_label.text(), "KHA")
+        self.assertEqual(self.roster.cards[2].classify_label.text(), "")
+        self.roster.next_group()
+        self.assertEqual(self.roster.assignments, {1: 3, 2: 2})
+        # A deliberate repeat replaces the imported result when the exercise starts.
+        self.roster.assign(1)
+        self.begin()
+        self.assertNotIn(1, self.roster.results)
+        self.window.stop_test()
+        self.assertEqual(self.roster.results[1], RosterResult(frozenset()))
+
     def test_keyboard_activation_and_literal_long_name(self):
         write_roster(self.path, [[1, "Nguyễn <An> & Bình " * 12, "Đại đội 1"]])
         self.load()
@@ -216,7 +304,7 @@ class ShootingRosterTests(unittest.TestCase):
         self.roster.clear(1)
         self.assertEqual(self.roster.assignments, {1: 1, 2: 2})
         self.window.stop_test()
-        self.assertEqual(self.roster.results, {1: (0, 0, "Không đạt"), 2: (0, 0, "Không đạt")})
+        self.assertEqual(self.roster.results, {1: RosterResult(frozenset()), 2: RosterResult(frozenset())})
         self.roster.next_group()
         self.assertEqual(self.roster.assignments, {1: 3, 2: 4})
         self.begin()
@@ -241,7 +329,7 @@ class ShootingRosterTests(unittest.TestCase):
         self.window.start_test()
         self.assertFalse(self.window.testing)
         self.result(1, 1, hit=True, class_id=1)
-        self.assertEqual(self.roster.results[1], (1, 1, "Không đạt"))
+        self.assertEqual(self.roster.results[1], RosterResult(frozenset({1})))
         self.assertTrue(self.window.new_route_btn.isEnabled())
 
     def test_late_old_images_never_count_for_new_person(self):
@@ -251,7 +339,7 @@ class ShootingRosterTests(unittest.TestCase):
         self.window.stop_test()
         self.roster.next_group()
         self.result(1, 1, hit=True, class_id=1)
-        self.assertEqual(self.roster.results[1], (1, 1, "Không đạt"))
+        self.assertEqual(self.roster.results[1], RosterResult(frozenset({1})))
         self.assertNotIn(3, self.roster.results)
         self.assertEqual(self.window.client_widgets[0].bullet_count, 0)
         self.assertFalse(self.window.client_widgets[0].review_btn.isEnabled())
@@ -277,10 +365,10 @@ class ShootingRosterTests(unittest.TestCase):
         self.window._review_sessions[sid][1] = [
             {"target_index": i, "hit": True} for i in (0, 1, 2)]
         self.window.stop_test()
-        self.assertEqual(self.roster.results[1][2], "Đạt")
+        self.assertEqual(self.roster.results[1].rank, "Đạt")
         self.window._review_sessions[sid][1][2]["target_index"] = 3
         self.roster.update_results(sid)
-        self.assertEqual(self.roster.results[1][2], "Khá")
+        self.assertEqual(self.roster.results[1].rank, "Khá")
 
     def test_card_targets_update_live_with_only_numerator_red(self):
         self.load()
@@ -310,7 +398,7 @@ class ShootingRosterTests(unittest.TestCase):
 
     def test_save_button_exports_then_recovers_from_failure(self):
         self.load()
-        self.roster.results[1] = (16, 3, "Khá")
+        self.roster.results[1] = RosterResult(frozenset({0, 2, 3}))
         with patch("gui.shooting_roster.QMessageBox.information") as message:
             self.window.save_result_btn.click()
             self.assertTrue(self.roster.saving)

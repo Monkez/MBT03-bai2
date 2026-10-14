@@ -2,10 +2,16 @@
 
 ## Nạp danh sách bắn từ Excel
 
-1. Bấm **Chọn danh sách bắn**, chọn file `.xlsx` theo định dạng MBT03-wireless.
-   Sheet đang được chọn trong Excel có dòng 1 là tiêu đề; bốn cột A–D lần lượt
-   là **STT, Họ và tên, Đơn vị, Ngày sinh**. STT phải là số nguyên dương, không
+1. Bấm **Chọn danh sách bắn**, chọn file `.xlsx` theo mẫu `c351-d3-HVKTQS.xlsx`.
+   Sheet đang được chọn trong Excel có dòng 1 là tiêu đề; năm cột A–E lần lượt
+   là **STT, Họ và tên, Đơn vị, Ngày sinh, Cấp bậc**. STT phải là số nguyên dương, không
    trùng; họ tên bắt buộc, đơn vị và ngày sinh có thể để trống. Bỏ qua dòng trống.
+   Cột **F–I** là **Bia số 6, Bia số 10, Bia số 7b, Bia số 8c** (1 = trúng,
+   0 = không trúng); cột **J** là **Xếp loại**. Để trống cả F–J cho người chưa bắn.
+   Kết quả có sẵn được nạp lại lên thẻ; Loạt bắn mới bỏ qua người đã có kết quả.
+   Nếu đã có đủ bốn giá trị 0/1 nhưng J trống, ứng dụng tự tính xếp loại. Nếu có
+   xếp loại thì phải khớp kết quả bốn bia; dữ liệu thiếu/sai được báo rõ dòng lỗi.
+   Vẫn nhận danh sách A–D chưa có cột kết quả; khi lưu sẽ bổ sung tiêu đề F–J.
 2. Mỗi người hiển thị bằng `assets/qt/score_card.ui`, có nút **Vào bắn** riêng.
    Bấm nút này để đưa người vào bệ; nút chuyển xanh như bản wireless.
    Bệ được phân theo `(STT - 1) % số bệ + 1`, giống bản wireless. Nút **x** cạnh
@@ -20,8 +26,10 @@
    lại; kết quả của người đó được thay khi bắt đầu bài mới.
 
 5. Bấm **Lưu kết quả** để tạo file **Kết quả - tên danh sách.xlsx** cùng thư mục.
-   Giữ các cột thông tin và định dạng; cột **O** ghi số mục tiêu trúng (0–4), cột
-   **P** ghi xếp loại đầy đủ của Bài 2. Ghi theo đúng dòng người bắn, kể cả STT
+   Giữ các cột thông tin và định dạng; cột **F–I** ghi 0/1 của từng bia theo đúng
+   mẫu, cột **J** ghi xếp loại đầy đủ. Người chưa bắn vẫn để trống F–J;
+   người đã bắn nhưng không trúng ghi bốn số 0 và **Không đạt**.
+   Ghi theo đúng dòng người bắn, kể cả STT
    không liên tiếp hoặc có dòng trống. File danh sách gốc không bị sửa. Lưu lần
    tiếp theo cập nhật file kết quả; nếu đang mở file đó trong Excel, đóng rồi thử lại.
 
