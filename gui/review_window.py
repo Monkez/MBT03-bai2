@@ -375,7 +375,9 @@ class ShotReviewDialog(QDialog):
             for detection in shot.get("detections", [])
         ]
         self._draw_detection_boxes(preview, detections)
-        draw_impact_marker(preview, self._transform_point(source_point, transform))
+        draw_impact_marker(
+            preview, self._transform_point(source_point, transform), color=(255, 0, 0)
+        )
         return preview
 
     @staticmethod
