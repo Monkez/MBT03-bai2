@@ -83,6 +83,41 @@ class LoraControllerTests(unittest.TestCase):
         self.assertEqual(results, [("@444#", False, 3)])
         controller.close()
 
+    def test_fold_all_sends_once_without_reading_a_response(self):
+        controller = LoraController()
+        self.addCleanup(controller.close)
+        device = FakeSerialPort()
+        controller._serial = device
+        results = []
+        sent = []
+        controller.command_sent.connect(lambda *args: sent.append(args))
+        controller.command_finished.connect(lambda *args: results.append(args))
+
+        with patch.object(device, "read", side_effect=AssertionError("Must not wait for echo")):
+            controller._send_with_retry("@661#")
+
+        self.assertEqual(device.write_count, 1)
+        self.assertEqual(results, [("@661#", True, 1)])
+        self.assertEqual(len(sent), 1)
+        self.assertEqual(sent[0][0], "@661#")
+
+    def test_fold_all_reports_write_failure_without_retry(self):
+        controller = LoraController()
+        self.addCleanup(controller.close)
+        device = FakeSerialPort()
+        controller._serial = device
+        results = []
+        sent = []
+        controller.command_sent.connect(lambda *args: sent.append(args))
+        controller.command_finished.connect(lambda *args: results.append(args))
+
+        with patch.object(device, "write", side_effect=OSError("Disconnected")) as write:
+            controller._send_with_retry("@661#")
+
+        write.assert_called_once_with(b"@661#")
+        self.assertEqual(results, [("@661#", False, 1)])
+        self.assertEqual(sent, [])
+
 
 if __name__ == "__main__":
     unittest.main()

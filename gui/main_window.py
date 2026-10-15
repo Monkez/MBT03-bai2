@@ -999,7 +999,12 @@ class MainWindow(QMainWindow):
         print(f"[LoRa] {state}: {message}")
 
     def _on_lora_command_finished(self, command, success, attempts):
-        if success:
+        if command == "@661#":
+            if success:
+                print(f"[LoRa] {command} da gui 1 lan; lenh khong co phan hoi")
+            else:
+                print(f"[LoRa] {command} gui that bai sau {attempts} lan thu")
+        elif success:
             print(f"[LoRa] {command} da duoc xac nhan sau {attempts} lan gui")
         else:
             print(f"[LoRa] {command} khong co phan hoi hop le sau {attempts} lan gui")

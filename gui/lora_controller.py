@@ -117,6 +117,8 @@ class LoraController(QObject):
     def _send_with_retry(self, command, queued_at=None):
         queued_at = time.monotonic() if queued_at is None else queued_at
         payload = command.encode("ascii")
+        # The fold-all broadcast has no echo from the target controller.
+        requires_ack = command != "@661#"
         attempts = 0
         success = False
 
@@ -140,7 +142,8 @@ class LoraController(QObject):
                     self.command_finished.emit(command, False, attempts)
                     return
 
-            for attempts in range(1, self.MAX_ATTEMPTS + 1):
+            max_attempts = self.MAX_ATTEMPTS if requires_ack else 1
+            for attempts in range(1, max_attempts + 1):
                 if self._closing:
                     break
                 try:
@@ -149,7 +152,7 @@ class LoraController(QObject):
                     device.flush()
                     if attempts == 1:
                         self.command_sent.emit(command, queued_at, time.monotonic())
-                    if self._wait_for_echo(device, payload):
+                    if not requires_ack or self._wait_for_echo(device, payload):
                         success = True
                         break
                 except (OSError, serial.SerialException):
