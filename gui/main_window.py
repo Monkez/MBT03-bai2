@@ -488,8 +488,9 @@ class MainWindow(QMainWindow):
         self._shot_sound.play()
         shot_number = self._next_review_shot_number(session_id, port_id)
         logging.getLogger("mbt03_server").info(
-            "[ShotReceipt] session=%s | Bệ %s | Phát %s | đã nhận để chấm lúc %.3fs",
+            "[ShotReceipt] session=%s | Bệ %s | Phát %s | đã nhận để chấm lúc %.3fs | received_at=%.6f | ui_delay_ms=%.0f",
             session_id, port_id, shot_number, received_at - self._shooting_session.started_at,
+            received_at, (time.monotonic() - received_at) * 1000,
         )
         self._scoring_pool.submit(
             self._score_shot_worker,
@@ -826,7 +827,7 @@ class MainWindow(QMainWindow):
                 "Chờ gửi lệnh hoặc đổi Wi-Fi hoàn tất trước khi bắt đầu bài bắn.",
             )
             return
-        if self._roster.loading or self._roster.saving or (self._roster.people and self._roster.pending()):
+        if self._roster.loading or self._roster.saving or self._roster.pending():
             return
         self._result_sound.stop()
         self._play_start_announcement()

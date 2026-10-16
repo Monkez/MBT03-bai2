@@ -45,6 +45,11 @@ class MBT03ServerCore(QObject):
         connection_quality_signal(dict)
     """
     
+    # Per pedestal: four complete 16-shot bursts, stored as compressed payloads.
+    # Two workers still decode at a time; receiving a normal burst must not
+    # wait for JPEG decoding and move its receipt timestamps past the deadline.
+    SHOOT_QUEUE_CAPACITY = 64
+
     log_signal = pyqtSignal(str)
     status_signal = pyqtSignal(str)
     client_connected_signal = pyqtSignal(str)
@@ -98,7 +103,7 @@ class MBT03ServerCore(QObject):
         self.data_socket = self.context.socket(zmq.PULL)
         self.data_socket.setsockopt(zmq.RCVTIMEO, 100)
         self.data_socket.setsockopt(zmq.LINGER, 0)
-        self.data_socket.setsockopt(zmq.RCVHWM, 5)
+        self.data_socket.setsockopt(zmq.RCVHWM, self.SHOOT_QUEUE_CAPACITY)
         opt = getattr(zmq, 'TCP_NODELAY', None)
         if opt is not None:
             try:
@@ -198,7 +203,7 @@ class MBT03ServerCore(QObject):
         # Async decode for shoot images
         self._decode_pool = ThreadPoolExecutor(max_workers=2, thread_name_prefix="ImgDec")
         self._decode_inflight = 0
-        self._decode_max_inflight = 8
+        self._decode_max_inflight = self.SHOOT_QUEUE_CAPACITY
         self._decode_lock = threading.Lock()
         
         # Stream FPS monitoring
@@ -779,6 +784,7 @@ class MBT03ServerCore(QObject):
         """Data channel loop — shoot images only."""
         poller = zmq.Poller()
         poller.register(self.data_socket, zmq.POLLIN)
+        queue_full_logged = False
         
         while self.running:
             try:
@@ -791,8 +797,14 @@ class MBT03ServerCore(QObject):
                 with self._decode_lock:
                     decode_full = self._decode_inflight >= self._decode_max_inflight
                 if decode_full:
+                    if not queue_full_logged:
+                        self._log(
+                            f"[ShotTransport] decode queue full ({self._decode_max_inflight}); "
+                            "waiting before reading next image")
+                        queue_full_logged = True
                     time.sleep(0.01)
                     continue
+                queue_full_logged = False
                 
                 frames = self.data_socket.recv_multipart()
                 received_at = time.monotonic()
@@ -805,6 +817,9 @@ class MBT03ServerCore(QObject):
                 if msg_type == Protocol.MSG_SHOOT_IMAGE:
                     payload = frames[1]
                     q0_meta = frames[2] if len(frames) > 2 else None
+                    self._log(
+                        f"[ShotTransport] received_at={received_at:.6f} | "
+                        f"bytes={len(payload)} | pending_decode={self._decode_inflight}")
                     with self._lock:
                         if not self._session_allows_operation_locked():
                             data_generation = None
@@ -828,7 +843,7 @@ class MBT03ServerCore(QObject):
                     if data_generation is None:
                         self._log(
                             "Drop shoot image before decode: "
-                            f"bytes={len(payload)}, reason={reject_reason}")
+                            f"received_at={received_at:.6f}, bytes={len(payload)}, reason={reject_reason}")
                         continue
 
                     with self._decode_lock:
@@ -892,17 +907,27 @@ class MBT03ServerCore(QObject):
                     q0_str += f" transfer={(time.time() - sent_at) * 1000:.0f}ms"
                 
                 with self._lock:
-                    if not self._session_allows_operation_locked(
-                        session_generation=session_generation
-                    ):
+                    # Admission already checked heartbeat freshness in the
+                    # receiver. A queued image must not expire while decoding.
+                    # Still reject frames from a disconnected/replaced client.
+                    same_connection = (
+                        self.connected_client_identity is not None
+                        and (session_generation is None
+                             or session_generation == self._session_generation)
+                    )
+                    if not same_connection:
                         self._log(
-                            "Drop shoot image after decode: connection expired or changed; "
+                            "Drop shoot image after decode: connection disconnected or replaced; "
+                            f"received_at={received_at:.6f}, "
                             f"generation={session_generation}, current={self._session_generation}")
                         return
                     # Keep the final validation and emit atomic relative to an
                     # offline/reconnect transition so a decoded, buffered
                     # image cannot leak into the next UI session.
-                    self._log(f"\U0001f4f8 Shoot image: {frame.shape[1]}x{frame.shape[0]} ({len(data)}B){q0_str}")
+                    self._log(
+                        f"\U0001f4f8 Shoot image: {frame.shape[1]}x{frame.shape[0]} ({len(data)}B){q0_str} "
+                        f"received_at={received_at:.6f} "
+                        f"queue_decode_ms={(time.monotonic() - received_at) * 1000:.0f}")
                     self.shoot_image_signal.emit(frame, q0_data)
             else:
                 self._log(f"Shoot image decode failed: bytes={len(data)}")

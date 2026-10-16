@@ -55,14 +55,26 @@ kết quả vào Excel. Vẫn có thể bắn theo bệ khi chưa chọn ngườ
 `Đạn` tăng sau khi chấm xong từng ảnh, kể cả không nhận diện được bia, trượt,
 ngoài thời gian tính điểm của bia hoặc chấm lỗi. Khi còn tác vụ chấm đang chờ,
 số này có thể tạm thấp hơn số ảnh đã nhận. Các ảnh nhận trong bài vẫn được xử lý
-sau khi dừng; bắt đầu bài mới sẽ bỏ kết quả còn chờ của bài trước.
+sau khi dừng. Nút bắt đầu lượt mới tạm khóa đến khi chấm xong mọi ảnh đã nhận,
+kể cả khi không tải danh sách bắn, để tránh bỏ kết quả còn chờ của lượt trước.
+
+Mỗi bệ có kênh nhận riêng, hàng đợi tối đa 64 ảnh nén và hai luồng giải mã.
+Loạt 16 ảnh mỗi bệ không phải chờ bộ giải mã xử lý xong tám ảnh đầu mới được nhận.
+Ảnh đã được tiếp nhận hợp lệ không bị bỏ chỉ vì heartbeat quá hạn trong lúc chờ
+giải mã; vẫn loại ảnh nếu kết nối đã bị ngắt hoặc thay bằng phiên khác. Khi đầy
+hàng đợi, PC chờ chỗ trống và ghi cảnh báo, không âm thầm xóa ảnh khỏi hàng đợi.
 
 Trong `server.log`, đối chiếu cùng phiên (`session`) và bệ:
 
 - `SHOOT ACCEPTED`: thông báo phát bắn nhận qua kênh điều khiển, chưa đảm bảo có ảnh.
-- `Shoot image`: ảnh đã giải mã, chuẩn bị gửi sang giao diện.
+- `[ShotTransport] received_at=…`: ảnh đã được đọc từ socket; ghi dung lượng và số
+  ảnh đang chờ giải mã. `decode queue full` báo hàng đợi đã đạt giới hạn.
+- `Shoot image`: ảnh đã giải mã, chuẩn bị gửi sang giao diện; `queue_decode_ms`
+  là thời gian từ đọc socket đến giải mã xong.
 - `[ShotReceipt]`: ảnh được nhận để chấm, hoặc lý do không đếm (chưa có bài,
   nhận ngoài thời gian bài, bệ không hợp lệ).
+- `received_at` nối log nhận mạng với log giao diện của cùng bệ; `ui_delay_ms`
+  đo tổng thời gian từ đọc socket đến giao diện nhận ảnh để chấm.
 - `[Scoring]`: kết quả chấm từng phát, kể cả lỗi.
 - `[Exercise] ... dừng bài`: tổng ảnh nhận để chấm, số chấm xong, số đang chờ
   và số đạn đang hiển thị tại thời điểm dừng.

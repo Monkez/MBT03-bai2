@@ -1,5 +1,13 @@
 # Trạng thái dự án
 
+## Tiếp nhận đồng thời bốn súng (2026-10-16)
+
+- Tái hiện ảnh đã nhận hợp lệ nhưng bị loại sau giải mã khi heartbeat quá 6 giây dù generation không đổi. Sau giải mã chỉ kiểm tra kết nối còn gắn và generation không đổi; kiểm tra heartbeat khi tiếp nhận vẫn giữ nguyên. Không đổi giao thức/client/firmware hay mốc kết thúc bài 85 giây.
+- Tăng hàng đợi ảnh nén mỗi server/bệ lên 64 (trước đây decode 8, socket 5), vẫn hai worker giải mã mỗi bệ. Hàng đợi có giới hạn và chờ khi đầy; log `[ShotTransport]` báo nhận/đầy, `received_at`, `queue_decode_ms`, `ui_delay_ms` để đối chiếu trên máy khác.
+- Khóa bắt đầu lượt mới khi còn tác vụ chấm, kể cả không nạp Excel; mở lại sau khi hoàn tất, tránh xóa kết quả cũ đang chờ.
+- Regression gồm 4 nguồn TCP đồng thời gửi 16 JPEG 640×480 mỗi nguồn với sender HWM=3/timeout=200 ms; giữ giải mã, làm heartbeat hết hạn sau tiếp nhận rồi nhả, kiểm đủ 64 ảnh và timestamp trước khi nhả. Kiểm riêng 4 worker chấm/Qt với 64 phát, lỗi inference xen kẽ và dừng bài lúc còn chờ, mỗi bệ phải đủ 16.
+- `test.bat`: 289 test đạt. Stress TCP lặp 20 lượt (1.280 ảnh) đủ, không trùng; kiểm ngược giới hạn cũ 8 ảnh tái hiện cả bốn bệ chỉ đọc 8/16 trước khi nhả giải mã. Chưa kiểm trên máy đang báo lỗi hoặc bốn súng thật; chưa build EXE.
+
 ## Cấp đạn thủ công (2026-10-16)
 
 - `prepare_btn` (CẤP ĐẠN) gửi `0F016\n` đến các bệ, không bắt đầu bài. Giữ khóa config `shooting.start_uart_command` để tương thích nhưng chỉ dùng cho nút cấp đạn.

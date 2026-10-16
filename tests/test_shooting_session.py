@@ -532,14 +532,22 @@ class ShootingFlowTests(unittest.TestCase):
         self.assertEqual(self.window._lora_schedule_timers, [])
         self.assertFalse(self.window.client_widgets[0].testing)
 
-    def test_restart_discards_old_job_and_resets_visibility(self):
+    def test_restart_waits_for_old_job_then_resets_visibility(self):
         self.open_target(0)
         self.receive(116)
         self.window.stop_test()
         self.clock.return_value = 180
         self.window.start_test()
-        self.assertEqual(self.window._hit_sound.reset.call_count, 2)
+        self.assertFalse(self.window.testing)
+        self.assertFalse(self.window.start_btn.isEnabled())
+        self.assertEqual(self.window._hit_sound.reset.call_count, 1)
         self.complete(1)
+        self.assertEqual(self.window.client_widgets[0].bullet_count, 1)
+        self.assertEqual(len(self.window._review_sessions[1][1]), 1)
+        self.assertTrue(self.window.start_btn.isEnabled())
+        self.window.start_test()
+        self.assertTrue(self.window.testing)
+        self.assertEqual(self.window._hit_sound.reset.call_count, 2)
         self.assertEqual(self.window.client_widgets[0].bullet_count, 0)
         self.assertEqual(self.window._review_sessions, {2: {1: []}})
         self.assertIsNone(self.window._shooting_session.active_target(180))

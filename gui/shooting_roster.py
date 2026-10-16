@@ -321,7 +321,7 @@ class ShootingRoster(QObject):
         for widget in window.client_widgets:
             widget.go_out_btn.setEnabled(enabled)
         # The start button remains usable to stop an active exercise.
-        ready = not self.loading and not self.saving and (not self.people or not self.pending())
+        ready = not self.loading and not self.saving and not self.pending()
         window.start_btn.setEnabled(window.testing or ready)
         window.start_btn.setToolTip(reason if not window.testing and reason else "")
 

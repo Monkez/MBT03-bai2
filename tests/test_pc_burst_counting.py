@@ -117,6 +117,65 @@ class PcBurstCountingTests(unittest.TestCase):
     def test_sixteen_images_count_despite_three_failed_scoring_jobs(self):
         self.assert_burst_count(failed_jobs=3, count=16)
 
+    def test_four_guns_finish_all_64_results_after_stop_without_roster(self):
+        release = threading.Event()
+        with (
+            patch('gui.main_window.OptionWindow') as option_factory,
+            patch.object(MainWindow, '_start_servers'),
+            patch('gui.main_window.LoraController'),
+            patch('gui.main_window.ShotSound'),
+            patch('gui.main_window.HitSound'),
+            patch.object(MainWindow, '_get_scoring_session', return_value=None),
+            patch.object(MainWindow, '_queue_raw_camera_image'),
+            patch.object(ClientWidget, 'show_target_simulation'),
+        ):
+            option = option_factory.return_value
+            option.exec_.return_value = option.Accepted = 1
+            option.start = True
+            option.p_num = 4
+            option.automatic_close_target_enabled = False
+            window = MainWindow()
+
+            def score(frame, *_args):
+                if not release.wait(10):
+                    raise TimeoutError('test decoder release')
+                if int(frame[0, 0, 0]) % 5 == 0:
+                    raise RuntimeError('injected scoring failure')
+                return None, {'class_id': None, 'hit': False}
+
+            try:
+                with patch('gui.main_window.scoring.scoring', side_effect=score):
+                    window.start_test()
+                    window._cancel_lora_script()
+                    sid = window._active_review_session_id
+                    for shot in range(16):
+                        for port in range(1, 5):
+                            window._on_shoot_image(port, np.full((8, 8, 3), shot, np.uint8),
+                                                   {'_server_received_at': time.monotonic()})
+                    self.assertEqual([window._review_shot_counters[(sid, p)] for p in range(1, 5)], [16] * 4)
+                    window.stop_test()
+                    self.assertFalse(window.start_btn.isEnabled())
+                    window.start_test()
+                    self.assertFalse(window.testing)
+                    self.assertEqual(window._previous_review_session_id, sid)
+                    release.set()
+                    deadline = time.monotonic() + 10
+                    while window._roster.pending() and time.monotonic() < deadline:
+                        self.app.processEvents()
+                        time.sleep(.005)
+                    self.assertFalse(window._roster.pending())
+                    self.assertEqual([widget.bullet_count for widget in window.client_widgets], [16] * 4)
+                    for port in range(1, 5):
+                        self.assertEqual([shot['shot_number'] for shot in window._review_sessions[sid][port]],
+                                         list(range(1, 17)))
+                    self.assertTrue(window.start_btn.isEnabled())
+            finally:
+                release.set()
+                window._scoring_pool.shutdown(wait=True)
+                self.app.processEvents()
+                window.close()
+                window.deleteLater()
+
     def assert_burst_count(self, failed_jobs, count=3):
         widget = ClientWidget(1)
         saves = [Future() for _ in range(count)]
