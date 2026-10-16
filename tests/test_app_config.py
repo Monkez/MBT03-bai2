@@ -74,7 +74,7 @@ class AppConfigTests(unittest.TestCase):
 
     def test_runtime_constants_match_config_file(self):
         self.assertEqual(
-            MainWindow.START_UART_COMMAND,
+            MainWindow.PREPARE_UART_COMMAND,
             config.get_setting("shooting.start_uart_command"),
         )
         self.assertEqual(

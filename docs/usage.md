@@ -160,10 +160,13 @@ nối vẫn được ưu tiên. Chỉ gửi đến súng đang kết nối, khô
 thất bại. Mất kết nối sẽ xóa trạng thái tìm súng trên giao diện; đóng ứng dụng gửi
 lệnh trở về đèn xanh tới các súng đang tìm và còn kết nối.
 
-Khi nhấn `BẮT ĐẦU`, ứng dụng gửi **`@661#` qua LoRa để gập tất cả bia**, một lần mỗi
-lượt bắt đầu, trước lịch dựng bia. Đồng thời ứng dụng gửi lệnh UART `0F016` đến súng
-ở mỗi bệ, sau khoảng **300 ms** gửi tiếp `0A000` (cả hai kèm ký tự xuống dòng).
-Lệnh thứ hai được hủy nếu kết thúc bài hoặc đóng ứng dụng trước khi hết thời gian chờ.
+Nhấn **CẤP ĐẠN** (`prepare_btn`) để gửi `0F016\n` cấp 16 viên cho súng ở mỗi bệ.
+Thao tác này là thủ công, không bắt đầu bài bắn.
+
+Khi nhấn `BẮT ĐẦU`, ứng dụng gửi **`@661#` qua LoRa để gập tất cả bia**, một lần,
+không chờ phản hồi, trước lịch dựng bia. Sau khoảng **300 ms**, ứng dụng gửi
+`0A000\n` đến súng ở mỗi bệ; không tự gửi lại lệnh cấp đạn `0F016`.
+Lệnh đang chờ được hủy nếu kết thúc bài hoặc đóng ứng dụng trước khi hết thời gian chờ.
 
 Khi bật **Q0**, phần mềm gửi `0F003` đến súng của bệ đang chọn, chờ **300 ms** rồi
 gửi `0Q000` (cả hai kèm xuống dòng). Trong thời gian chờ chưa thu mẫu quy không.

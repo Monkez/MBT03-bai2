@@ -272,11 +272,11 @@ class ShootingFlowTests(unittest.TestCase):
         timer = self.window._start_followup_timer
         self.assertEqual(timer.interval(), 300)
         for server in self.window.servers:
-            server.send_uart_command.assert_called_once_with("0F016\n")
+            server.send_uart_command.assert_not_called()
         self.assertTrue(QSignalSpy(timer.timeout).wait(1000))
         for server in self.window.servers:
             self.assertEqual(server.send_uart_command.call_args_list,
-                             [call("0F016\n"), call("0A000\n")])
+                             [call("0A000\n")])
         self.assertFalse(timer.isActive())
 
     def test_start_lowers_all_targets_before_scheduling_raises(self):
@@ -299,7 +299,20 @@ class ShootingFlowTests(unittest.TestCase):
         self.window.start_test()
         self.assertTrue(QSignalSpy(timer.timeout).wait(1000))
         self.assertEqual(self.window.servers[0].send_uart_command.call_args_list,
-                         [call("0S000\n"), call("0F016\n"), call("0A000\n")])
+                         [call("0S000\n"), call("0A000\n")])
+
+    def test_prepare_button_only_loads_ammunition_without_starting_session(self):
+        self.window.stop_test()
+        self.window.servers = [MagicMock(), MagicMock()]
+        self.window.lora.send_command.reset_mock()
+
+        self.window.prepare_btn.click()
+
+        for server in self.window.servers:
+            server.send_uart_command.assert_called_once_with("0F016\n")
+        self.assertFalse(self.window.testing)
+        self.assertFalse(self.window._start_followup_timer.isActive())
+        self.window.lora.send_command.assert_not_called()
 
     def test_close_cancels_followup(self):
         self.window.servers = [MagicMock()]

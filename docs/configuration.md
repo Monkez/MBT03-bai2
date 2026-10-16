@@ -14,7 +14,7 @@ Nhóm `shooting`:
 
 | Khóa | Ý nghĩa |
 | --- | --- |
-| `start_uart_command` | Lệnh UART gửi đến súng khi bắt đầu bài, mặc định `0F016\n`. Ký tự `\n` trong JSON là ký tự xuống dòng thật. |
+| `start_uart_command` | Giữ tên khóa cũ để tương thích: lệnh cấp đạn thủ công khi nhấn **CẤP ĐẠN**, mặc định `0F016\n`; không tự gửi khi bắt đầu bài. Ký tự `\n` trong JSON là ký tự xuống dòng thật. |
 | `automatic_close_target.default_single_pedestal` | Mặc định bật/tắt gập bia tự động khi chọn 1 bệ. |
 | `automatic_close_target.default_multiple_pedestals` | Mặc định bật/tắt gập bia tự động khi chọn từ 2 bệ. |
 | `automatic_close_target.commands_by_class` | Lệnh gập/ẩn bia theo class mô hình. Để `command` thành chuỗi rỗng nếu muốn vô hiệu hóa một bia. |

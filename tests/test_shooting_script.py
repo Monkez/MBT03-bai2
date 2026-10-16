@@ -32,19 +32,20 @@ class ShootingScriptTests(unittest.TestCase):
     def setUpClass(cls):
         cls.app = QApplication.instance() or QApplication([])
 
-    def test_start_command_is_sent_to_every_server(self):
+    def test_prepare_command_is_sent_to_every_server(self):
         servers = [MagicMock(), MagicMock()]
         window = type("WindowState", (), {})()
         window.servers = servers
-        window.START_UART_COMMAND = MainWindow.START_UART_COMMAND
+        window.PREPARE_UART_COMMAND = MainWindow.PREPARE_UART_COMMAND
+        window._closing = False
         window._start_followup_timer = MagicMock()
 
-        MainWindow._send_start_uart_command(window)
+        MainWindow._send_prepare_uart_command(window)
 
-        self.assertEqual(MainWindow.START_UART_COMMAND, "0F016\n")
+        self.assertEqual(MainWindow.PREPARE_UART_COMMAND, "0F016\n")
         for server in servers:
             server.send_uart_command.assert_called_once_with("0F016\n")
-        window._start_followup_timer.start.assert_called_once_with(300)
+        window._start_followup_timer.start.assert_not_called()
 
     def test_settings_raises_target_and_lowers_on_every_close_path(self):
         for close_action in ("confirm_btn", "cancel_btn", "close", "escape"):

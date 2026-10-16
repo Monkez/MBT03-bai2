@@ -1,5 +1,10 @@
 # Trạng thái dự án
 
+## Cấp đạn thủ công (2026-10-16)
+
+- `prepare_btn` (CẤP ĐẠN) gửi `0F016\n` đến các bệ, không bắt đầu bài. Giữ khóa config `shooting.start_uart_command` để tương thích nhưng chỉ dùng cho nút cấp đạn.
+- Luồng bắt đầu không tự cấp đạn nữa: vẫn gửi LoRa `@661#` một lần không chờ echo, lập lịch bia và gửi `0A000\n` sau 300 ms. Dừng/đóng hủy timer như cũ. Thông tin này thay thế các mô tả chuỗi `0F016` → `0A000` bên dưới.
+
 ## Offset trên ảnh client demo (2026-10-15)
 
 - `client_demo.py` vẫn là entry point; `assets/server_client/demo_client.py` vẽ Q0 hiện tại từ `client.q0_value`, dX/dY theo % so với tâm `(0.5, 0.5)` và dấu ngắm xanh. Chỉ vẽ trên QPixmap riêng của preview, giữ nguyên ảnh capture gửi stream/chấm điểm. Cache ảnh gốc để cập nhật Q0 lúc streaming mà không tranh camera; đổi camera/backend xóa cache. Q0 sai/không hữu hạn/ngoài [0,1] hiển thị thông báo, không giả làm tâm.

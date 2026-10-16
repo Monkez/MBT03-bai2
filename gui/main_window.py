@@ -102,7 +102,8 @@ def _configured_lora_script():
 class MainWindow(QMainWindow):
     scoring_done_signal = pyqtSignal(object)
     q0_done_signal = pyqtSignal(object)
-    START_UART_COMMAND = cf.config_str(
+    # Retain the existing config key for the manual ammunition command.
+    PREPARE_UART_COMMAND = cf.config_str(
         "shooting.start_uart_command", "0F016\n"
     )
     AUTO_CLOSE_TARGET_COMMANDS = _configured_auto_close_commands()
@@ -205,6 +206,7 @@ class MainWindow(QMainWindow):
     def _configure_main_ui(self):
         self.setting_btn.clicked.connect(self.open_setting_window)
         self.start_btn.clicked.connect(self.start_btn_clicked)
+        self.prepare_btn.clicked.connect(self._send_prepare_uart_command)
         self._uart_debug_shortcut = QShortcut(QtGui.QKeySequence("Ctrl+S"), self)
         self._uart_debug_shortcut.activated.connect(self._open_uart_debug_dialog)
 
@@ -852,9 +854,13 @@ class MainWindow(QMainWindow):
             widget.start_test()
         self._update_score_speak_buttons()
 
-    def _send_start_uart_command(self):
+    def _send_prepare_uart_command(self):
+        if self._closing:
+            return
         for server in self.servers:
-            server.send_uart_command(self.START_UART_COMMAND)
+            server.send_uart_command(self.PREPARE_UART_COMMAND)
+
+    def _send_start_uart_command(self):
         self._start_followup_timer.start(300)
 
     def _send_start_followup_command(self):
