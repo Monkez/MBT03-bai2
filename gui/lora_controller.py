@@ -20,6 +20,7 @@ class LoraController(QObject):
     connection_changed = pyqtSignal(bool, str)
     command_finished = pyqtSignal(str, bool, int)
     command_sent = pyqtSignal(str, float, float)  # command, queued_at, sent_at
+    sequence_finished = pyqtSignal()
 
     DEFAULT_PORT_DESCRIPTION = cf.config_str(
         "lora.port_description", "USB Serial Port"
@@ -41,6 +42,7 @@ class LoraController(QObject):
         self._lock = threading.Lock()
         self._executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="LoRa")
         self._closing = False
+        self._stop_event = threading.Event()
 
     @property
     def port_name(self):
@@ -114,6 +116,26 @@ class LoraController(QObject):
         if not self._closing:
             self._executor.submit(self._send_with_retry, command, time.monotonic())
 
+    def send_sequence(self, commands):
+        """Queue one ordered batch; no other queued commands can interleave."""
+        if self._closing:
+            return False
+        self._executor.submit(self._send_sequence, tuple(commands), time.monotonic())
+        return True
+
+    def _send_sequence(self, commands, queued_at):
+        try:
+            for index, command in enumerate(commands):
+                if self._closing:
+                    break
+                success = self._send_with_retry(command, queued_at)
+                # Exhausted retries advance immediately; ACK adds a 100 ms gap.
+                if success and index < len(commands) - 1:
+                    if self._stop_event.wait(0.1):
+                        break
+        finally:
+            self.sequence_finished.emit()
+
     def _send_with_retry(self, command, queued_at=None):
         queued_at = time.monotonic() if queued_at is None else queued_at
         payload = command.encode("ascii")
@@ -128,7 +150,7 @@ class LoraController(QObject):
                 port_name = self._port_name
                 if not port_name or serial is None:
                     self.command_finished.emit(command, False, attempts)
-                    return
+                    return False
                 try:
                     device = serial.Serial(
                         port=port_name,
@@ -140,7 +162,7 @@ class LoraController(QObject):
                     self.connection_changed.emit(True, port_name)
                 except (OSError, serial.SerialException):
                     self.command_finished.emit(command, False, attempts)
-                    return
+                    return False
 
             max_attempts = self.MAX_ATTEMPTS if requires_ack else 1
             for attempts in range(1, max_attempts + 1):
@@ -160,6 +182,7 @@ class LoraController(QObject):
                     break
 
         self.command_finished.emit(command, success, attempts)
+        return success
 
     def _wait_for_echo(self, device, payload):
         deadline = time.monotonic() + self.ACK_TIMEOUT_SECONDS
@@ -185,5 +208,6 @@ class LoraController(QObject):
 
     def close(self):
         self._closing = True
+        self._stop_event.set()
         self.disconnect_port()
         self._executor.shutdown(wait=False, cancel_futures=True)

@@ -1,5 +1,12 @@
 # Trạng thái dự án
 
+## Điều khiển bia thủ công (2026-10-21)
+
+- Hai nút người dùng thêm trong `main.ui`: `close_target_btn` gửi `@611#` có ACK; `open_target_btn` gửi tuần tự lệnh hiện bia 6/10/7/8 từ `LORA_SCRIPT` (mặc định `@111#`, `@221#`, `@331#`, `@444#`). START bỏ lệnh tự động `@661#` cũ, giữ lịch bia và UART `0A000` sau 300 ms.
+- `LoraController.send_sequence` chạy cả chuỗi trên executor một worker: nhận ACK chờ 100 ms trước lệnh sau; thất bại sau các lần thử chuyển ngay. Không xen lệnh khác vào giữa chuỗi; đóng app ngắt khoảng chờ. Khóa hai nút/START/Cài đặt khi gửi và hai nút khi đang bắn; `sequence_finished` mở lại sau hoàn tất.
+- Thông tin này thay thế mô tả START tự gửi lệnh gập bia ở các mục cũ bên dưới; ngoại lệ không ACK cho `@661#` vẫn giữ trong controller nhưng không còn được START gọi.
+- Kiểm chứng: 297 test đạt; kiểm tra Qt hai nút với kết nối giả lập và DPI 200% đạt. Build `MBT03-Bai2-V18-211026` thành công, đối chiếu UI trong bundle khớp source. Smoke test desktop chưa hoàn tất: cả source và EXE không hiện hộp chọn bệ; source ghi nhận Windows COM `0x8001010d` tại `OptionWindow.exec_()`. Chưa xác định nguyên nhân môi trường này, chưa kiểm ACK với LoRa thật.
+
 ## Tiếp nhận đồng thời bốn súng (2026-10-16)
 
 - Tái hiện ảnh đã nhận hợp lệ nhưng bị loại sau giải mã khi heartbeat quá 6 giây dù generation không đổi. Sau giải mã chỉ kiểm tra kết nối còn gắn và generation không đổi; kiểm tra heartbeat khi tiếp nhận vẫn giữ nguyên. Không đổi giao thức/client/firmware hay mốc kết thúc bài 85 giây.

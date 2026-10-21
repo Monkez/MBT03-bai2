@@ -126,6 +126,7 @@ class MainWindow(QMainWindow):
             option_dialog.automatic_close_target_enabled
         )
         self.testing = False
+        self._manual_targets_busy = False
         self.client_widgets = []
         self._start_button_text = self.start_btn.text()
         self._test_start_time = 0.0
@@ -188,6 +189,7 @@ class MainWindow(QMainWindow):
         self.lora.connection_changed.connect(self._on_lora_connection_changed)
         self.lora.command_finished.connect(self._on_lora_command_finished)
         self.lora.command_sent.connect(self._on_lora_command_sent)
+        self.lora.sequence_finished.connect(self._on_manual_targets_finished)
 
         self._configure_main_ui()
         self._create_client_widgets()
@@ -207,6 +209,8 @@ class MainWindow(QMainWindow):
         self.setting_btn.clicked.connect(self.open_setting_window)
         self.start_btn.clicked.connect(self.start_btn_clicked)
         self.prepare_btn.clicked.connect(self._send_prepare_uart_command)
+        self.close_target_btn.clicked.connect(self._close_targets_manually)
+        self.open_target_btn.clicked.connect(self._open_targets_manually)
         self._uart_debug_shortcut = QShortcut(QtGui.QKeySequence("Ctrl+S"), self)
         self._uart_debug_shortcut.activated.connect(self._open_uart_debug_dialog)
 
@@ -819,7 +823,7 @@ class MainWindow(QMainWindow):
             self.start_test()
 
     def start_test(self):
-        if self.testing:
+        if self.testing or getattr(self, "_manual_targets_busy", False):
             return
         if self._uart_debug_dialog is not None and self._uart_debug_dialog.has_pending_operations():
             QMessageBox.information(
@@ -846,7 +850,7 @@ class MainWindow(QMainWindow):
         )
         self._test_timeout_timer.start(MAX_DURATION_SECONDS * 1000)
         self.setting_btn.setEnabled(False)
-        self.lora.send_command("@661#")
+        self._update_manual_target_buttons()
         self._send_start_uart_command()
         self._schedule_lora_script()
         self._set_start_button_active(True)
@@ -860,6 +864,35 @@ class MainWindow(QMainWindow):
             return
         for server in self.servers:
             server.send_uart_command(self.PREPARE_UART_COMMAND)
+
+    def _update_manual_target_buttons(self):
+        enabled = not self.testing and not self._manual_targets_busy and not self._closing
+        self.close_target_btn.setEnabled(enabled)
+        self.open_target_btn.setEnabled(enabled)
+
+    def _send_manual_target_sequence(self, commands):
+        if self.testing or self._manual_targets_busy or self._closing:
+            return
+        self._manual_targets_busy = True
+        self._update_manual_target_buttons()
+        self.setting_btn.setEnabled(False)
+        self._roster.refresh_controls()
+        if not self.lora.send_sequence(commands):
+            self._on_manual_targets_finished()
+
+    def _close_targets_manually(self):
+        self._send_manual_target_sequence(("@611#",))
+
+    def _open_targets_manually(self):
+        self._send_manual_target_sequence(tuple(command for _, command, _ in self.LORA_SCRIPT))
+
+    def _on_manual_targets_finished(self):
+        if self._closing:
+            return
+        self._manual_targets_busy = False
+        self._update_manual_target_buttons()
+        self.setting_btn.setEnabled(not self.testing)
+        self._roster.refresh_controls()
 
     def _send_start_uart_command(self):
         self._start_followup_timer.start(300)
@@ -898,6 +931,7 @@ class MainWindow(QMainWindow):
         self._shooting_session.stop(time.monotonic())
         self.testing = False
         self._test_timeout_timer.stop()
+        self._update_manual_target_buttons()
         self._start_followup_timer.stop()
         for server in self.servers:
             server.send_uart_command("0S000\n")

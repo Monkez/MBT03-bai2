@@ -170,7 +170,7 @@ class ShootingFlowTests(unittest.TestCase):
         self.window._scoring_pool = MagicMock()
         self.window.start_test()
         self.window._cancel_lora_script()
-        self.window.lora.send_command.assert_called_once_with("@661#")
+        self.window.lora.send_command.assert_not_called()
         self.window.lora.send_command.reset_mock()
         self.addCleanup(self.window.close)
 
@@ -268,7 +268,7 @@ class ShootingFlowTests(unittest.TestCase):
         self.window.servers = [MagicMock(), MagicMock()]
         self.window.start_test()
         self.window.start_test()  # Repeated start while running sends nothing extra.
-        self.window.lora.send_command.assert_called_once_with("@661#")
+        self.window.lora.send_command.assert_not_called()
         timer = self.window._start_followup_timer
         self.assertEqual(timer.interval(), 300)
         for server in self.window.servers:
@@ -279,14 +279,51 @@ class ShootingFlowTests(unittest.TestCase):
                              [call("0A000\n")])
         self.assertFalse(timer.isActive())
 
-    def test_start_lowers_all_targets_before_scheduling_raises(self):
+    def test_start_only_schedules_targets_without_manual_fold_command(self):
         self.window.stop_test()
         order = MagicMock()
         order.attach_mock(self.window.lora.send_command, "lora")
         with patch.object(self.window, "_schedule_lora_script") as schedule:
             order.attach_mock(schedule, "schedule")
             self.window.start_test()
-        self.assertEqual(order.mock_calls, [call.lora("@661#"), call.schedule()])
+        self.assertEqual(order.mock_calls, [call.schedule()])
+
+    def test_manual_target_buttons_send_close_and_ordered_open_commands(self):
+        self.window.stop_test()
+        self.window.close_target_btn.click()
+        self.window.lora.send_sequence.assert_called_once_with(("@611#",))
+        self.assertFalse(self.window.open_target_btn.isEnabled())
+        self.assertFalse(self.window.close_target_btn.isEnabled())
+        self.assertFalse(self.window.start_btn.isEnabled())
+        self.window.start_test()
+        self.assertFalse(self.window.testing)
+        self.window._open_targets_manually()
+        self.assertEqual(self.window.lora.send_sequence.call_count, 1)
+        self.window._on_manual_targets_finished()
+        self.assertTrue(self.window.start_btn.isEnabled())
+        self.assertTrue(self.window.open_target_btn.isEnabled())
+        self.window.open_target_btn.click()
+        self.window.lora.send_sequence.assert_called_with(("@111#", "@221#", "@331#", "@444#"))
+        self.window._on_manual_targets_finished()
+        self.assertTrue(self.window.close_target_btn.isEnabled())
+
+    def test_manual_targets_are_disabled_during_exercise(self):
+        self.assertFalse(self.window.open_target_btn.isEnabled())
+        self.assertFalse(self.window.close_target_btn.isEnabled())
+        self.window._open_targets_manually()
+        self.window._close_targets_manually()
+        self.window.lora.send_sequence.assert_not_called()
+        self.window.stop_test()
+        self.assertTrue(self.window.open_target_btn.isEnabled())
+        self.assertTrue(self.window.close_target_btn.isEnabled())
+
+    def test_manual_targets_recover_if_controller_cannot_queue_sequence(self):
+        self.window.stop_test()
+        self.window.lora.send_sequence.return_value = False
+        self.window.open_target_btn.click()
+        self.assertFalse(self.window._manual_targets_busy)
+        self.assertTrue(self.window.open_target_btn.isEnabled())
+        self.assertTrue(self.window.start_btn.isEnabled())
 
     def test_stop_cancels_followup_and_restart_schedules_new_one(self):
         self.window.servers = [MagicMock()]
