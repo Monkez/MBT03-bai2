@@ -263,20 +263,20 @@ class ShootingFlowTests(unittest.TestCase):
         self.complete(3)
         self.assertEqual(self.window.client_widgets[0].hit_targets, {3})
 
-    def test_start_sends_followup_once_after_delay_to_each_server(self):
+    def test_start_loads_ammunition_then_sends_followup_once_to_four_servers(self):
         self.window.stop_test()
-        self.window.servers = [MagicMock(), MagicMock()]
+        self.window.servers = [MagicMock() for _ in range(4)]
         self.window.start_test()
         self.window.start_test()  # Repeated start while running sends nothing extra.
         self.window.lora.send_command.assert_not_called()
         timer = self.window._start_followup_timer
         self.assertEqual(timer.interval(), 300)
         for server in self.window.servers:
-            server.send_uart_command.assert_not_called()
+            server.send_uart_command.assert_called_once_with("0F016\n")
         self.assertTrue(QSignalSpy(timer.timeout).wait(1000))
         for server in self.window.servers:
             self.assertEqual(server.send_uart_command.call_args_list,
-                             [call("0A000\n")])
+                             [call("0F016\n"), call("0A000\n")])
         self.assertFalse(timer.isActive())
 
     def test_start_only_schedules_targets_without_manual_fold_command(self):
@@ -291,7 +291,7 @@ class ShootingFlowTests(unittest.TestCase):
     def test_manual_target_buttons_send_close_and_ordered_open_commands(self):
         self.window.stop_test()
         self.window.close_target_btn.click()
-        self.window.lora.send_sequence.assert_called_once_with(("@611#",))
+        self.window.lora.send_sequence.assert_called_once_with(("@661#",))
         self.assertFalse(self.window.open_target_btn.isEnabled())
         self.assertFalse(self.window.close_target_btn.isEnabled())
         self.assertFalse(self.window.start_btn.isEnabled())
@@ -303,7 +303,7 @@ class ShootingFlowTests(unittest.TestCase):
         self.assertTrue(self.window.start_btn.isEnabled())
         self.assertTrue(self.window.open_target_btn.isEnabled())
         self.window.open_target_btn.click()
-        self.window.lora.send_sequence.assert_called_with(("@111#", "@221#", "@331#", "@444#"))
+        self.window.lora.send_sequence.assert_called_with(("@114#", "@224#", "@334#", "@441#"))
         self.window._on_manual_targets_finished()
         self.assertTrue(self.window.close_target_btn.isEnabled())
 
@@ -336,20 +336,31 @@ class ShootingFlowTests(unittest.TestCase):
         self.window.start_test()
         self.assertTrue(QSignalSpy(timer.timeout).wait(1000))
         self.assertEqual(self.window.servers[0].send_uart_command.call_args_list,
-                         [call("0S000\n"), call("0A000\n")])
+                         [call("0S000\n"), call("0F016\n"), call("0A000\n")])
 
-    def test_prepare_button_only_loads_ammunition_without_starting_session(self):
+    def test_start_button_combines_ammunition_and_session_without_prepare_button(self):
         self.window.stop_test()
         self.window.servers = [MagicMock(), MagicMock()]
-        self.window.lora.send_command.reset_mock()
-
-        self.window.prepare_btn.click()
-
+        self.assertFalse(hasattr(self.window, "prepare_btn"))
+        self.window.start_btn.click()
         for server in self.window.servers:
             server.send_uart_command.assert_called_once_with("0F016\n")
+        self.assertTrue(self.window.testing)
+        self.assertTrue(self.window._start_followup_timer.isActive())
+        self.window.start_btn.click()
         self.assertFalse(self.window.testing)
         self.assertFalse(self.window._start_followup_timer.isActive())
-        self.window.lora.send_command.assert_not_called()
+        for server in self.window.servers:
+            self.assertEqual(server.send_uart_command.call_args_list,
+                             [call("0F016\n"), call("0S000\n")])
+
+    def test_manual_open_commands_are_independent_of_exercise_schedule(self):
+        self.window.stop_test()
+        with patch.object(self.window, "LORA_SCRIPT", ((1, "@111#", "test"),)):
+            self.window.open_target_btn.click()
+        self.window.lora.send_sequence.assert_called_once_with(
+            ("@114#", "@224#", "@334#", "@441#"))
+        self.window._on_manual_targets_finished()
 
     def test_close_cancels_followup(self):
         self.window.servers = [MagicMock()]

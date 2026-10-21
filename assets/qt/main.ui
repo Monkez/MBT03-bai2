@@ -97,6 +97,55 @@
            <number>2</number>
           </property>
           <item>
+           <widget class="MonkezButton" name="start_btn">
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>50</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
+              <height>50</height>
+             </size>
+            </property>
+            <property name="font">
+             <font>
+              <pointsize>16</pointsize>
+              <bold>true</bold>
+             </font>
+            </property>
+            <property name="text">
+             <string>BẮT ĐẦU</string>
+            </property>
+            <property name="radius" stdset="0">
+             <number>8</number>
+            </property>
+            <property name="DeactiveColor" stdset="0">
+             <color>
+              <red>255</red>
+              <green>255</green>
+              <blue>255</blue>
+             </color>
+            </property>
+            <property name="textColor" stdset="0">
+             <color>
+              <red>0</red>
+              <green>0</green>
+              <blue>0</blue>
+             </color>
+            </property>
+            <property name="hoverTextColor" stdset="0">
+             <color>
+              <red>8</red>
+              <green>89</green>
+              <blue>35</blue>
+             </color>
+            </property>
+           </widget>
+          </item>
+          <item>
            <layout class="QHBoxLayout" name="horizontalLayout">
             <item>
              <widget class="MonkezButton" name="close_target_btn">
@@ -196,55 +245,6 @@
               </property>
              </widget>
             </item>
-            <item>
-             <widget class="MonkezButton" name="prepare_btn">
-              <property name="minimumSize">
-               <size>
-                <width>0</width>
-                <height>35</height>
-               </size>
-              </property>
-              <property name="maximumSize">
-               <size>
-                <width>16777215</width>
-                <height>35</height>
-               </size>
-              </property>
-              <property name="font">
-               <font>
-                <pointsize>14</pointsize>
-                <bold>true</bold>
-               </font>
-              </property>
-              <property name="text">
-               <string>CẤP ĐẠN</string>
-              </property>
-              <property name="radius" stdset="0">
-               <number>8</number>
-              </property>
-              <property name="DeactiveColor" stdset="0">
-               <color>
-                <red>255</red>
-                <green>255</green>
-                <blue>255</blue>
-               </color>
-              </property>
-              <property name="textColor" stdset="0">
-               <color>
-                <red>0</red>
-                <green>0</green>
-                <blue>0</blue>
-               </color>
-              </property>
-              <property name="hoverTextColor" stdset="0">
-               <color>
-                <red>8</red>
-                <green>89</green>
-                <blue>35</blue>
-               </color>
-              </property>
-             </widget>
-            </item>
            </layout>
           </item>
           <item>
@@ -283,55 +283,6 @@
              <property name="bottomMargin">
               <number>2</number>
              </property>
-             <item>
-              <widget class="MonkezButton" name="start_btn">
-               <property name="minimumSize">
-                <size>
-                 <width>0</width>
-                 <height>50</height>
-                </size>
-               </property>
-               <property name="maximumSize">
-                <size>
-                 <width>16777215</width>
-                 <height>50</height>
-                </size>
-               </property>
-               <property name="font">
-                <font>
-                 <pointsize>16</pointsize>
-                 <bold>true</bold>
-                </font>
-               </property>
-               <property name="text">
-                <string>BẮT ĐẦU</string>
-               </property>
-               <property name="radius" stdset="0">
-                <number>8</number>
-               </property>
-               <property name="DeactiveColor" stdset="0">
-                <color>
-                 <red>255</red>
-                 <green>255</green>
-                 <blue>255</blue>
-                </color>
-               </property>
-               <property name="textColor" stdset="0">
-                <color>
-                 <red>0</red>
-                 <green>0</green>
-                 <blue>0</blue>
-                </color>
-               </property>
-               <property name="hoverTextColor" stdset="0">
-                <color>
-                 <red>8</red>
-                 <green>89</green>
-                 <blue>35</blue>
-                </color>
-               </property>
-              </widget>
-             </item>
             </layout>
            </widget>
           </item>

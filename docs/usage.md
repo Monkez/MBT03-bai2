@@ -172,20 +172,21 @@ nối vẫn được ưu tiên. Chỉ gửi đến súng đang kết nối, khô
 thất bại. Mất kết nối sẽ xóa trạng thái tìm súng trên giao diện; đóng ứng dụng gửi
 lệnh trở về đèn xanh tới các súng đang tìm và còn kết nối.
 
-Nhấn **CẤP ĐẠN** (`prepare_btn`) để gửi `0F016\n` cấp 16 viên cho súng ở mỗi bệ.
-Thao tác này là thủ công, không bắt đầu bài bắn.
-
-Nhấn nút **ẨN BIA** (`close_target_btn`) để gửi `@611#` qua LoRa. Nút
+Nhấn nút **ẨN BIA** (`close_target_btn`) để gửi `@661#` qua LoRa **một lần**,
+không chờ ACK và không gửi lại. Nút
 **HIỆN BIA** (`open_target_btn`) gửi lần lượt bia **6 → 10 → 7 → 8**, dùng các
-lệnh trong `shooting.lora_timeline`: mặc định `@111#`, `@221#`, `@331#`, `@444#`.
-Các lệnh chờ ACK (echo đúng lệnh). Nhận ACK thì chờ **100 ms** trước bia kế tiếp;
+lệnh riêng `@114#`, `@224#`, `@334#`, `@441#`, độc lập với `shooting.lora_timeline`.
+Các lệnh HIỆN BIA chờ ACK (echo đúng lệnh). Nhận ACK thì chờ **100 ms** trước bia kế tiếp;
 hết số lần thử tối đa mà không có ACK thì chuyển ngay sang bia kế tiếp. Thời gian
 chờ và số lần thử dùng `lora.ack_timeout_seconds` / `lora.max_attempts` (mặc định
 1 giây / 3 lần gửi tổng cộng). Trong lúc gửi, hai nút điều khiển bia, Cài đặt và
 BẮT ĐẦU tạm khóa; hai nút điều khiển bia cũng khóa khi bài bắn đang chạy.
 
-Khi nhấn `BẮT ĐẦU`, ứng dụng lập lịch bài bắn, không tự gửi lệnh ẩn tất cả bia.
-Sau khoảng **300 ms**, ứng dụng gửi `0A000\n` đến súng ở mỗi bệ; không tự gửi lại lệnh cấp đạn `0F016`.
+Nút CẤP ĐẠN đã gộp vào **BẮT ĐẦU**. Khi nhấn `BẮT ĐẦU`, ứng dụng gửi
+`0F016\n` cấp 16 viên cho súng ở mỗi bệ, lập lịch bài bắn và sau khoảng **300 ms**
+gửi `0A000\n`. Lệnh cấp đạn dùng khóa cấu hình `shooting.start_uart_command`.
+Không tự gửi lệnh ẩn tất cả bia; lịch hiện bia trong bài bắn vẫn dùng
+`shooting.lora_timeline` (mặc định `@111#`, `@221#`, `@331#`, `@444#`).
 Lệnh đang chờ được hủy nếu kết thúc bài hoặc đóng ứng dụng trước khi hết thời gian chờ.
 
 Khi bật **Q0**, phần mềm gửi `0F003` đến súng của bệ đang chọn, chờ **300 ms** rồi

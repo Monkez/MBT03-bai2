@@ -102,10 +102,10 @@ def _configured_lora_script():
 class MainWindow(QMainWindow):
     scoring_done_signal = pyqtSignal(object)
     q0_done_signal = pyqtSignal(object)
-    # Retain the existing config key for the manual ammunition command.
-    PREPARE_UART_COMMAND = cf.config_str(
+    START_UART_COMMAND = cf.config_str(
         "shooting.start_uart_command", "0F016\n"
     )
+    MANUAL_OPEN_TARGET_COMMANDS = ("@114#", "@224#", "@334#", "@441#")
     AUTO_CLOSE_TARGET_COMMANDS = _configured_auto_close_commands()
     LORA_SCRIPT = _configured_lora_script()
 
@@ -208,7 +208,6 @@ class MainWindow(QMainWindow):
     def _configure_main_ui(self):
         self.setting_btn.clicked.connect(self.open_setting_window)
         self.start_btn.clicked.connect(self.start_btn_clicked)
-        self.prepare_btn.clicked.connect(self._send_prepare_uart_command)
         self.close_target_btn.clicked.connect(self._close_targets_manually)
         self.open_target_btn.clicked.connect(self._open_targets_manually)
         self._uart_debug_shortcut = QShortcut(QtGui.QKeySequence("Ctrl+S"), self)
@@ -859,12 +858,6 @@ class MainWindow(QMainWindow):
             widget.start_test()
         self._update_score_speak_buttons()
 
-    def _send_prepare_uart_command(self):
-        if self._closing:
-            return
-        for server in self.servers:
-            server.send_uart_command(self.PREPARE_UART_COMMAND)
-
     def _update_manual_target_buttons(self):
         enabled = not self.testing and not self._manual_targets_busy and not self._closing
         self.close_target_btn.setEnabled(enabled)
@@ -881,10 +874,10 @@ class MainWindow(QMainWindow):
             self._on_manual_targets_finished()
 
     def _close_targets_manually(self):
-        self._send_manual_target_sequence(("@611#",))
+        self._send_manual_target_sequence(("@661#",))
 
     def _open_targets_manually(self):
-        self._send_manual_target_sequence(tuple(command for _, command, _ in self.LORA_SCRIPT))
+        self._send_manual_target_sequence(self.MANUAL_OPEN_TARGET_COMMANDS)
 
     def _on_manual_targets_finished(self):
         if self._closing:
@@ -895,6 +888,8 @@ class MainWindow(QMainWindow):
         self._roster.refresh_controls()
 
     def _send_start_uart_command(self):
+        for server in self.servers:
+            server.send_uart_command(self.START_UART_COMMAND)
         self._start_followup_timer.start(300)
 
     def _send_start_followup_command(self):

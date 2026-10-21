@@ -218,7 +218,6 @@ class UartDebugDialogTests(unittest.TestCase):
         window.servers = self.servers
         window.setting_btn = MagicMock()
         window.start_btn = MagicMock()
-        window.prepare_btn = MagicMock()
         window.close_target_btn = MagicMock()
         window.open_target_btn = MagicMock()
         window._closing = True  # Avoid real server shutdown in this UI-only harness.

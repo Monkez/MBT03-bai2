@@ -1,5 +1,11 @@
 # Trạng thái dự án
 
+## Cập nhật nút điều khiển và gộp cấp đạn (2026-10-21)
+
+- Thay thế cơ chế thủ công mô tả bên dưới: ẨN BIA gửi `@661#` đúng một lần, không ACK; HIỆN BIA gửi `@114#` → `@224#` → `@334#` → `@441#`, có ACK/retry và chờ 100 ms sau ACK trước lệnh kế tiếp. Bộ lệnh thủ công độc lập với lịch bài bắn.
+- UI người dùng đã bỏ `prepare_btn`; BẮT ĐẦU cấp `0F016\n` cho mỗi bệ rồi hẹn `0A000\n` sau 300 ms. Dừng/đóng hủy lệnh đang hẹn; lịch LoRa trong bài bắn giữ nguyên, không tự gập tất cả bia khi START.
+- Kiểm chứng: 298 test đạt; Qt kiểm tra click ẨN/HIỆN/BẮT ĐẦU/DỪNG với bốn bệ giả lập đạt. Build `MBT03-Bai2-V20-211026` thành công, UI đóng gói khớp source. Công cụ desktop vẫn không thấy cửa sổ sau khi mở EXE nên chưa xác nhận khởi động bình thường; chưa thử thiết bị thật. Render offscreen thiếu chữ, không dùng làm bằng chứng hiển thị/DPI.
+
 ## Điều khiển bia thủ công (2026-10-21)
 
 - Hai nút người dùng thêm trong `main.ui`: `close_target_btn` gửi `@611#` có ACK; `open_target_btn` gửi tuần tự lệnh hiện bia 6/10/7/8 từ `LORA_SCRIPT` (mặc định `@111#`, `@221#`, `@331#`, `@444#`). START bỏ lệnh tự động `@661#` cũ, giữ lịch bia và UART `0A000` sau 300 ms.

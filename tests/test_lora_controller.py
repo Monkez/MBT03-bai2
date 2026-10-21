@@ -57,7 +57,7 @@ class LoraControllerTests(unittest.TestCase):
         return controller, writes
 
     def test_open_sequence_waits_100ms_after_ack_before_next_target(self):
-        commands = ("@111#", "@221#", "@331#", "@444#")
+        commands = ("@114#", "@224#", "@334#", "@441#")
         controller, writes = self.sequence_controller({cmd.encode(): 1 for cmd in commands})
         writes_at_gap = []
         with patch.object(controller._stop_event, "wait", side_effect=lambda _: writes_at_gap.append(len(writes)) or False) as wait:
@@ -67,32 +67,34 @@ class LoraControllerTests(unittest.TestCase):
         self.assertEqual(writes_at_gap, [1, 2, 3])
 
     def test_open_sequence_advances_immediately_after_exhausted_retries(self):
-        controller, writes = self.sequence_controller({b"@111#": 2, b"@331#": 1})
+        controller, writes = self.sequence_controller({b"@114#": 2, b"@334#": 1})
         results = []
         controller.command_finished.connect(lambda *args: results.append(args))
         with patch.object(controller._stop_event, "wait", return_value=False) as wait:
-            controller._send_sequence(("@111#", "@221#", "@331#", "@444#"), 100.0)
-        self.assertEqual(writes, [b"@111#"] * 2 + [b"@221#"] * 3 + [b"@331#"] + [b"@444#"] * 3)
-        self.assertEqual(results, [("@111#", True, 2), ("@221#", False, 3),
-                                   ("@331#", True, 1), ("@444#", False, 3)])
+            controller._send_sequence(("@114#", "@224#", "@334#", "@441#"), 100.0)
+        self.assertEqual(writes, [b"@114#"] * 2 + [b"@224#"] * 3 + [b"@334#"] + [b"@441#"] * 3)
+        self.assertEqual(results, [("@114#", True, 2), ("@224#", False, 3),
+                                   ("@334#", True, 1), ("@441#", False, 3)])
         self.assertEqual([item.args for item in wait.call_args_list], [(0.1,)] * 2)
 
-    def test_close_target_611_requires_ack_and_retries(self):
-        controller, writes = self.sequence_controller({b"@611#": 2})
-        self.assertTrue(controller._send_with_retry("@611#"))
-        self.assertEqual(writes, [b"@611#"] * 2)
+    def test_close_target_sequence_sends_661_once_without_waiting_for_ack(self):
+        controller, writes = self.sequence_controller({})
+        with patch.object(controller, "_wait_for_echo") as wait:
+            controller._send_sequence(("@661#",), 100.0)
+        self.assertEqual(writes, [b"@661#"])
+        wait.assert_not_called()
 
     def test_shutdown_during_ack_gap_stops_remaining_targets(self):
-        controller, writes = self.sequence_controller({b"@111#": 1})
+        controller, writes = self.sequence_controller({b"@114#": 1})
         finished = []
         controller.sequence_finished.connect(lambda: finished.append(True))
         with patch.object(controller._stop_event, "wait", side_effect=lambda _: controller._stop_event.set() or True):
-            controller._send_sequence(("@111#", "@221#"), 100.0)
-        self.assertEqual(writes, [b"@111#"])
+            controller._send_sequence(("@114#", "@224#"), 100.0)
+        self.assertEqual(writes, [b"@114#"])
         self.assertEqual(finished, [True])
 
     def test_sequence_cannot_interleave_with_another_queued_command(self):
-        commands = ("@111#", "@221#", "@331#", "@444#")
+        commands = ("@114#", "@224#", "@334#", "@441#")
         controller, writes = self.sequence_controller({cmd.encode(): 1 for cmd in (*commands, "@611#")})
         self.assertTrue(controller.send_sequence(commands))
         controller.send_command("@611#")
