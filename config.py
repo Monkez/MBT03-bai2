@@ -13,6 +13,7 @@ ASSETS_CUSTOM_WIDGETS_DIR = os.path.join(DATA_DIR, "assets", "MonkezCustomWidget
 DEFAULT_CONFIG = {
     "save_raw_data": True,
     "shooting": {
+        "show_rejected_shots_on_target": False,
         "hit_announcement_playback_rate": 1.75,
         "start_uart_command": "0F016\n",
         "automatic_close_target": {
@@ -51,7 +52,10 @@ DEFAULT_CONFIG = {
         },
     },
     "review": {
-        "show_before_offset": False,
+        "show_camera_aim_point": True,
+        "show_camera_impact_point": True,
+        "show_simulation_aim_point": False,
+        "show_simulation_impact_point": True,
         "camera_zoom": 1.5,
         "simulation_marker_scale": 1.45,
         "selected_box_thickness": 2,
@@ -130,6 +134,12 @@ def load_app_config(path=CONFIG_PATH):
         pass
     except (OSError, ValueError, TypeError, json.JSONDecodeError) as exc:
         print(f"[Config] Khong doc duoc {path}, dung gia tri mac dinh: {exc}")
+        overrides = {}
+    review = overrides.get("review")
+    if isinstance(review, dict) and "show_simulation_aim_point" not in review:
+        # Preserve the previous setting when opening an older config file.
+        if isinstance(review.get("show_before_offset"), bool):
+            review["show_simulation_aim_point"] = review["show_before_offset"]
     return _merge_known(DEFAULT_CONFIG, overrides)
 
 

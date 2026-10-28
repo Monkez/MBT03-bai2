@@ -429,7 +429,9 @@ class ShootingFlowTests(unittest.TestCase):
         self.complete(0)
         widget = self.window.client_widgets[0]
         self.assertEqual(widget.bullet_count, 4)
-        self.assertEqual([shot[3] for shot in widget.shots], [False, False, True, False])
+        self.assertEqual([shot["hit"] for shot in self.window._review_sessions[1][1]],
+                         [False, False, True, False])
+        self.assertEqual([shot[3] for shot in widget.shots], [True])
         self.assertEqual(widget.hit_targets, {0})
         self.window.lora.send_command.assert_called_with("@222#")
 
@@ -462,8 +464,10 @@ class ShootingFlowTests(unittest.TestCase):
         for received_at in (116, 118, 119.999, 120):
             self.receive(received_at)
             self.complete(1)
-        self.assertEqual([shot[3] for shot in self.window.client_widgets[0].shots],
+        self.assertEqual([shot["hit"] for shot in self.window._review_sessions[1][1]],
                          [True, True, True, False])
+        self.assertEqual(self.window.client_widgets[0].bullet_count, 4)
+        self.assertEqual([shot[3] for shot in self.window.client_widgets[0].shots], [True] * 3)
         self.assertEqual(self.window.lora.send_command.call_args_list,
                          [call("@111#"), call("@112#")])
 
@@ -474,8 +478,10 @@ class ShootingFlowTests(unittest.TestCase):
         for received_at, class_id in ((139.999, 2), (140, 0), (140, 2), (142.999, 0), (143, 0), (143, 2)):
             self.receive(received_at)
             self.complete(class_id)
-        self.assertEqual([shot[3] for shot in self.window.client_widgets[0].shots],
+        self.assertEqual([shot["hit"] for shot in self.window._review_sessions[1][1]],
                          [False, True, True, True, False, True])
+        self.assertEqual(self.window.client_widgets[0].bullet_count, 6)
+        self.assertEqual([shot[3] for shot in self.window.client_widgets[0].shots], [True] * 4)
         self.assertEqual(self.window.lora.send_command.call_count, 2)
 
     def test_overlap_preserves_previous_target_after_next_raise_and_delayed_scoring(self):

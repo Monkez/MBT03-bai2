@@ -11,7 +11,7 @@ from gui.review_window import (
     REVIEW_CAMERA_ZOOM,
     SELECTED_BOX_THICKNESS,
     SIMULATION_MARKER_SCALE,
-    SHOW_BEFORE_OFFSET,
+    SHOW_SIMULATION_AIM_POINT,
 )
 
 
@@ -73,8 +73,21 @@ class AppConfigTests(unittest.TestCase):
         self.assertNotIn("unknown", loaded["review"])
         self.assertNotIn("legacy_option", loaded)
 
+    def test_legacy_visibility_migrates_but_explicit_new_setting_wins(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = os.path.join(directory, "config.json")
+            for values, expected in (({"show_before_offset": True}, True),
+                                     ({"show_before_offset": True, "show_simulation_aim_point": False}, False)):
+                with open(path, "w", encoding="utf-8") as file:
+                    json.dump({"review": values}, file)
+                loaded = config.load_app_config(path)
+                self.assertEqual(loaded["review"]["show_simulation_aim_point"], expected)
+                self.assertNotIn("show_before_offset", loaded["review"])
+                self.assertTrue(loaded["review"]["show_camera_impact_point"])
+                self.assertFalse(loaded["shooting"]["show_rejected_shots_on_target"])
+
     def test_runtime_constants_match_config_file(self):
-        self.assertEqual(SHOW_BEFORE_OFFSET, config.config_bool("review.show_before_offset", False))
+        self.assertEqual(SHOW_SIMULATION_AIM_POINT, config.config_bool("review.show_simulation_aim_point", False))
         self.assertEqual(
             MainWindow.START_UART_COMMAND,
             config.get_setting("shooting.start_uart_command"),

@@ -1,4 +1,5 @@
 import os
+import itertools
 import unittest
 from concurrent.futures import Future
 from types import SimpleNamespace
@@ -10,6 +11,7 @@ import numpy as np
 from PyQt5.QtWidgets import QApplication, QLabel
 
 import scoring
+import config
 from PyQt5.QtTest import QSignalSpy
 from gui.shooting_session import TargetExposure
 from gui.main_window import MainWindow
@@ -171,14 +173,98 @@ class ReviewWindowTests(unittest.TestCase):
         MainWindow._store_review_shot(window, {
             "session_id": 1, "port_id": 1, "shot_number": 1,
             "metadata": {"class_id": 3, "transformed_click_point": (100, 50),
-                         "transformed_point": (-20, 50), "hit": False},
+                         "transformed_point": (-20, 50), "hit": False,
+                         "camera_impact_point": (-.3, 1.1), "scoring_eligible": False,
+                         "hit_on_image": True},
         })
         shot = window._review_sessions[1][1][0]
         self.assertEqual(shot["target_point_before_offset"], (0.5, 0.5))
         self.assertEqual(shot["target_point"], (-0.1, 0.5))
         self.assertIs(shot["hit"], False)
+        self.assertEqual(shot["camera_impact_point"], (-.3, 1.1))
+        self.assertIs(shot["scoring_eligible"], False)
+        self.assertIs(shot["hit_on_image"], True)
 
-    @patch("gui.review_window.SHOW_BEFORE_OFFSET", True)
+    def test_four_visibility_flags_are_independent(self):
+        import gui.review_window as review
+        dialog = ShotReviewDialog.__new__(ShotReviewDialog)
+        frame = np.full((300, 400, 3), 255, dtype=np.uint8)
+        dialog._reference_images = {1: frame}
+        shot = {"frame": frame, "camera_point": (.4, .5), "camera_impact_point": (.6, .5),
+                "target_index": 1, "target_point_before_offset": (.4, .5),
+                "target_point": (.6, .5), "hit": True}
+        keys = ("SHOW_CAMERA_AIM_POINT", "SHOW_CAMERA_IMPACT_POINT",
+                "SHOW_SIMULATION_AIM_POINT", "SHOW_SIMULATION_IMPACT_POINT")
+        for flags in itertools.product((False, True), repeat=4):
+            with self.subTest(flags=flags), patch.multiple(review, **dict(zip(keys, flags))):
+                camera = dialog._camera_preview(shot)
+                target = dialog._simulation_preview(shot)
+                actual = [np.any(np.all(image == color, axis=2))
+                          for image in (camera, target) for color in ([255, 0, 0], [0, 0, 255])]
+                self.assertEqual(actual, list(flags))
+                if flags[1]:
+                    # Crop is x=27..294, y=50..250; impact is transformed with it.
+                    np.testing.assert_array_equal(camera[150, 319], [0, 0, 255])
+        np.testing.assert_array_equal(frame, 255)
+
+    def test_camera_outside_points_are_not_moved_to_edges_and_overlap_keeps_both_colors(self):
+        dialog = ShotReviewDialog.__new__(ShotReviewDialog)
+        frame = np.full((300, 400, 3), 255, dtype=np.uint8)
+        with patch("gui.review_window.SHOW_CAMERA_AIM_POINT", True), \
+                patch("gui.review_window.SHOW_CAMERA_IMPACT_POINT", True):
+            for impact in ((-.2, .5), (.99, .5), (float("nan"), .5), None):
+                preview = dialog._camera_preview({"frame": frame, "camera_point": (.5, .5),
+                                                  "camera_impact_point": impact})
+                self.assertFalse(np.any(np.all(preview == [0, 0, 255], axis=2)))
+            preview = dialog._camera_preview({"frame": frame, "camera_point": (.5, .5),
+                                              "camera_impact_point": (.5, .5)})
+            self.assertTrue(np.any(np.all(preview == [255, 0, 0], axis=2)))
+            self.assertTrue(np.any(np.all(preview == [0, 0, 255], axis=2)))
+
+    def test_rejected_markers_hidden_on_target_only_and_normal_misses_remain_visible(self):
+        dialog = ShotReviewDialog.__new__(ShotReviewDialog)
+        frame = np.full((300, 400, 3), 255, dtype=np.uint8)
+        dialog._reference_images = {1: frame}
+        shot = {"frame": frame, "camera_point": (.4, .5), "camera_impact_point": (.6, .5),
+                "target_index": 1, "target_point_before_offset": (.4, .5),
+                "target_point": (.6, .5), "hit": False}
+        with patch("gui.review_window.SHOW_SIMULATION_AIM_POINT", True):
+            for eligible, show_rejected in itertools.product((False, True), repeat=2):
+                with self.subTest(eligible=eligible, show_rejected=show_rejected), \
+                        patch.dict(config.APP_CONFIG["shooting"], show_rejected_shots_on_target=show_rejected):
+                    shot["scoring_eligible"] = eligible
+                    target = dialog._simulation_preview(shot)
+                    for color in ([255, 0, 0], [0, 0, 255]):
+                        self.assertEqual(np.any(np.all(target == color, axis=2)), eligible or show_rejected)
+                    camera = dialog._camera_preview(shot)
+                    self.assertTrue(np.any(np.all(camera == [0, 0, 255], axis=2)))
+
+    def test_rejected_shot_preserves_ammo_and_review_without_target_marker(self):
+        from gui.client_widget import ClientWidget
+        for show_rejected, on_image in itertools.product((False, True), repeat=2):
+            widget = SimpleNamespace(bullet_count=0, bullet_limit=16, shots=[], hit_targets=set(),
+                                     update_result_label=MagicMock(), show_target_simulation=MagicMock())
+            widget.record_miss = lambda: ClientWidget.record_miss(widget)
+            widget.record_shot = lambda *args, **kwargs: ClientWidget.record_shot(widget, *args, **kwargs)
+            window = SimpleNamespace(
+                _store_review_shot=MagicMock(), testing=True, _active_review_session_id=1,
+                client_widgets=[widget], _reference_images={0: np.zeros((100, 200, 3))},
+                _maybe_close_hit_target=MagicMock(), automatic_close_target_enabled=True,
+            )
+            with patch.dict(config.APP_CONFIG["shooting"], show_rejected_shots_on_target=show_rejected):
+                MainWindow._on_scoring_done(window, {
+                    "ok": True, "session_id": 1, "port_id": 1, "received_at": 50,
+                    "exposure": TargetExposure(0, 32, 39),
+                    "metadata": {"class_id": 0, "transformed_point": (100, 35), "hit": on_image},
+                })
+            self.assertEqual(widget.bullet_count, 1)
+            self.assertEqual(len(widget.shots), int(show_rejected))
+            self.assertEqual(widget.hit_targets, set())
+            stored = window._store_review_shot.call_args.args[0]["metadata"]
+            self.assertIs(stored["scoring_eligible"], False)
+            self.assertIs(stored["hit_on_image"], on_image)
+
+    @patch("gui.review_window.SHOW_SIMULATION_AIM_POINT", True)
     def test_simulation_shows_separate_overlapping_and_outside_points(self):
         reference = np.full((300, 400, 3), 255, dtype=np.uint8)
         dialog = ShotReviewDialog.__new__(ShotReviewDialog)
@@ -204,7 +290,7 @@ class ReviewWindowTests(unittest.TestCase):
                     self.assertLess(red_x.max(), border_x.min())
         np.testing.assert_array_equal(reference, 255)
 
-    @patch("gui.review_window.SHOW_BEFORE_OFFSET", False)
+    @patch("gui.review_window.SHOW_SIMULATION_AIM_POINT", False)
     def test_hidden_before_point_does_not_draw_or_expand_canvas(self):
         reference = np.full((300, 400, 3), 255, dtype=np.uint8)
         dialog = ShotReviewDialog.__new__(ShotReviewDialog)
@@ -227,7 +313,8 @@ class ReviewWindowTests(unittest.TestCase):
 
     def test_offset_legend_and_notes_follow_visibility_setting(self):
         for visible in (False, True):
-            with self.subTest(visible=visible), patch("gui.review_window.SHOW_BEFORE_OFFSET", visible):
+            with (self.subTest(visible=visible), patch("gui.review_window.SHOW_SIMULATION_AIM_POINT", visible),
+                  patch("gui.review_window.SHOW_CAMERA_AIM_POINT", False)):
                 dialog = ShotReviewDialog(1, [{"target_point_before_offset": (-2, 3),
                                               "target_point": (0.5, 0.5)}])
                 try:
@@ -252,7 +339,7 @@ class ReviewWindowTests(unittest.TestCase):
             "metadata": {"class_id": 0, "transformed_point": (100, 35),
                          "transformed_click_point": (100, 50), "hit": True},
         })
-        widget.record_shot.assert_called_once_with(0, 0.5, 0.35, True)
+        widget.record_shot.assert_called_once_with(0, 0.5, 0.35, True, show_marker=True)
 
     def test_shot_picker_and_navigation_stay_in_sync(self):
         dialog = ShotReviewDialog(1, [{"shot_number": n} for n in (1, 2, 3)])

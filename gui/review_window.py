@@ -20,7 +20,10 @@ import config as cf
 import scoring
 
 
-SHOW_BEFORE_OFFSET = cf.config_bool("review.show_before_offset", False)
+SHOW_CAMERA_AIM_POINT = cf.config_bool("review.show_camera_aim_point", True)
+SHOW_CAMERA_IMPACT_POINT = cf.config_bool("review.show_camera_impact_point", True)
+SHOW_SIMULATION_AIM_POINT = cf.config_bool("review.show_simulation_aim_point", False)
+SHOW_SIMULATION_IMPACT_POINT = cf.config_bool("review.show_simulation_impact_point", True)
 REVIEW_CAMERA_ZOOM = cf.config_float(
     "review.camera_zoom", 1.5, minimum=1.0, maximum=5.0
 )
@@ -40,13 +43,30 @@ def draw_impact_marker(image, point, color=(0, 0, 255), scale_factor=1.0):
     if image is None or point is None:
         return
     height, width = image.shape[:2]
-    x = max(0, min(width - 1, int(round(point[0]))))
-    y = max(0, min(height - 1, int(round(point[1]))))
+    if not np.all(np.isfinite(point)):
+        return
+    x, y = int(round(point[0])), int(round(point[1]))
+    if not (0 <= x < width and 0 <= y < height):
+        return
     base = max(height, width)
     scale_factor = max(0.5, float(scale_factor))
     size = max(18, int(round(base * 0.04 * scale_factor)))
     thickness = max(6, int(round(base * 0.008 * scale_factor)))
     cv2.drawMarker(image, (x, y), color, cv2.MARKER_CROSS, size, thickness)
+
+
+def marker_legend(show_aim, show_impact):
+    labels = []
+    if show_aim:
+        labels.append('<span style="color:#0000ff">+ Điểm ngắm (Trước offset)</span>')
+    if show_impact:
+        labels.append('<span style="color:#b91c1c">+ Điểm chạm (Sau offset)</span>')
+    return " &nbsp; · &nbsp; ".join(labels) or "Đã ẩn các dấu điểm theo config"
+
+
+def target_markers_visible(shot):
+    return (shot.get("scoring_eligible") is not False
+            or cf.config_bool("shooting.show_rejected_shots_on_target", False))
 
 
 class AspectImageLabel(QLabel):
@@ -175,13 +195,12 @@ class ShotReviewDialog(QDialog):
         panels.setSpacing(12)
         self.camera_view = self._create_panel(
             panels, "ĐIỂM NGẮM NGƯỜI TẬP", "Không có ảnh camera",
-            f"Zoom {REVIEW_CAMERA_ZOOM:g}× · Khung vàng: bia được chọn · Khung xanh: bia khác",
+            f"Zoom {REVIEW_CAMERA_ZOOM:g}× · Khung vàng: bia được chọn · Khung xanh: bia khác<br>"
+            + marker_legend(SHOW_CAMERA_AIM_POINT, SHOW_CAMERA_IMPACT_POINT),
         )
         self.simulation_view = self._create_panel(
             panels, "ĐIỂM CHẠM TRÊN BIA", "Không có ảnh mô phỏng",
-            ('<span style="color:#0000ff">+ Trước offset</span> &nbsp; '
-             if SHOW_BEFORE_OFFSET else '')
-            + '<span style="color:#b91c1c">+ Sau offset · dùng chấm điểm</span>',
+            marker_legend(SHOW_SIMULATION_AIM_POINT, SHOW_SIMULATION_IMPACT_POINT),
         )
         root.addLayout(panels, 1)
 
@@ -211,6 +230,8 @@ class ShotReviewDialog(QDialog):
         for shot in self.shots:
             hit = shot.get("hit")
             result = "Trúng" if hit is True else "Trượt" if hit is False else "Chưa xác định"
+            if shot.get("scoring_eligible") is False:
+                result = "Không tính điểm"
             self.shot_selector.addItem(
                 f"Phát {shot.get('shot_number', 0)} · {shot.get('target_name') or 'Không rõ bia'} · {result}"
             )
@@ -299,15 +320,22 @@ class ShotReviewDialog(QDialog):
         status = shot.get("status") or "Không có trạng thái"
         hit = shot.get("hit")
         result_text = "TRÚNG" if hit is True else "TRƯỢT" if hit is False else "CHƯA XÁC ĐỊNH"
+        if shot.get("scoring_eligible") is False:
+            result_text = "KHÔNG TÍNH ĐIỂM"
         self.status_label.setText(
             f"Phát {shot_number} · {target_name} · {result_text}"
         )
         status_color = "#166534" if hit is True else "#b91c1c" if hit is False else "#475569"
         self.status_label.setStyleSheet(f"color: {status_color};")
         detection_count = len(shot.get("detections", []))
-        before = shot.get("target_point_before_offset") if SHOW_BEFORE_OFFSET else None
-        after = shot.get("target_point")
-        if not SHOW_BEFORE_OFFSET:
+        visible = target_markers_visible(shot)
+        before = shot.get("target_point_before_offset") if visible and SHOW_SIMULATION_AIM_POINT else None
+        after = shot.get("target_point") if visible and SHOW_SIMULATION_IMPACT_POINT else None
+        if not visible:
+            offset_note = "Đã ẩn dấu trên bia: phát bắn không được chấp nhận tính điểm."
+        elif not SHOW_SIMULATION_IMPACT_POINT:
+            offset_note = "Đã ẩn điểm chạm trên bia theo config."
+        elif not SHOW_SIMULATION_AIM_POINT:
             offset_note = ("Chấm điểm tại dấu thập đỏ (sau offset)." if after is not None
                            else "Chưa có điểm sau offset để hiển thị.")
         elif before is None or after is None:
@@ -319,6 +347,8 @@ class ShotReviewDialog(QDialog):
         if any(point is not None and any(value < 0 or value > 1 for value in point)
                for point in (before, after)):
             offset_note += " Điểm ngoài ảnh bia được hiển thị trên vùng nền mở rộng."
+        if SHOW_CAMERA_IMPACT_POINT and shot.get("camera_impact_point") is None:
+            offset_note += " Chưa đủ dữ liệu suy ngược điểm chạm lên ảnh thật."
         self.details_label.setText(
             f"{status} · Phát hiện {detection_count} bia. {offset_note}"
         )
@@ -360,17 +390,14 @@ class ShotReviewDialog(QDialog):
         if frame is None:
             return self._placeholder_image("KHONG CO ANH CAMERA")
         normalized = shot.get("camera_point")
-        if normalized is None:
-            preview = frame.copy()
-            self._draw_detection_boxes(preview, shot.get("detections", []))
-            return preview
-
         height, width = frame.shape[:2]
-        source_point = (normalized[0] * width, normalized[1] * height)
+        source_point = ((normalized[0] * width, normalized[1] * height)
+                        if normalized is not None and np.all(np.isfinite(normalized))
+                        else (width / 2, height / 2))
         preview, transform = self._zoom_around_point(
             frame,
             source_point,
-            REVIEW_CAMERA_ZOOM,
+            REVIEW_CAMERA_ZOOM if normalized is not None else 1.0,
         )
         detections = [
             {
@@ -380,9 +407,18 @@ class ShotReviewDialog(QDialog):
             for detection in shot.get("detections", [])
         ]
         self._draw_detection_boxes(preview, detections)
-        draw_impact_marker(
-            preview, self._transform_point(source_point, transform), color=(255, 0, 0)
-        )
+        points = []
+        for key, enabled in (("camera_point", SHOW_CAMERA_AIM_POINT),
+                             ("camera_impact_point", SHOW_CAMERA_IMPACT_POINT)):
+            point = shot.get(key) if enabled else None
+            points.append(self._transform_point((point[0] * width, point[1] * height), transform)
+                          if point is not None and np.all(np.isfinite(point)) else None)
+        before, after = points
+        coincident = (before is not None and after is not None
+                      and np.allclose(before, after, rtol=0, atol=1e-6))
+        draw_impact_marker(preview, before, color=(255, 0, 0),
+                           scale_factor=1.35 if coincident else 1.0)
+        draw_impact_marker(preview, after, color=(0, 0, 255))
         return preview
 
     @staticmethod
@@ -485,9 +521,10 @@ class ShotReviewDialog(QDialog):
         )
         height, width = preview.shape[:2]
         points = []
-        for key in ("target_point_before_offset", "target_point"):
-            normalized = (None if key == "target_point_before_offset" and not SHOW_BEFORE_OFFSET
-                          else shot.get(key))
+        visible = target_markers_visible(shot)
+        for key, enabled in (("target_point_before_offset", SHOW_SIMULATION_AIM_POINT),
+                             ("target_point", SHOW_SIMULATION_IMPACT_POINT)):
+            normalized = shot.get(key) if enabled and visible else None
             points.append(
                 (float(normalized[0]) * width, float(normalized[1]) * height)
                 if normalized is not None and np.all(np.isfinite(normalized)) else None

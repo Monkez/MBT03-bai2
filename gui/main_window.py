@@ -620,8 +620,9 @@ class MainWindow(QMainWindow):
                 and exposure.contains(received_at)
                 and metadata.get("class_id") == exposure.class_id
             )
+            metadata = dict(metadata, scoring_eligible=eligible, hit_on_image=hit_on_image)
+            result = dict(result, metadata=metadata)
             if not eligible:
-                metadata = dict(metadata)
                 metadata["hit"] = False
                 if received_at is None:
                     metadata["status"] = "Không tính trúng: thiếu thời điểm PC nhận ảnh"
@@ -655,7 +656,6 @@ class MainWindow(QMainWindow):
                             metadata["status"] += (
                                 f" · Muộn {received_at - target_window.closed_at:.3f}s so với mốc đóng"
                             )
-                result = dict(result, metadata=metadata)
             logging.getLogger("mbt03_server").info(
                 "[Scoring] session=%s | Bệ %s | Phát %s | class=%s | "
                 "Trúng trên ảnh=%s | Tính trúng=%s | %s",
@@ -696,19 +696,17 @@ class MainWindow(QMainWindow):
         # stores normalized reference coordinates for target simulation.
         mapped = metadata.get("transformed_point")
         reference = self._reference_images.get(class_id)
-        if mapped is not None and reference is not None:
+        has_point = mapped is not None and reference is not None and np.all(np.isfinite(mapped))
+        show_marker = (has_point and (metadata.get("scoring_eligible") is not False
+                       or cf.config_bool("shooting.show_rejected_shots_on_target", False)))
+        x_ratio, y_ratio = 0.0, 0.0
+        if has_point:
             ref_h, ref_w = reference.shape[:2]
-            x_ratio = mapped[0] / ref_w
-            y_ratio = mapped[1] / ref_h
-        else:
-            x_ratio, y_ratio = 0.5, 0.5
+            x_ratio, y_ratio = mapped[0] / ref_w, mapped[1] / ref_h
         hit = metadata.get("hit") is True
+        # Marker visibility must never change ammunition, score or hit feedback.
         self.client_widgets[port_id - 1].record_shot(
-            class_id,
-            x_ratio,
-            y_ratio,
-            hit,
-        )
+            class_id, x_ratio, y_ratio, hit, show_marker=bool(show_marker))
         if hit and (len(self.client_widgets) > 1 or not self.automatic_close_target_enabled):
             self._hit_sound.announce(port_id, class_id)
         self._maybe_close_hit_target(class_id, hit)
@@ -747,11 +745,14 @@ class MainWindow(QMainWindow):
             "frame": result.get("frame"),
             "raw_image_save": result.get("raw_image_save"),
             "camera_point": result.get("bullet_point"),
+            "camera_impact_point": metadata.get("camera_impact_point"),
             "target_index": target_index,
             "target_name": metadata.get("target_name"),
             "target_point": target_point,
             "target_point_before_offset": target_point_before_offset,
             "hit": metadata.get("hit"),
+            "scoring_eligible": metadata.get("scoring_eligible"),
+            "hit_on_image": metadata.get("hit_on_image"),
             "status": metadata.get("status") or result.get("error"),
             "detections": [
                 {

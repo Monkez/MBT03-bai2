@@ -116,13 +116,40 @@ class TargetOffsetTests(unittest.TestCase):
 
         self.assertEqual(metadata["transformed_click_point"], (100.0, 50.0))
         self.assertEqual(metadata["transformed_point"], (100.0, 35.0))
-        self.assertNotIn("camera_impact_point", metadata)
+        self.assertEqual(metadata["camera_impact_point"], (0.5, 0.35))
         self.assertEqual(metadata["target_offset"], (0.0, -0.15))
         self.assertEqual(hit_area.call_count, 2)
         self.assertEqual(
             hit_area.call_args,
             mock.call(0, reference.shape, (100.0, 35.0)),
         )
+
+    def test_inverse_projection_matches_scored_point_for_affine_and_offset(self):
+        image = np.zeros((480, 640, 3), dtype=np.uint8)
+        reference = np.zeros((300, 200, 3), dtype=np.uint8)
+        detection = {"bbox": [0, 0, 639, 479], "conf": .9, "class_id": 3, "keypoints": []}
+        for matrix in (np.array([[.5, 0, 20], [0, 2, -10]]),
+                       np.array([[0, -2, 300], [1.5, .2, -10]]),
+                       np.array([[-1, .2, 200], [.1, 1, 30]])):
+            with (self.subTest(matrix=matrix),
+                  mock.patch.object(scoring, "inference", return_value=[detection]),
+                  mock.patch.object(scoring, "estimate_target_transform", return_value=(matrix, 4))):
+                _, metadata = scoring.scoring(image, (.5, .5), {3: reference}, object())
+                camera_point = np.array(metadata["camera_impact_point"]) * [640, 480]
+                expected = np.linalg.solve(matrix[:, :2],
+                                           np.array(metadata["transformed_point"]) - matrix[:, 2])
+                np.testing.assert_allclose(camera_point, expected)
+                np.testing.assert_allclose(matrix @ np.r_[camera_point, 1],
+                                           metadata["transformed_point"])
+
+    def test_inverse_projection_rejects_invalid_transform_and_keeps_outside_points(self):
+        for matrix, point in ((None, (1, 2)), (np.eye(2, 3), None),
+                              (np.zeros((2, 3)), (1, 2)),
+                              (np.array([[1, 0, 0], [0, 1e-15, 0]]), (1, 2)),
+                              (np.full((2, 3), np.nan), (1, 2)),
+                              (np.eye(2, 3), (np.inf, 2))):
+            self.assertIsNone(scoring.inverse_transform_point(matrix, point))
+        self.assertEqual(scoring.inverse_transform_point(np.eye(2, 3), (-20, 500)), (-20, 500))
 
     def test_real_hit_area_uses_offset_to_change_hit_result(self):
         image = np.zeros((100, 200, 3), dtype=np.uint8)

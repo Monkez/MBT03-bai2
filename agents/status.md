@@ -1,10 +1,12 @@
 # Trạng thái dự án
 
-## Ẩn/hiện điểm trước offset khi xem lại (2026-10-28)
+## Điểm ngắm/điểm chạm và phát bị từ chối (2026-10-28)
 
-- `review.show_before_offset` mặc định `false`: bia mô phỏng chỉ vẽ điểm đỏ sau offset; ẩn điểm xanh, đường nối vàng và chú thích so sánh. Đổi thành `true` và khởi động lại để khôi phục cả hai điểm. Khung ảnh chỉ mở rộng theo điểm đang hiển thị.
-- Giữ nguyên dữ liệu hai điểm, chấm điểm và dấu xanh trên ảnh camera. 21 test review/config đạt, đã đối chiếu ảnh render thật của hàm preview ở cả hai chế độ.
-- Build `MBT03-Bai2-V22-281026` thành công; config đóng gói đã kiểm tra mặc định ẩn. Chưa kiểm tra tương tác trực tiếp trên EXE mới.
+- Xem lại chiếu ngược điểm sau offset lên ảnh thật bằng affine của chính phát bắn; lưu tọa độ chuẩn hóa, không tính lại theo config hiện tại. Phép biến đổi không khả nghịch/không hữu hạn không sinh điểm giả; điểm ngoài ảnh/vùng zoom không bị kéo vào mép.
+- Bốn khóa `review.show_camera_aim_point`, `show_camera_impact_point`, `show_simulation_aim_point`, `show_simulation_impact_point` mặc định `true/true/false/true`. Khóa cũ `show_before_offset` được đọc dự phòng cho `show_simulation_aim_point`.
+- `shooting.show_rejected_shots_on_target=false`: ẩn dấu trên bia chính và bia mô phỏng xem lại với phát không đủ điều kiện thời gian/bia; lưu riêng `scoring_eligible` và `hit_on_image`, hiển thị KHÔNG TÍNH ĐIỂM. Không thay đổi số đạn, lịch sử, điểm số, báo trúng; phát trượt hình học hợp lệ vẫn vẽ bình thường.
+- Kiểm chứng: 307 test đạt, gồm 16 tổ hợp hiển thị, affine xoay/scale, điểm ngoài ảnh, phát bị từ chối và nhận đồng thời bốn súng. Đã xem ảnh render của hai panel và trường hợp ẩn dấu. Render Qt offscreen vẫn thiếu chữ nên chưa xác nhận bố cục chữ bằng mắt; test QLabel kiểm tra nội dung/chú thích.
+- Build `MBT03-Bai2-V26-281026` thành công; kiểm tra mã trong PYZ, config và asset đóng gói khớp nguồn. Chưa kiểm tra trực tiếp EXE mới và súng thật.
 
 ## Cập nhật nút điều khiển và gộp cấp đạn (2026-10-21)
 

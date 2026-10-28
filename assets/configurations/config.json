@@ -1,6 +1,7 @@
 {
     "save_raw_data": true,
     "shooting": {
+        "show_rejected_shots_on_target": false,
         "hit_announcement_playback_rate": 1.75,
         "start_uart_command": "0F016\n",
         "automatic_close_target": {
@@ -63,7 +64,10 @@
         }
     },
     "review": {
-        "show_before_offset": false,
+        "show_camera_aim_point": true,
+        "show_camera_impact_point": true,
+        "show_simulation_aim_point": false,
+        "show_simulation_impact_point": true,
         "camera_zoom": 1.5,
         "simulation_marker_scale": 1.45,
         "selected_box_thickness": 2,

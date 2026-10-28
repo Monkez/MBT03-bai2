@@ -362,7 +362,7 @@ class ClientWidget(QFrame):
         self.testing = False
         self.update_result_label()
 
-    def record_shot(self, target_index, x_ratio, y_ratio, hit=True):
+    def record_shot(self, target_index, x_ratio, y_ratio, hit=True, show_marker=True):
         if self.bullet_count >= self.bullet_limit:
             return
 
@@ -371,7 +371,8 @@ class ClientWidget(QFrame):
         y_ratio = max(0.0, min(1.0, float(y_ratio)))
 
         self.bullet_count += 1
-        self.shots.append((target_index, x_ratio, y_ratio, bool(hit)))
+        if show_marker:
+            self.shots.append((target_index, x_ratio, y_ratio, bool(hit)))
         if hit:
             self.hit_targets.add(target_index)
 

@@ -501,6 +501,27 @@ def transform_point(matrix, point):
     return float(transformed[0]), float(transformed[1])
 
 
+def inverse_transform_point(matrix, point):
+    """Map a reference point back to camera pixels without inventing a location."""
+    if matrix is None or point is None:
+        return None
+    matrix = np.asarray(matrix, dtype=np.float64)
+    point = np.asarray(point, dtype=np.float64)
+    if (matrix.shape != (2, 3) or point.shape != (2,)
+            or not np.all(np.isfinite(matrix)) or not np.all(np.isfinite(point))):
+        return None
+    try:
+        linear = matrix[:, :2]
+        if np.linalg.cond(linear) > 1e12:
+            return None
+        camera_point = np.linalg.solve(linear, point - matrix[:, 2])
+    except np.linalg.LinAlgError:
+        return None
+    if not np.all(np.isfinite(camera_point)):
+        return None
+    return float(camera_point[0]), float(camera_point[1])
+
+
 def affine_rotation_matrix(matrix):
     """Extract the closest proper rotation from a camera-to-reference affine."""
     if matrix is None:
@@ -632,6 +653,7 @@ def scoring(
         "status": "Khong phat hien bia",
         "transformed_point": None,
         "transformed_click_point": None,
+        "camera_impact_point": None,
         "target_offset": (0.0, 0.0),
         "matched_keypoints": 0,
         "detections": detections,
@@ -653,10 +675,13 @@ def scoring(
     matrix, matched = estimate_target_transform(selected, reference.shape)
     mapped_click = transform_point(matrix, shot)
     mapped = apply_target_offset(class_id, reference.shape, mapped_click, matrix)
+    camera_impact = inverse_transform_point(matrix, mapped)
     hit = point_in_hit_area(class_id, reference.shape, mapped)
     metadata.update(
         transformed_point=mapped,
         transformed_click_point=mapped_click,
+        camera_impact_point=(camera_impact[0] / width, camera_impact[1] / height)
+        if camera_impact is not None else None,
         target_offset=TARGET_OFFSETS.get(class_id, (0.0, 0.0)),
         matched_keypoints=matched,
         hit=hit,

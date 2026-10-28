@@ -144,7 +144,7 @@ Khi chọn 2 bệ, bố cục dọc lần lượt là bia 6, bia 10, rồi hàng
 và bia 8 bên phải. Bia 7B được phóng vừa ô đứng; mọi ảnh giữ đúng tỉ lệ, không kéo méo
 hoặc cắt bia.
 
-Màu vết chạm trên màn hình chính biểu thị kết quả: **xanh dương là trúng, đỏ là trượt**, không phải màu phân biệt bệ. Mỗi vết là điểm sau offset của một phát; nhiều phát trên cùng bia có thể có cả hai màu. Riêng cửa sổ `Xem lại` mặc định chỉ vẽ điểm đỏ sau offset trên bia mô phỏng; có thể bật thêm điểm xanh trước offset bằng `review.show_before_offset`. Để kiểm tra nhầm bệ, bắn riêng từng bệ và theo dõi bộ đếm `Đạn` cùng ảnh camera trong lịch sử của bệ đó.
+Màu vết chạm trên màn hình chính biểu thị kết quả: **xanh dương là trúng, đỏ là trượt**, không phải màu phân biệt bệ. Mỗi vết là điểm sau offset của một phát; nhiều phát trên cùng bia có thể có cả hai màu. Riêng cửa sổ `Xem lại` mặc định chỉ vẽ điểm đỏ sau offset trên bia mô phỏng; có thể bật thêm điểm xanh trước offset bằng `review.show_simulation_aim_point`. Để kiểm tra nhầm bệ, bắn riêng từng bệ và theo dõi bộ đếm `Đạn` cùng ảnh camera trong lịch sử của bệ đó.
 
 Ứng dụng hiện đã khởi động server cho từng bệ được chọn, tự công bố các bệ trong mạng nội bộ và nhận kết nối từ client Orange Pi. Trạng thái bệ phân biệt rõ đang xác nhận, đã kết nối và chưa kết nối; khi client gửi đủ dữ liệu heartbeat, giao diện hiển thị thêm ping và phần trăm pin.
 
@@ -249,18 +249,29 @@ bắt đầu bài mới hủy thông báo còn chờ của bài cũ.
 
 Ở màn hình lựa chọn ban đầu, nút hiển thị ngắn gọn `Gập bia: BẬT` với màu xanh khi chức năng đang được chọn; trạng thái tắt hiển thị `Gập bia: TẮT` với màu xám. Khi chỉ chọn 1 bệ, chức năng mặc định bật nhưng vẫn có thể bấm nút để tắt. Khi chọn từ 2 bệ trở lên, chức năng mặc định tắt. Nếu đang bật và phát bắn được xác định là trúng, hệ thống gửi lệnh gập/ẩn bia qua LoRa: bia số 6 dùng `@112#`, bia số 10 dùng `@222#`, bia số 7B dùng `@332#`, bia số 8 dùng `@442#`. Mỗi loại bia chỉ gửi lệnh một lần trong một bài bắn.
 
-Sau khi kết thúc bài bắn, nhấn `Xem lại` tại từng bệ để duyệt các phát bắn của phiên vừa kết thúc. Cửa sổ hiển thị ảnh camera được zoom mặc định 1.5x quanh điểm chạm bên trái, dưới nhãn **ĐIỂM NGẮM NGƯỜI TẬP**, và ảnh bia mô phỏng bên phải. Chọn trực tiếp một phát trong danh sách bên dưới hoặc dùng `Phát trước`, `Phát sau` và phím mũi tên. Home/End chuyển đến phát đầu/cuối, Esc đóng cửa sổ.
+Sau khi kết thúc bài bắn, nhấn `Xem lại` tại từng bệ để duyệt các phát bắn của phiên vừa kết thúc. Cửa sổ hiển thị ảnh camera được zoom mặc định 1.5x quanh điểm ngắm bên trái, dưới nhãn **ĐIỂM NGẮM NGƯỜI TẬP**, và ảnh bia mô phỏng bên phải. Chọn trực tiếp một phát trong danh sách bên dưới hoặc dùng `Phát trước`, `Phát sau` và phím mũi tên. Home/End chuyển đến phát đầu/cuối, Esc đóng cửa sổ.
 
 Dòng **File ảnh gốc** hiển thị đúng tên PNG đã lưu cho phát đang xem, ví dụ
 `20261011_201504_645194_be_01.png`. Có thể bôi đen để sao chép tên, rê chuột để xem
 đường dẫn đầy đủ. Nếu ảnh đang chờ ghi, dòng này báo **Đang lưu…** và tự cập nhật
 khi xong; khi không lưu hoặc lưu thất bại sẽ ghi rõ trạng thái thay vì hiện tên file.
 
-Trong cửa sổ xem lại, bia mô phỏng mặc định chỉ hiển thị dấu thập đỏ sau offset dùng để xét trúng/trượt. Trong `assets/configurations/config.json`, đặt `review.show_before_offset` thành `true` để hiện thêm dấu xanh trước offset và đường nối vàng; đặt `false` để ẩn (mặc định). Khởi động lại phần mềm sau khi sửa config. Với bản EXE, file nằm tại `_internal/assets/configurations/config.json` trong thư mục bản chạy.
+Trong `assets/configurations/config.json`, bốn khóa trong nhóm `review` điều khiển độc lập các dấu điểm:
 
-Khi bật hai điểm, dấu xanh dài hơn một chút nếu trùng tâm với dấu đỏ. Vùng nền mở rộng chỉ tính theo các điểm đang hiển thị. Dữ liệu hai điểm vẫn được lưu theo từng phát, không tính lại khi thay đổi cấu hình hiển thị. Tùy chọn này không đổi việc chấm điểm, điểm xanh trên ảnh camera bên trái hoặc màn hình chính.
+| Khóa | Nội dung | Mặc định |
+| --- | --- | --- |
+| `show_camera_aim_point` | Điểm ngắm màu xanh trên ảnh thật bên trái | `true` |
+| `show_camera_impact_point` | Điểm chạm sau offset màu đỏ trên ảnh thật bên trái | `true` |
+| `show_simulation_aim_point` | Điểm ngắm trước offset màu xanh trên bia mô phỏng bên phải | `false` |
+| `show_simulation_impact_point` | Điểm chạm sau offset màu đỏ trên bia mô phỏng bên phải | `true` |
 
-Trên ảnh camera, khung vàng là bia hệ thống đã chọn để tính điểm, các khung xanh là những bia khác được nhận diện trong cùng ảnh. Điểm sau offset chỉ hiển thị trên ảnh bia chuẩn. Nhãn trên khung cho biết mã lớp, tên bia và độ tin cậy để tiện kiểm tra trường hợp nhận nhầm. Khi bắt đầu bài bắn mới, dữ liệu xem lại của phiên cũ được xóa.
+Đổi `true`/`false` rồi khởi động lại phần mềm. Với bản EXE, file nằm tại `_internal/assets/configurations/config.json` trong thư mục bản chạy. Config cũ có `review.show_before_offset` vẫn được đọc làm giá trị dự phòng cho `show_simulation_aim_point`; khi có khóa mới, khóa mới được ưu tiên.
+
+Điểm chạm trên ảnh thật được suy ngược từ điểm sau offset bằng chính phép biến đổi affine đã dùng để chấm phát đó, rồi lưu cùng dữ liệu xem lại. Đây là vị trí suy tính, không phải phát hiện lỗ đạn thực tế trên ảnh. Không tính lại theo offset hiện tại. Nếu thiếu phép biến đổi hợp lệ thì không tạo điểm giả. Điểm nằm ngoài ảnh hoặc ngoài vùng zoom không bị kéo vào mép ảnh; có thể giảm `review.camera_zoom` về `1.0` để xem toàn bộ ảnh gốc.
+
+Khi bật cả hai điểm, dấu xanh dài hơn một chút nếu trùng tâm với dấu đỏ. Bia mô phỏng có đường nối vàng và vùng nền mở rộng chỉ theo các điểm đang hiển thị. Trên ảnh camera, khung vàng là bia hệ thống đã chọn để tính điểm, các khung xanh là những bia khác được nhận diện. Nhãn trên khung cho biết mã lớp, tên bia và độ tin cậy.
+
+`shooting.show_rejected_shots_on_target` mặc định `false`: phát bị từ chối vì ngoài thời gian cho phép, thiếu thời điểm nhận hoặc nhận diện khác bia được phép tính điểm sẽ **không vẽ dấu trên bia màn hình chính và bia mô phỏng trong Xem lại**. Đặt `true` để hiện lại phục vụ kiểm tra; các công tắc `review` vẫn áp dụng. Phát trượt hình học trong thời gian hợp lệ vẫn hiển thị bình thường. Bộ đếm Đạn, lịch sử, ảnh camera và kết quả chấm không thay đổi; phần xem lại ghi rõ **KHÔNG TÍNH ĐIỂM** cùng lý do. Khi bắt đầu bài bắn mới, dữ liệu xem lại của phiên cũ được xóa.
 
 Khi `save_raw_data` trong `assets/configurations/config.json` là `true`, mọi ảnh chụp gốc nhận từ súng được lưu tự động vào `raw_camera_images`. Tên ảnh chứa thời gian chụp và số bệ để phục vụ thu thập, phân loại dữ liệu. Đặt khóa này thành `false` và mở lại ứng dụng nếu không muốn lưu ảnh.
 
