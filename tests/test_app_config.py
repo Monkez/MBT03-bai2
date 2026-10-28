@@ -11,6 +11,7 @@ from gui.review_window import (
     REVIEW_CAMERA_ZOOM,
     SELECTED_BOX_THICKNESS,
     SIMULATION_MARKER_SCALE,
+    SHOW_BEFORE_OFFSET,
 )
 
 
@@ -73,6 +74,7 @@ class AppConfigTests(unittest.TestCase):
         self.assertNotIn("legacy_option", loaded)
 
     def test_runtime_constants_match_config_file(self):
+        self.assertEqual(SHOW_BEFORE_OFFSET, config.config_bool("review.show_before_offset", False))
         self.assertEqual(
             MainWindow.START_UART_COMMAND,
             config.get_setting("shooting.start_uart_command"),

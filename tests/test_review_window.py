@@ -2,12 +2,12 @@ import os
 import unittest
 from concurrent.futures import Future
 from types import SimpleNamespace
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import numpy as np
-from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import QApplication, QLabel
 
 import scoring
 from PyQt5.QtTest import QSignalSpy
@@ -178,6 +178,7 @@ class ReviewWindowTests(unittest.TestCase):
         self.assertEqual(shot["target_point"], (-0.1, 0.5))
         self.assertIs(shot["hit"], False)
 
+    @patch("gui.review_window.SHOW_BEFORE_OFFSET", True)
     def test_simulation_shows_separate_overlapping_and_outside_points(self):
         reference = np.full((300, 400, 3), 255, dtype=np.uint8)
         dialog = ShotReviewDialog.__new__(ShotReviewDialog)
@@ -202,6 +203,40 @@ class ReviewWindowTests(unittest.TestCase):
                     border_x = np.where(np.all(preview == [40, 40, 220], axis=2))[1]
                     self.assertLess(red_x.max(), border_x.min())
         np.testing.assert_array_equal(reference, 255)
+
+    @patch("gui.review_window.SHOW_BEFORE_OFFSET", False)
+    def test_hidden_before_point_does_not_draw_or_expand_canvas(self):
+        reference = np.full((300, 400, 3), 255, dtype=np.uint8)
+        dialog = ShotReviewDialog.__new__(ShotReviewDialog)
+        dialog._reference_images = {1: reference}
+        for before, after in (((0.3, 0.5), (0.6, 0.5)),
+                              ((0.5, 0.5), (0.5, 0.5)),
+                              ((-2, 3), (0.5, 0.5)),
+                              ((0.5, 0.5), (-0.2, 0.5)),
+                              ((0.5, 0.5), None)):
+            with self.subTest(before=before, after=after):
+                shot = {"target_index": 1, "target_point": after, "hit": False}
+                expected = dialog._simulation_preview(shot)
+                shot["target_point_before_offset"] = before
+                preview = dialog._simulation_preview(shot)
+                np.testing.assert_array_equal(preview, expected)
+                self.assertFalse(np.any(np.all(preview == [255, 0, 0], axis=2)))
+                self.assertEqual(np.any(np.all(preview == [0, 0, 255], axis=2)), after is not None)
+                self.assertEqual(shot["target_point_before_offset"], before)
+        np.testing.assert_array_equal(reference, 255)
+
+    def test_offset_legend_and_notes_follow_visibility_setting(self):
+        for visible in (False, True):
+            with self.subTest(visible=visible), patch("gui.review_window.SHOW_BEFORE_OFFSET", visible):
+                dialog = ShotReviewDialog(1, [{"target_point_before_offset": (-2, 3),
+                                              "target_point": (0.5, 0.5)}])
+                try:
+                    labels = " ".join(label.text() for label in dialog.findChildren(QLabel))
+                    self.assertEqual("Trước offset" in labels, visible)
+                    self.assertIn("Sau offset", labels)
+                    self.assertEqual("vùng nền mở rộng" in dialog.details_label.text(), visible)
+                finally:
+                    dialog.close()
 
     def test_scoring_result_reaches_hit_counter_with_offset_coordinates(self):
         widget = MagicMock()

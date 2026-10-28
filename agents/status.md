@@ -1,5 +1,11 @@
 # Trạng thái dự án
 
+## Ẩn/hiện điểm trước offset khi xem lại (2026-10-28)
+
+- `review.show_before_offset` mặc định `false`: bia mô phỏng chỉ vẽ điểm đỏ sau offset; ẩn điểm xanh, đường nối vàng và chú thích so sánh. Đổi thành `true` và khởi động lại để khôi phục cả hai điểm. Khung ảnh chỉ mở rộng theo điểm đang hiển thị.
+- Giữ nguyên dữ liệu hai điểm, chấm điểm và dấu xanh trên ảnh camera. 21 test review/config đạt, đã đối chiếu ảnh render thật của hàm preview ở cả hai chế độ.
+- Build `MBT03-Bai2-V22-281026` thành công; config đóng gói đã kiểm tra mặc định ẩn. Chưa kiểm tra tương tác trực tiếp trên EXE mới.
+
 ## Cập nhật nút điều khiển và gộp cấp đạn (2026-10-21)
 
 - Thay thế cơ chế thủ công mô tả bên dưới: ẨN BIA gửi `@661#` đúng một lần, không ACK; HIỆN BIA gửi `@114#` → `@224#` → `@334#` → `@441#`, có ACK/retry và chờ 100 ms sau ACK trước lệnh kế tiếp. Bộ lệnh thủ công độc lập với lịch bài bắn.

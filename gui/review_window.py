@@ -20,6 +20,7 @@ import config as cf
 import scoring
 
 
+SHOW_BEFORE_OFFSET = cf.config_bool("review.show_before_offset", False)
 REVIEW_CAMERA_ZOOM = cf.config_float(
     "review.camera_zoom", 1.5, minimum=1.0, maximum=5.0
 )
@@ -178,8 +179,9 @@ class ShotReviewDialog(QDialog):
         )
         self.simulation_view = self._create_panel(
             panels, "ĐIỂM CHẠM TRÊN BIA", "Không có ảnh mô phỏng",
-            '<span style="color:#0000ff">+ Trước offset</span> &nbsp; '
-            '<span style="color:#b91c1c">+ Sau offset · dùng chấm điểm</span>',
+            ('<span style="color:#0000ff">+ Trước offset</span> &nbsp; '
+             if SHOW_BEFORE_OFFSET else '')
+            + '<span style="color:#b91c1c">+ Sau offset · dùng chấm điểm</span>',
         )
         root.addLayout(panels, 1)
 
@@ -303,9 +305,12 @@ class ShotReviewDialog(QDialog):
         status_color = "#166534" if hit is True else "#b91c1c" if hit is False else "#475569"
         self.status_label.setStyleSheet(f"color: {status_color};")
         detection_count = len(shot.get("detections", []))
-        before = shot.get("target_point_before_offset")
+        before = shot.get("target_point_before_offset") if SHOW_BEFORE_OFFSET else None
         after = shot.get("target_point")
-        if before is None or after is None:
+        if not SHOW_BEFORE_OFFSET:
+            offset_note = ("Chấm điểm tại dấu thập đỏ (sau offset)." if after is not None
+                           else "Chưa có điểm sau offset để hiển thị.")
+        elif before is None or after is None:
             offset_note = "Chưa đủ dữ liệu để so sánh hai điểm."
         elif np.allclose(before, after, rtol=0, atol=1e-9):
             offset_note = "Offset bằng 0: hai điểm trùng nhau."
@@ -481,7 +486,8 @@ class ShotReviewDialog(QDialog):
         height, width = preview.shape[:2]
         points = []
         for key in ("target_point_before_offset", "target_point"):
-            normalized = shot.get(key)
+            normalized = (None if key == "target_point_before_offset" and not SHOW_BEFORE_OFFSET
+                          else shot.get(key))
             points.append(
                 (float(normalized[0]) * width, float(normalized[1]) * height)
                 if normalized is not None and np.all(np.isfinite(normalized)) else None

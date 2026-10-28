@@ -144,7 +144,7 @@ Khi chọn 2 bệ, bố cục dọc lần lượt là bia 6, bia 10, rồi hàng
 và bia 8 bên phải. Bia 7B được phóng vừa ô đứng; mọi ảnh giữ đúng tỉ lệ, không kéo méo
 hoặc cắt bia.
 
-Màu vết chạm trên màn hình chính biểu thị kết quả: **xanh dương là trúng, đỏ là trượt**, không phải màu phân biệt bệ. Mỗi vết là điểm sau offset của một phát; nhiều phát trên cùng bia có thể có cả hai màu. Riêng cửa sổ `Xem lại` dùng xanh dương cho điểm trước offset và đỏ cho điểm sau offset của cùng một phát. Để kiểm tra nhầm bệ, bắn riêng từng bệ và theo dõi bộ đếm `Đạn` cùng ảnh camera trong lịch sử của bệ đó.
+Màu vết chạm trên màn hình chính biểu thị kết quả: **xanh dương là trúng, đỏ là trượt**, không phải màu phân biệt bệ. Mỗi vết là điểm sau offset của một phát; nhiều phát trên cùng bia có thể có cả hai màu. Riêng cửa sổ `Xem lại` mặc định chỉ vẽ điểm đỏ sau offset trên bia mô phỏng; có thể bật thêm điểm xanh trước offset bằng `review.show_before_offset`. Để kiểm tra nhầm bệ, bắn riêng từng bệ và theo dõi bộ đếm `Đạn` cùng ảnh camera trong lịch sử của bệ đó.
 
 Ứng dụng hiện đã khởi động server cho từng bệ được chọn, tự công bố các bệ trong mạng nội bộ và nhận kết nối từ client Orange Pi. Trạng thái bệ phân biệt rõ đang xác nhận, đã kết nối và chưa kết nối; khi client gửi đủ dữ liệu heartbeat, giao diện hiển thị thêm ping và phần trăm pin.
 
@@ -256,7 +256,9 @@ Dòng **File ảnh gốc** hiển thị đúng tên PNG đã lưu cho phát đan
 đường dẫn đầy đủ. Nếu ảnh đang chờ ghi, dòng này báo **Đang lưu…** và tự cập nhật
 khi xong; khi không lưu hoặc lưu thất bại sẽ ghi rõ trạng thái thay vì hiện tên file.
 
-Trong cửa sổ xem lại, trên ảnh bia, dấu thập xanh dương biểu thị điểm trước offset, dấu thập đỏ là điểm sau offset dùng để xét trúng/trượt. Một đường thẳng vàng nối hai điểm; hai dấu thập vẫn đơn giản, không viền hay mũi tên. Khi offset bằng 0, dấu xanh dài hơn một chút để phân biệt hai dấu trùng tâm. Điểm ngoài ảnh bia được giữ đúng tọa độ trên vùng nền mở rộng. Dữ liệu hai điểm được lưu theo từng phát, không tính lại theo cấu hình mới khi xem lại. Với phát không đủ dữ liệu, màn hình thông báo không thể so sánh hai điểm. Bia mô phỏng ở màn hình chính chỉ vẽ điểm sau offset của mỗi phát.
+Trong cửa sổ xem lại, bia mô phỏng mặc định chỉ hiển thị dấu thập đỏ sau offset dùng để xét trúng/trượt. Trong `assets/configurations/config.json`, đặt `review.show_before_offset` thành `true` để hiện thêm dấu xanh trước offset và đường nối vàng; đặt `false` để ẩn (mặc định). Khởi động lại phần mềm sau khi sửa config. Với bản EXE, file nằm tại `_internal/assets/configurations/config.json` trong thư mục bản chạy.
+
+Khi bật hai điểm, dấu xanh dài hơn một chút nếu trùng tâm với dấu đỏ. Vùng nền mở rộng chỉ tính theo các điểm đang hiển thị. Dữ liệu hai điểm vẫn được lưu theo từng phát, không tính lại khi thay đổi cấu hình hiển thị. Tùy chọn này không đổi việc chấm điểm, điểm xanh trên ảnh camera bên trái hoặc màn hình chính.
 
 Trên ảnh camera, khung vàng là bia hệ thống đã chọn để tính điểm, các khung xanh là những bia khác được nhận diện trong cùng ảnh. Điểm sau offset chỉ hiển thị trên ảnh bia chuẩn. Nhãn trên khung cho biết mã lớp, tên bia và độ tin cậy để tiện kiểm tra trường hợp nhận nhầm. Khi bắt đầu bài bắn mới, dữ liệu xem lại của phiên cũ được xóa.
 

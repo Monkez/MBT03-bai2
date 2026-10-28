@@ -63,6 +63,7 @@
         }
     },
     "review": {
+        "show_before_offset": false,
         "camera_zoom": 1.5,
         "simulation_marker_scale": 1.45,
         "selected_box_thickness": 2,

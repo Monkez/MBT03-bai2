@@ -51,6 +51,7 @@ DEFAULT_CONFIG = {
         },
     },
     "review": {
+        "show_before_offset": False,
         "camera_zoom": 1.5,
         "simulation_marker_scale": 1.45,
         "selected_box_thickness": 2,
