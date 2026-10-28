@@ -174,7 +174,7 @@ class ShotReviewDialog(QDialog):
         panels = QHBoxLayout()
         panels.setSpacing(12)
         self.camera_view = self._create_panel(
-            panels, "ẢNH CAMERA", "Không có ảnh camera",
+            panels, "ĐIỂM NGẮM NGƯỜI TẬP", "Không có ảnh camera",
             f"Zoom {REVIEW_CAMERA_ZOOM:g}× · Khung vàng: bia được chọn · Khung xanh: bia khác",
         )
         self.simulation_view = self._create_panel(
