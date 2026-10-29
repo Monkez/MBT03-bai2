@@ -64,11 +64,6 @@ def marker_legend(show_aim, show_impact):
     return " &nbsp; · &nbsp; ".join(labels) or "Đã ẩn các dấu điểm theo config"
 
 
-def target_markers_visible(shot):
-    return (shot.get("scoring_eligible") is not False
-            or cf.config_bool("shooting.show_rejected_shots_on_target", False))
-
-
 class AspectImageLabel(QLabel):
     def __init__(self, placeholder, parent=None):
         super().__init__(placeholder, parent)
@@ -328,12 +323,9 @@ class ShotReviewDialog(QDialog):
         status_color = "#166534" if hit is True else "#b91c1c" if hit is False else "#475569"
         self.status_label.setStyleSheet(f"color: {status_color};")
         detection_count = len(shot.get("detections", []))
-        visible = target_markers_visible(shot)
-        before = shot.get("target_point_before_offset") if visible and SHOW_SIMULATION_AIM_POINT else None
-        after = shot.get("target_point") if visible and SHOW_SIMULATION_IMPACT_POINT else None
-        if not visible:
-            offset_note = "Đã ẩn dấu trên bia: phát bắn không được chấp nhận tính điểm."
-        elif not SHOW_SIMULATION_IMPACT_POINT:
+        before = shot.get("target_point_before_offset") if SHOW_SIMULATION_AIM_POINT else None
+        after = shot.get("target_point") if SHOW_SIMULATION_IMPACT_POINT else None
+        if not SHOW_SIMULATION_IMPACT_POINT:
             offset_note = "Đã ẩn điểm chạm trên bia theo config."
         elif not SHOW_SIMULATION_AIM_POINT:
             offset_note = ("Chấm điểm tại dấu thập đỏ (sau offset)." if after is not None
@@ -349,6 +341,8 @@ class ShotReviewDialog(QDialog):
             offset_note += " Điểm ngoài ảnh bia được hiển thị trên vùng nền mở rộng."
         if SHOW_CAMERA_IMPACT_POINT and shot.get("camera_impact_point") is None:
             offset_note += " Chưa đủ dữ liệu suy ngược điểm chạm lên ảnh thật."
+        if shot.get("scoring_eligible") is False:
+            offset_note += " Điểm hiển thị để đối chiếu; phát này không được tính điểm."
         self.details_label.setText(
             f"{status} · Phát hiện {detection_count} bia. {offset_note}"
         )
@@ -521,10 +515,9 @@ class ShotReviewDialog(QDialog):
         )
         height, width = preview.shape[:2]
         points = []
-        visible = target_markers_visible(shot)
         for key, enabled in (("target_point_before_offset", SHOW_SIMULATION_AIM_POINT),
                              ("target_point", SHOW_SIMULATION_IMPACT_POINT)):
-            normalized = shot.get(key) if enabled and visible else None
+            normalized = shot.get(key) if enabled else None
             points.append(
                 (float(normalized[0]) * width, float(normalized[1]) * height)
                 if normalized is not None and np.all(np.isfinite(normalized)) else None

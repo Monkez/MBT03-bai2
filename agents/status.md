@@ -1,10 +1,17 @@
 # Trạng thái dự án
 
+## Sửa dấu điểm chạm bị ẩn khi xem lại (2026-10-29)
+
+- Bỏ điều kiện `shooting.show_rejected_shots_on_target` khỏi Xem lại: hai panel chỉ theo bốn khóa `review`, kể cả khi `scoring_eligible=false`. Màn hình chính vẫn ẩn phát bị từ chối như trước.
+- Giữ nhãn KHÔNG TÍNH ĐIỂM, lý do và thêm chú thích điểm dùng để đối chiếu. Không thay đổi phép tính điểm hoặc số đạn.
+- 76 test review/config/luồng bài bắn đạt; ảnh render bia 7B cùng dữ liệu tái hiện bản cũ không có dấu, bản sửa có dấu đỏ.
+- Build `MBT03-Bai2-V27-291026` thành công; kiểm tra mã trong PYZ và config đã đóng gói. Chưa chạy thử trực tiếp EXE mới với súng thật.
+
 ## Điểm ngắm/điểm chạm và phát bị từ chối (2026-10-28)
 
 - Xem lại chiếu ngược điểm sau offset lên ảnh thật bằng affine của chính phát bắn; lưu tọa độ chuẩn hóa, không tính lại theo config hiện tại. Phép biến đổi không khả nghịch/không hữu hạn không sinh điểm giả; điểm ngoài ảnh/vùng zoom không bị kéo vào mép.
 - Bốn khóa `review.show_camera_aim_point`, `show_camera_impact_point`, `show_simulation_aim_point`, `show_simulation_impact_point` mặc định `true/true/false/true`. Khóa cũ `show_before_offset` được đọc dự phòng cho `show_simulation_aim_point`.
-- `shooting.show_rejected_shots_on_target=false`: ẩn dấu trên bia chính và bia mô phỏng xem lại với phát không đủ điều kiện thời gian/bia; lưu riêng `scoring_eligible` và `hit_on_image`, hiển thị KHÔNG TÍNH ĐIỂM. Không thay đổi số đạn, lịch sử, điểm số, báo trúng; phát trượt hình học hợp lệ vẫn vẽ bình thường.
+- `shooting.show_rejected_shots_on_target=false`: ẩn dấu trên bia chính với phát không đủ điều kiện thời gian/bia (từ V27, Xem lại chỉ theo các công tắc `review`); lưu riêng `scoring_eligible` và `hit_on_image`, hiển thị KHÔNG TÍNH ĐIỂM. Không thay đổi số đạn, lịch sử, điểm số, báo trúng; phát trượt hình học hợp lệ vẫn vẽ bình thường.
 - Kiểm chứng: 307 test đạt, gồm 16 tổ hợp hiển thị, affine xoay/scale, điểm ngoài ảnh, phát bị từ chối và nhận đồng thời bốn súng. Đã xem ảnh render của hai panel và trường hợp ẩn dấu. Render Qt offscreen vẫn thiếu chữ nên chưa xác nhận bố cục chữ bằng mắt; test QLabel kiểm tra nội dung/chú thích.
 - Build `MBT03-Bai2-V26-281026` thành công; kiểm tra mã trong PYZ, config và asset đóng gói khớp nguồn. Chưa kiểm tra trực tiếp EXE mới và súng thật.
 

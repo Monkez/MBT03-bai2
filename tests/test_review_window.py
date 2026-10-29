@@ -221,23 +221,41 @@ class ReviewWindowTests(unittest.TestCase):
             self.assertTrue(np.any(np.all(preview == [255, 0, 0], axis=2)))
             self.assertTrue(np.any(np.all(preview == [0, 0, 255], axis=2)))
 
-    def test_rejected_markers_hidden_on_target_only_and_normal_misses_remain_visible(self):
+    def test_review_markers_follow_review_flags_even_when_scoring_rejects_shot(self):
         dialog = ShotReviewDialog.__new__(ShotReviewDialog)
         frame = np.full((300, 400, 3), 255, dtype=np.uint8)
-        dialog._reference_images = {1: frame}
+        dialog._reference_images = {2: frame}
         shot = {"frame": frame, "camera_point": (.4, .5), "camera_impact_point": (.6, .5),
-                "target_index": 1, "target_point_before_offset": (.4, .5),
+                "target_index": 2, "target_point_before_offset": (.4, .5),
                 "target_point": (.6, .5), "hit": False}
-        with patch("gui.review_window.SHOW_SIMULATION_AIM_POINT", True):
-            for eligible, show_rejected in itertools.product((False, True), repeat=2):
-                with self.subTest(eligible=eligible, show_rejected=show_rejected), \
-                        patch.dict(config.APP_CONFIG["shooting"], show_rejected_shots_on_target=show_rejected):
-                    shot["scoring_eligible"] = eligible
-                    target = dialog._simulation_preview(shot)
-                    for color in ([255, 0, 0], [0, 0, 255]):
-                        self.assertEqual(np.any(np.all(target == color, axis=2)), eligible or show_rejected)
-                    camera = dialog._camera_preview(shot)
-                    self.assertTrue(np.any(np.all(camera == [0, 0, 255], axis=2)))
+        for eligible, show_rejected, aim, impact in itertools.product((False, True), repeat=4):
+            with (self.subTest(eligible=eligible, show_rejected=show_rejected, aim=aim, impact=impact),
+                  patch.dict(config.APP_CONFIG["shooting"], show_rejected_shots_on_target=show_rejected),
+                  patch("gui.review_window.SHOW_SIMULATION_AIM_POINT", aim),
+                  patch("gui.review_window.SHOW_SIMULATION_IMPACT_POINT", impact)):
+                shot["scoring_eligible"] = eligible
+                target = dialog._simulation_preview(shot)
+                self.assertEqual(np.any(np.all(target == [255, 0, 0], axis=2)), aim)
+                self.assertEqual(np.any(np.all(target == [0, 0, 255], axis=2)), impact)
+                camera = dialog._camera_preview(shot)
+                self.assertTrue(np.any(np.all(camera == [0, 0, 255], axis=2)))
+
+    def test_rejected_review_keeps_explanation_while_showing_impact(self):
+        with (patch.dict(config.APP_CONFIG["shooting"], show_rejected_shots_on_target=False),
+              patch("gui.review_window.SHOW_SIMULATION_IMPACT_POINT", True)):
+            dialog = ShotReviewDialog(1, [{"shot_number": 1, "target_index": 2,
+                                          "target_point": (.5, .5), "hit": False,
+                                          "scoring_eligible": False,
+                                          "status": "Ngoài thời gian cho phép"}])
+            try:
+                self.assertIn("KHÔNG TÍNH ĐIỂM", dialog.status_label.text())
+                self.assertIn("Không tính điểm", dialog.shot_selector.currentText())
+                self.assertIn("Ngoài thời gian cho phép", dialog.details_label.text())
+                self.assertIn("hiển thị để đối chiếu", dialog.details_label.text())
+                preview = dialog._simulation_preview(dialog.shots[0])
+                self.assertTrue(np.any(np.all(preview == [0, 0, 255], axis=2)))
+            finally:
+                dialog.close()
 
     def test_rejected_shot_preserves_ammo_and_review_without_target_marker(self):
         from gui.client_widget import ClientWidget
