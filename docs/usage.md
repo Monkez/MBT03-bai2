@@ -145,9 +145,26 @@ làm mềm đầu/cuối mỗi cụm 5 ms. File tạm được dọn khi đọc 
 Thiếu hoặc lỗi bất kỳ cụm nào sẽ báo lỗi và mở lại nút loa, không đọc câu thiếu.
 Có thể bấm đọc lại để lấy kết quả mới nếu còn ảnh đang chấm.
 
-Bố cục thường: bia 6 trên trái, bia 10 dưới trái, bia 7B ở cột giữa và bia 8 bên phải.
+Trong bài bắn, mỗi bệ chỉ hiển thị một bia được phóng to theo thứ tự
+**6 → 10 → 7B → 8C**. Khi bắt đầu, bia 6 mờ đen trắng và có nhãn **ĐANG GẬP**.
+Tên bia và trạng thái nằm trên một hàng, ví dụ **BIA SỐ 8C · ĐANG GẬP** (không ghi góc alpha).
+Đến thời điểm hiện bia, ảnh chuyển sang màu rõ và nhãn **ĐANG HIỆN**.
+Hết thời gian, hoặc có phát trúng hợp lệ khi bật tự động gập bia, ảnh trở lại mờ.
+Sau khoảng 0,8 giây, chuyển sang bia tiếp theo ở trạng thái gập, chờ đến lượt hiện.
+Sau lượt bia cuối, giữ bia cuối ở trạng thái gập đến khi kết thúc bài.
+Viền bo góc đỏ biểu thị chưa trúng, xanh biểu thị đã trúng; lớp viền ngoài nhạt cùng màu
+giúp dễ phân biệt từng bia. Khi bia gập, viền chuyển xám nhẹ.
+Các bệ cùng theo trạng thái bia chung; trúng ở một bệ có thể gập bia chung khi bật chế độ này.
+
+Màn hình mô phỏng theo lịch điều khiển và thời điểm gửi lệnh, không phải cảm biến
+xác nhận bia vật lý. Khoảng cho phép chấm điểm ảnh đến sớm/muộn không kéo dài
+thời gian hiện bia trên màn hình. Dấu chạm chỉ hiện trên bia đang hiện; toàn bộ
+dấu chạm được giữ lại để xem khi kết thúc. Khi mới mở ứng dụng hoặc kết thúc/dừng
+bài bắn, màn hình hiển thị lại cả bốn bia như trước.
+
+Bố cục thường: bia 6 trên trái, bia 10 dưới trái, bia 7B ở cột giữa và bia 8C bên phải.
 Khi chọn 2 bệ, bố cục dọc lần lượt là bia 6, bia 10, rồi hàng cuối gồm bia 7B bên trái
-và bia 8 bên phải. Bia 7B được phóng vừa ô đứng; mọi ảnh giữ đúng tỉ lệ, không kéo méo
+và bia 8C bên phải. Bia 7B được phóng vừa ô đứng; mọi ảnh giữ đúng tỉ lệ, không kéo méo
 hoặc cắt bia.
 
 Màu vết chạm trên màn hình chính biểu thị kết quả: **xanh dương là trúng, đỏ là trượt**, không phải màu phân biệt bệ. Mỗi vết là điểm sau offset của một phát; nhiều phát trên cùng bia có thể có cả hai màu. Riêng cửa sổ `Xem lại` mặc định chỉ vẽ điểm đỏ sau offset trên bia mô phỏng; có thể bật thêm điểm xanh trước offset bằng `review.show_simulation_aim_point`. Để kiểm tra nhầm bệ, bắn riêng từng bệ và theo dõi bộ đếm `Đạn` cùng ảnh camera trong lịch sử của bệ đó.

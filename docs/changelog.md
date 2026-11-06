@@ -120,3 +120,10 @@
 - Đọc bệ, số điểm chạm từng bia 6 → 10 → 7b → 8c an pha 45, rồi xếp loại; 0 đọc “Không trúng”, 1–16 dùng bản ghi tương ứng.
 - Đếm riêng điểm chạm hợp lệ, không phụ thuộc hiển thị dấu chạm; giữ quy tắc xếp loại.
 - Đóng gói đủ bộ WAV mới trong bản V28.
+
+## 2026-11-06 — Hiển thị theo lượt bia
+
+- Trong bài bắn chỉ phóng to bia hiện tại: mờ đen trắng với nhãn ĐANG GẬP, có màu với nhãn ĐANG HIỆN.
+- Chuyển theo lịch bia 6 → 10 → 7B → 8C, giữ trạng thái vừa gập khoảng 0,8 giây rồi xem trước bia kế tiếp. Tự động gập khi trúng cũng cập nhật trạng thái chung của các bệ.
+- Khi mở app hoặc kết thúc/dừng bài, hiển thị lại bốn bia cùng toàn bộ dấu chạm. Tách trạng thái hiện bia khỏi khoảng cho phép chấm điểm ảnh đến trễ.
+- Tên bia và trạng thái cùng một hàng; thống nhất nhãn BIA SỐ 8C không ghi góc alpha. Viền xanh/đỏ bo góc, khử răng cưa, có lớp nền nhạt cùng màu để dễ phân biệt.

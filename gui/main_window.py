@@ -149,6 +149,10 @@ class MainWindow(QMainWindow):
         self._start_followup_timer.setTimerType(Qt.PreciseTimer)
         self._start_followup_timer.timeout.connect(self._send_start_followup_command)
         self._lora_schedule_timers = []
+        self._target_presentation_timer = QTimer(self)
+        self._target_presentation_timer.setInterval(100)
+        self._target_presentation_timer.setTimerType(Qt.PreciseTimer)
+        self._target_presentation_timer.timeout.connect(self._refresh_target_presentation)
         self._closing = False
         self.servers = []
         self.hub_registrar = None
@@ -859,6 +863,8 @@ class MainWindow(QMainWindow):
         self.update_app()
         for widget in self.client_widgets:
             widget.start_test()
+        self._refresh_target_presentation()
+        self._target_presentation_timer.start()
         self._update_score_speak_buttons()
 
     def _update_manual_target_buttons(self):
@@ -919,6 +925,7 @@ class MainWindow(QMainWindow):
         if not self.testing:
             return
         self._start_sound.stop()
+        self._target_presentation_timer.stop()
         session_id = self._active_review_session_id
         for widget in self.client_widgets:
             received = self._review_shot_counters.get((session_id, widget.id), 0)
@@ -943,6 +950,13 @@ class MainWindow(QMainWindow):
             widget.stop_test()
         self._roster.update_results(self._previous_review_session_id)
         self._update_score_speak_buttons()
+
+    def _refresh_target_presentation(self):
+        if not self.testing or self._shooting_session is None:
+            return
+        state = self._shooting_session.target_presentation(time.monotonic())
+        for widget in self.client_widgets:
+            widget.set_target_presentation(state)
 
     def update_app(self):
         if not self.testing:
@@ -1033,6 +1047,7 @@ class MainWindow(QMainWindow):
             return
         if not self._shooting_session.open_target(class_id, now):
             return
+        self._refresh_target_presentation()
         print(f"[LoRa] Gui {command}: {description}")
         self.lora.send_command(command)
 
@@ -1058,10 +1073,12 @@ class MainWindow(QMainWindow):
         for class_id, (_, raise_command, _) in zip(TARGET_CLASS_SEQUENCE, self.LORA_SCRIPT):
             if command == raise_command:
                 session.confirm_command_sent(class_id, sent_at, raised=True)
+                self._refresh_target_presentation()
                 return
         for class_id, (close_command, _) in self.AUTO_CLOSE_TARGET_COMMANDS.items():
             if command == close_command:
                 session.confirm_command_sent(class_id, sent_at, raised=False)
+                self._refresh_target_presentation()
                 return
 
     def closeEvent(self, event):

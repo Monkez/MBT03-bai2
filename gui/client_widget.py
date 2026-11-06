@@ -2,9 +2,9 @@ import os
 
 import cv2
 import numpy as np
-from PyQt5 import uic
-from PyQt5.QtCore import QEvent, QTimer, Qt, pyqtSignal
-from PyQt5.QtGui import QColor
+from PyQt5 import sip, uic
+from PyQt5.QtCore import QEvent, QRectF, QTimer, Qt, pyqtSignal
+from PyQt5.QtGui import QColor, QImage, QPainter, QPen
 from PyQt5.QtWidgets import QLabel, QPushButton, QWidget, QFrame, QSizePolicy
 
 import config as cf
@@ -17,6 +17,7 @@ TARGET_IMAGE_FILES = [
     "biaso7b_X7.png",
     "biaso8_phai_X7.png",
 ]
+TARGET_NAMES = ("BIA SỐ 10", "BIA SỐ 6", "BIA SỐ 7B", "BIA SỐ 8C")
 
 
 TARGET_LAYOUT = {
@@ -61,6 +62,7 @@ class ClientWidget(QFrame):
         self.hit_counts = [0] * 4
         self.shots = []
         self.testing = False
+        self._target_presentation = None
         self.connected = False
         self.connection_info = ""
         self._pedestal_default_style = self.pedestal_name_label.styleSheet()
@@ -130,6 +132,10 @@ class ClientWidget(QFrame):
 
     def _configure_ui(self):
         self._set_target_background_white()
+        self.target_status_label = QLabel(self.sign_image)
+        self.target_status_label.setAlignment(Qt.AlignCenter)
+        self.target_status_label.setAttribute(Qt.WA_TransparentForMouseEvents, True)
+        self.target_status_label.hide()
         self.error_label = QLabel(self.sign_image)
         self.error_label.setTextFormat(Qt.PlainText)
         self.error_label.setAlignment(Qt.AlignCenter)
@@ -146,6 +152,7 @@ class ClientWidget(QFrame):
         self._error_timer.setSingleShot(True)
         self._error_timer.timeout.connect(self.error_label.hide)
         self.sign_image.installEventFilter(self)
+        self.sign_image.frame.installEventFilter(self)
         self.score_speak_icon.clicked.connect(lambda: self.score_speak_requested.emit(self.id))
         self.set_score_speak_ui_state("idle")
         self.review_btn.clicked.connect(lambda: self.review_requested.emit(self.id))
@@ -190,6 +197,9 @@ class ClientWidget(QFrame):
                 return True
         if watched is self.sign_image and event.type() == QEvent.Resize:
             self._position_error_label()
+            self._position_target_status()
+        if watched is self.sign_image.frame and event.type() == QEvent.Resize and self.testing:
+            self.show_target_simulation()
         return super().eventFilter(watched, event)
 
     def clear_error(self):
@@ -212,6 +222,7 @@ class ClientWidget(QFrame):
         self.hit_counts = [0] * 4
         self.shots.clear()
         self.testing = False
+        self._target_presentation = None
         self.pedestal_name_label.setText(f"BỆ SỐ {self.id}")
         self.reset_shooter()
         self.show_target_simulation()
@@ -351,6 +362,7 @@ class ClientWidget(QFrame):
     def start_test(self):
         self.reset_results()
         self.testing = True
+        self.set_target_presentation((1, False))
 
     def reset_results(self):
         self.clear_error()
@@ -363,6 +375,7 @@ class ClientWidget(QFrame):
 
     def stop_test(self):
         self.testing = False
+        self.set_target_presentation(None)
         self.update_result_label()
 
     def record_shot(self, target_index, x_ratio, y_ratio, hit=True, show_marker=True):
@@ -426,8 +439,38 @@ class ClientWidget(QFrame):
 
     def show_target_simulation(self):
         self.sign_image.set_image(self.compose_target_image())
+        self._update_target_status()
+
+    def set_target_presentation(self, state):
+        if state != self._target_presentation:
+            self._target_presentation = state
+            self.show_target_simulation()
+
+    def _position_target_status(self):
+        self.target_status_label.setGeometry(8, 4, max(1, self.sign_image.width() - 16), 28)
+
+    def _update_target_status(self):
+        state = self._target_presentation
+        self.target_status_label.setVisible(state is not None)
+        if state is None:
+            self.sign_image.setAccessibleName("Toàn bộ bốn bia và các điểm chạm")
+            return
+        target, visible = state
+        status = "ĐANG HIỆN" if visible else "ĐANG GẬP"
+        text = f"{TARGET_NAMES[target]} · {status}"
+        self.target_status_label.setText(text)
+        self.target_status_label.setStyleSheet(
+            "background: white; font-size: 15px; font-weight: bold; color: "
+            + ("#15803d;" if visible else "#64748b;")
+        )
+        self._position_target_status()
+        self.target_status_label.raise_()
+        self.error_label.raise_()
+        self.sign_image.setAccessibleName(text)
 
     def compose_target_image(self):
+        if self._target_presentation is not None:
+            return self._compose_focused_target()
         layout = self._current_target_layout()
         canvas_w, canvas_h = self._current_canvas_size()
         canvas = np.full((canvas_h, canvas_w, 3), 255, dtype=np.uint8)
@@ -443,6 +486,26 @@ class ClientWidget(QFrame):
 
         return canvas
 
+    def _compose_focused_target(self):
+        target, visible = self._target_presentation
+        # Match the live viewport so both landscape and portrait targets enlarge.
+        width = max(160, self.sign_image.frame.width()) * 2
+        height = max(160, self.sign_image.frame.height()) * 2
+        canvas = np.full((height, width, 3), 255, dtype=np.uint8)
+        self._rendered_target_rects = {}
+        border = TARGET_GREEN if target in self.hit_targets else TARGET_RED
+        self._draw_target(canvas, target, 20, 72, width - 40, height - 92,
+                          border if visible else "#cbd5e1")
+        if visible:
+            for index, px, py, hit in self.shots:
+                if index == target:
+                    self._draw_shot(canvas, index, px, py, hit)
+        else:
+            gray = cv2.cvtColor(canvas, cv2.COLOR_BGR2GRAY)
+            canvas = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
+            canvas = cv2.addWeighted(canvas, 0.28, np.full_like(canvas, 255), 0.72, 0)
+        return canvas
+
     def _current_target_layout(self):
         if self.target_layout_mode == "two_pedestals":
             return TWO_PEDESTAL_TARGET_LAYOUT
@@ -454,9 +517,28 @@ class ClientWidget(QFrame):
         return 1000, 630
 
     def _draw_target(self, canvas, target_index, x, y, w, h, border_color_hex):
-        cv2.rectangle(canvas, (x, y), (x + w, y + h), self._hex_to_bgr(border_color_hex), 6)
+        # Paint directly into the BGR canvas for smooth corners at every size.
+        scale = 2 if self._target_presentation is not None else 1
+        stroke = 3 * scale
+        halo = 9 * scale
+        inset = halo / 2 + 1
+        frame = QRectF(x + inset, y + inset, w - 2 * inset, h - 2 * inset)
+        surface = QImage(sip.voidptr(canvas.ctypes.data), canvas.shape[1], canvas.shape[0],
+                         canvas.strides[0], QImage.Format_BGR888)
+        painter = QPainter(surface)
+        painter.setRenderHint(QPainter.Antialiasing)
+        color = QColor(border_color_hex)
+        soft_color = QColor(color)
+        soft_color.setAlpha(35)
+        painter.setBrush(Qt.white)
+        painter.setPen(QPen(soft_color, halo))
+        painter.drawRoundedRect(frame, 12 * scale, 12 * scale)
+        painter.setPen(QPen(color, stroke))
+        painter.drawRoundedRect(frame, 12 * scale, 12 * scale)
+        painter.end()
 
-        inner = (x + 8, y + 8, w - 16, h - 16)
+        padding = 12 * scale
+        inner = (x + padding, y + padding, w - 2 * padding, h - 2 * padding)
         image = self._fit_image(self._target_images[target_index], inner[2], inner[3])
         ih, iw = image.shape[:2]
         ox = inner[0] + (inner[2] - iw) // 2
@@ -465,6 +547,8 @@ class ClientWidget(QFrame):
         self._rendered_target_rects[target_index] = (ox, oy, iw, ih)
 
     def _draw_shot(self, canvas, target_index, px, py, hit):
+        if self._target_presentation is not None and target_index != self._target_presentation[0]:
+            return
         layout = self._current_target_layout()
         if target_index not in layout:
             return
@@ -492,10 +576,3 @@ class ClientWidget(QFrame):
         new_w = max(1, int(w * scale))
         new_h = max(1, int(h * scale))
         return cv2.resize(image, (new_w, new_h), interpolation=cv2.INTER_AREA)
-
-    def _hex_to_bgr(self, color):
-        color = color.lstrip("#")
-        r = int(color[0:2], 16)
-        g = int(color[2:4], 16)
-        b = int(color[4:6], 16)
-        return b, g, r

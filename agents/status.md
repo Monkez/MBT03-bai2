@@ -1,3 +1,11 @@
+## Hiển thị theo lượt bia — 2026-11-06
+
+- Khi bắt đầu chỉ phóng to bia 6 đang gập, rồi theo thứ tự 6 → 10 → 7B → 8C. Bia gập mờ đen trắng; đến lượt hiện có màu rõ. Sau khi gập (hết giờ hoặc trúng khi bật auto-close), giữ 0,8 giây rồi xem trước bia tiếp theo đang gập. Bia cuối giữ gập đến kết thúc.
+- `ShootingSession.target_presentation` dùng thời điểm dựng/gập điều khiển, tách khỏi scoring grace. MainWindow cập nhật 100 ms, chỉ vẽ lại khi trạng thái đổi; dừng bài trả overview cả bốn bia và giữ dấu chạm. Resize theo viewport, marker theo ảnh bia đã fit.
+- Tên và trạng thái cùng hàng. Người dùng chốt BIA SỐ 7B, BIA SỐ 8C, không ghi alpha trên nhãn. Viền bo góc khử răng cưa bằng QPainter trên buffer BGR ghi trực tiếp qua sip.voidptr; xanh/đỏ rõ cùng lớp halo nhạt, gập dùng xám.
+- 319 tests đạt; đã xem ảnh Windows Qt ở 1/2/4 bệ và kiểm tra luồng từ mã PYZ + tài nguyên bản V31-061126, gồm nhãn một hàng không tràn và hiện/gập/trả overview. Chưa thử cơ cấu bia/súng thật.
+- Build cuối V31-061126; chuyển cấu hình/dữ liệu từ V28/V30 sang bản Desktop trước khi dọn bản cũ vào Recycle Bin. V29/V30 là bản trung gian trước các chỉnh nhãn/viền trong cùng task.
+
 ## Hoàn tất âm thanh — 2026-11-06
 
 - Dùng `assets/new_sounds`: bắt đầu tập; đọc bệ + các bia class 1/0/2/3 theo thứ tự 6/10/7b/8c alpha 45 (góc do người dùng xác nhận), số điểm chạm 0–16 và xếp loại. Không thêm bia 5/8c alpha 90 vào bài hiện tại.

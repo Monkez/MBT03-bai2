@@ -6,6 +6,7 @@ TARGET_VISIBLE_SECONDS_BY_CLASS = {1: 7, 0: 7, 2: 7, 3: 18}
 TARGET_CLASS_SEQUENCE = (1, 0, 2, 3)  # Bia 6, 10, 7B, 8.
 TARGET_EARLY_SECONDS = 2
 TARGET_LATE_SECONDS = 4
+FOLDED_PREVIEW_SECONDS = 0.8
 
 
 @dataclass
@@ -42,6 +43,25 @@ class ShootingSession:
 
     def expired(self, now):
         return now >= self.deadline
+
+    def target_presentation(self, now):
+        """Return the focused target and commanded visibility, without scoring grace."""
+        if self.stopped_at is not None or self.expired(now):
+            return None
+        if not self.next_target:
+            return TARGET_CLASS_SEQUENCE[0], False
+        class_id = TARGET_CLASS_SEQUENCE[self.next_target - 1]
+        raised_at = self._raised_times[class_id]
+        closed_at = min(raised_at + TARGET_VISIBLE_SECONDS_BY_CLASS[class_id],
+                        self._lowered_times.get(class_id, self.deadline), self.deadline)
+        if now < raised_at:
+            return class_id, False
+        if now < closed_at:
+            return class_id, True
+        # Briefly show the fold before previewing the next target.
+        if now >= closed_at + FOLDED_PREVIEW_SECONDS and self.next_target < len(TARGET_CLASS_SEQUENCE):
+            class_id = TARGET_CLASS_SEQUENCE[self.next_target]
+        return class_id, False
 
     def stop(self, now):
         if self.stopped_at is None:

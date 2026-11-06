@@ -1,0 +1,176 @@
+import os
+import unittest
+from unittest.mock import MagicMock, patch
+
+import numpy as np
+
+os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+
+from PyQt5.QtWidgets import QApplication
+from PyQt5.QtTest import QTest
+
+from gui.main_window import MainWindow
+from gui.shooting_session import ShootingSession
+from gui.styles import TARGET_GREEN, TARGET_RED
+
+
+class TargetPresentationTests(unittest.TestCase):
+    def test_sequence_uses_visibility_not_early_and_late_scoring_grace(self):
+        session = ShootingSession(100, (15, 32, 42, 64))
+        self.assertEqual(session.target_presentation(100), (1, False))
+        for target, opened in ((1, 115), (0, 132), (2, 142), (3, 164)):
+            session.open_target(target, opened)
+            self.assertEqual(session.target_presentation(opened), (target, True))
+            closed = opened + (18 if target == 3 else 7)
+            self.assertEqual(session.target_presentation(closed - .001), (target, True))
+            self.assertEqual(session.target_presentation(closed), (target, False))
+            # The scoring window remains open after the picture folds.
+            self.assertEqual(session.active_target(closed, target).class_id, target)
+            upcoming = {1: 0, 0: 2, 2: 3, 3: 3}[target]
+            self.assertEqual(session.target_presentation(closed + .801), (upcoming, False))
+        self.assertIsNone(session.target_presentation(185))
+
+    def test_early_fold_and_delayed_serial_confirmation(self):
+        session = ShootingSession(100, (15, 32, 42, 64))
+        session.open_target(1, 115)
+        session.confirm_command_sent(1, 118, raised=True)
+        self.assertEqual(session.target_presentation(116), (1, False))
+        self.assertEqual(session.target_presentation(118), (1, True))
+        self.assertTrue(session.close_target(1, 119))
+        self.assertEqual(session.target_presentation(119), (1, False))
+        self.assertEqual(session.target_presentation(119.801), (0, False))
+        session.confirm_command_sent(1, 120, raised=False)
+        self.assertEqual(session.target_presentation(120.5), (1, False))
+        session.stop(121)
+        self.assertIsNone(session.target_presentation(121))
+
+
+class TargetPresentationFlowTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.app = QApplication.instance() or QApplication([])
+
+    def setUp(self):
+        self.addCleanup(patch.stopall)
+        self.clock = patch("gui.main_window.time.monotonic", return_value=100.0).start()
+        option = patch("gui.main_window.OptionWindow").start().return_value
+        option.exec_.return_value = option.Accepted = 1
+        option.start = True
+        option.p_num = 2
+        option.automatic_close_target_enabled = True
+        patch.object(MainWindow, "_start_servers").start()
+        for name in ("LoraController", "ShotSound", "HitSound", "ResultSound"):
+            patch(f"gui.main_window.{name}").start()
+        self.window = MainWindow()
+        self.window.servers = [MagicMock(), MagicMock()]
+        self.addCleanup(self.window.close)
+
+    def assert_state(self, state):
+        for widget in self.window.client_widgets:
+            self.assertEqual(widget._target_presentation, state)
+            image = widget.compose_target_image()
+            self.assertEqual(set(widget._rendered_target_rects),
+                             set(range(4)) if state is None else {state[0]})
+            if state is not None and not state[1]:
+                np.testing.assert_array_equal(image[:, :, 0], image[:, :, 1])
+                np.testing.assert_array_equal(image[:, :, 1], image[:, :, 2])
+                self.assertGreaterEqual(image.min(), 183)
+                self.assertIn("ĐANG GẬP", widget.target_status_label.text())
+                self.assertNotIn("\n", widget.target_status_label.text())
+
+    def start(self):
+        self.window.start_test()
+        self.window._cancel_lora_script()
+
+    def raise_target(self, index, at):
+        self.clock.return_value = at
+        _, command, description = self.window.LORA_SCRIPT[index]
+        self.window._send_lora_script_command(command, description, (1, 0, 2, 3)[index])
+
+    def test_start_each_target_fold_preview_and_stop_restore_overview(self):
+        self.assert_state(None)
+        self.start()
+        self.assert_state((1, False))
+        for index, target, at in ((0, 1, 115), (1, 0, 132), (2, 2, 142), (3, 3, 164)):
+            self.raise_target(index, at)
+            self.assert_state((target, True))
+            self.clock.return_value = at + (18 if target == 3 else 7)
+            self.window._refresh_target_presentation()
+            self.assert_state((target, False))
+            self.clock.return_value += .801
+            self.window._refresh_target_presentation()
+            self.assert_state(({1: 0, 0: 2, 2: 3, 3: 3}[target], False))
+        self.clock.return_value = 185
+        self.window.update_app()
+        self.assertFalse(self.window._target_presentation_timer.isActive())
+        self.assert_state(None)
+
+    def test_auto_fold_only_on_hit_when_enabled_and_late_result_keeps_next_target(self):
+        self.start()
+        self.raise_target(0, 115)
+        self.clock.return_value = 116
+        self.assertFalse(self.window._maybe_close_hit_target(1, False))
+        self.window.automatic_close_target_enabled = False
+        self.assertFalse(self.window._maybe_close_hit_target(1, True))
+        self.window._refresh_target_presentation()
+        self.assert_state((1, True))
+        self.window.automatic_close_target_enabled = True
+        self.assertTrue(self.window._maybe_close_hit_target(1, True))
+        self.window._refresh_target_presentation()
+        self.assert_state((1, False))
+        self.clock.return_value = 117
+        self.window._refresh_target_presentation()
+        self.assert_state((0, False))
+        self.raise_target(1, 132)
+        self.assertFalse(self.window._maybe_close_hit_target(1, True))
+        self.window._refresh_target_presentation()
+        self.assert_state((0, True))
+        self.window.stop_test()
+        self.assert_state(None)
+        self.start()
+        self.assert_state((1, False))
+
+    def test_focused_shot_mapping_filters_other_targets_and_overview_keeps_all_shots(self):
+        widget = self.window.client_widgets[0]
+        self.start()
+        widget.record_shot(1, .5, .5)
+        widget.record_shot(0, .25, .25)
+        with patch.object(widget, "_draw_shot", wraps=widget._draw_shot) as draw:
+            self.raise_target(0, 115)
+            self.assertEqual([call.args[1] for call in draw.call_args_list], [1])
+        self.window.stop_test()
+        self.assertEqual(len(widget.shots), 2)
+        self.assertEqual(set(widget._rendered_target_rects), set(range(4)))
+
+    def test_live_timer_folds_after_hit_and_stop_cancels_further_transitions(self):
+        self.start()
+        self.raise_target(0, 115)
+        self.clock.return_value = 116
+        self.window._maybe_close_hit_target(1, True)
+        QTest.qWait(150)
+        self.assert_state((1, False))
+        self.clock.return_value = 117
+        QTest.qWait(150)
+        self.assert_state((0, False))
+        self.window.stop_test()
+        self.clock.return_value = 132
+        QTest.qWait(150)
+        self.assert_state(None)
+
+    def test_overview_and_focused_target_render_distinct_hit_and_miss_borders(self):
+        widget = self.window.client_widgets[0]
+        widget.record_shot(1, .5, .5)
+        for state in (None, (1, True), (0, True)):
+            widget.set_target_presentation(state)
+            canvas = widget.compose_target_image()
+            colors = (TARGET_GREEN, TARGET_RED) if state is None else (
+                TARGET_GREEN if state[0] == 1 else TARGET_RED,)
+            for color in colors:
+                bgr = tuple(int(color[i:i + 2], 16) for i in (5, 3, 1))
+                self.assertGreater(np.count_nonzero(np.all(canvas == bgr, axis=2)), 100)
+        widget.set_target_presentation((3, False))
+        self.assertEqual(widget.target_status_label.text(), "BIA SỐ 8C · ĐANG GẬP")
+
+
+if __name__ == "__main__":
+    unittest.main()
