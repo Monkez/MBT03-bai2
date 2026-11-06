@@ -1,3 +1,9 @@
+## Dải đạn từng bia — 2026-11-07
+
+- target_round_groups ghép shots/receipt, ưu tiên displayed_target_index, pending xám/completed miss đỏ/hit xanh; phân loạt toàn bài trước khi chia bia, không biến loạt đi qua hai bia thành viên lẻ.
+- ClientWidget vẽ dải căn trái trong từng khung, riêng vùng ảnh, tự xuống dòng/thu ô khi khung nhỏ. Viên lẻ ô vuông khung đỏ, loạt khung vàng, số phát chung. Thay icon A, giữ asset cũ. Reset xóa dải; MainWindow cập nhật cả lúc pending/trễ.
+- 367 tests đạt trước bổ sung hai test nhóm; 9 test nhóm đạt; native Qt đã xem 1/2/4 bệ và 16 viên lẻ cùng bia. 17 test nhóm/vẽ ảnh đạt sau sửa ô vuông khung đỏ. Build V47-071126 đạt, native Qt từ PYZ đóng gói xác nhận 1/2/4 bệ và xuống hàng, bàn giao Desktop giữ dữ liệu. Chưa thử thiết bị thật/EXE mặc định.
+
 ## Giới hạn xem lại — 2026-11-07
 
 - MainWindow chặn receipt vượt bullet_limit trước khi tăng counter/nhóm/submit. ShotReviewDialog lọc cả source ban đầu và refresh, receipt/fired count, chỉ tạo max_bullets ô.

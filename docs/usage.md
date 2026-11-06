@@ -128,7 +128,7 @@ mục tiêu; không cần bắn hết 16 viên mới hiển thị xếp loại.
 
 Mỗi loạt yêu cầu ít nhất **2 viên**. Có ít nhất một loạt chỉ một viên thì
 hạ **một bậc cho cả bài**: Giỏi → Khá, Khá → Đạt; Đạt và Không đạt giữ nguyên.
-Nhiều viên bắn lẻ không hạ cộng dồn. Bia có bắn lẻ được đánh dấu bằng **icon viên đạn vàng đồng có vòng tròn đỏ ở góc trên bên phải**; viền vẫn xanh khi trúng, đỏ khi chưa trúng. Viên lẻ được tính cho bia hiển thị tại thời điểm PC nhận phát bắn, kể cả bia đang gập hoặc đang chờ hiện. Khi nhiều bia cùng mở, dùng bia nhận diện trong ảnh để phân biệt. Mốc phân loạt dùng `shooting.burst_gap_seconds`. Khi đang bắn,
+Nhiều viên bắn lẻ không hạ cộng dồn. Mỗi bia có dải các viên đã bắn căn trái, phía trên ảnh bia: trúng màu xanh lá, trượt màu đỏ, đang chờ chấm màu xám. Viên lẻ cũng là ô vuông và có khung đỏ; loạt từ hai viên có khung vàng bao quanh. Số trên viên là số thứ tự chung của phát bắn để đối chiếu với Xem lại. Dải tự xuống hàng khi cần và chừa vùng riêng phía trên ảnh. Viền bia vẫn xanh khi trúng, đỏ khi chưa trúng. Viên lẻ được tính cho bia hiển thị tại thời điểm PC nhận phát bắn, kể cả bia đang gập hoặc đang chờ hiện. Khi nhiều bia cùng mở, dùng bia nhận diện trong ảnh để phân biệt. Mốc phân loạt dùng `shooting.burst_gap_seconds`. Khi đang bắn,
 chờ đủ khoảng này trước khi kết luận viên cuối là bắn lẻ; khi dừng bài thì chốt ngay.
 Ảnh chấm về chậm không tách một loạt đã nhận thành nhiều viên lẻ. Xếp loại trên
 màn hình, đọc kết quả và lưu/nạp Excel dùng chung kết quả sau khi hạ bậc.
@@ -161,7 +161,7 @@ Bia vừa gập tiếp tục hiển thị đến mốc giữa thời điểm g�
 Khi nhiều bia cùng hiện, màn hình chia khung để hiển thị tất cả các bia đang hiện.
 Sau lượt bia cuối, giữ bia cuối ở trạng thái gập đến khi kết thúc bài.
 Viền bo góc đỏ biểu thị chưa trúng, xanh biểu thị đã trúng; lớp viền ngoài nhạt cùng màu
-giúp dễ phân biệt từng bia. Icon viên đạn vòng đỏ đánh dấu bắn lẻ giữ rõ cả khi bia gập; viền giữ xanh/đỏ theo kết quả.
+giúp dễ phân biệt từng bia. Dải đạn giữ rõ cả khi bia gập; viền giữ xanh/đỏ theo kết quả.
 Các bệ cùng theo trạng thái bia chung; trúng ở một bệ có thể gập bia chung khi bật chế độ này.
 
 Màn hình mô phỏng theo lịch điều khiển và thời điểm gửi lệnh, không phải cảm biến
@@ -171,7 +171,7 @@ dấu chạm được giữ lại để xem khi kết thúc. Khi mới mở ứn
 bài bắn, màn hình hiển thị lại cả bốn bia như trước.
 
 Ở màn hình kết quả sau khi kết thúc/dừng bài, bia chưa trúng mờ đen trắng
-và giữ viền đỏ; bia đã trúng giữ ảnh có màu và viền xanh. Bia có bắn lẻ có icon viên đạn vòng đỏ góc trên phải. Khi mới mở app hoặc
+và giữ viền đỏ; bia đã trúng giữ ảnh có màu và viền xanh. Dải đạn riêng của từng bia vẫn hiển thị, gồm cả viên trượt hoặc không có điểm chạm để vẽ. Khi mới mở app hoặc
 xóa kết quả để bắt đầu lượt mới, cả bốn bia vẫn hiển thị có màu như ban đầu.
 
 Ảnh bia được thu nhỏ 10% theo cả chiều rộng và chiều cao trong khung, giữ đúng

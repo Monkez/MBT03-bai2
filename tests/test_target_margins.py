@@ -27,6 +27,26 @@ class TargetMarginTests(unittest.TestCase):
         x, y, w, h = self.widget._rendered_target_rects[target]
         return canvas[y:y + h, x:x + w]
 
+    def test_sixteen_rounds_fit_left_strip_above_target_in_compact_views(self):
+        widget = self.widget
+        widget.resize(320, 320)
+        widget.set_target_rounds({1: [("single", ((n, "hit" if n % 2 else "miss"),))
+                                      for n in range(1, 17)]})
+        for state, visible in ((None, ()), ((1, False), ()), ((1, True), (1, 0, 2, 3))):
+            widget.set_target_presentation(state, visible_targets=visible)
+            image = widget.compose_target_image()
+            x, y, w, h = widget._rendered_target_rects[1]
+            self.assertGreater(h, 0)
+            self.assertGreaterEqual(x, 0)
+            self.assertGreaterEqual(y, 0)
+            self.assertLessEqual(x + w, image.shape[1])
+            self.assertLessEqual(y + h, image.shape[0])
+            # Both hit and miss fills remain visible independently of target artwork.
+            for color in ((88, 155, 26), (73, 57, 223)):
+                self.assertTrue(np.any(np.all(image == color, axis=2)))
+        widget.reset_results()
+        self.assertEqual(widget._target_rounds, {})
+
     def test_initial_view_is_colored_and_final_unhit_targets_fade_with_red_borders(self):
         widget = self.widget
         initial = widget.compose_target_image()

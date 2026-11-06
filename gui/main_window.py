@@ -23,7 +23,7 @@ from gui.client_widget import ClientWidget
 from gui.lora_controller import LoraController
 from gui.option_window import OptionWindow
 from gui.review_window import ShotReviewDialog
-from gui.shot_groups import same_burst, single_shot_violations
+from gui.shot_groups import same_burst, single_shot_violations, target_round_groups
 from gui.setting_window import SettingWindow
 from gui.shot_sound import ShotSound
 from gui.hit_sound import HitSound
@@ -801,6 +801,8 @@ class MainWindow(QMainWindow):
             shots, receipts, cf.burst_gap_seconds(), limit=widget.bullet_limit,
             final=not self.testing, now=time.monotonic())
         widget.set_burst_assessment(singles, targets)
+        widget.set_target_rounds(target_round_groups(shots, receipts, cf.burst_gap_seconds(),
+                                                   limit=widget.bullet_limit, singles=singles))
         for index, shot in enumerate(shots):
             shot["single_shot"] = shot.get("shot_number", index + 1) in singles
 

@@ -266,14 +266,16 @@ class ShootingRosterTests(unittest.TestCase):
         widget.set_burst_assessment((1,), {1})
         self.assertEqual(widget._target_border_color(1), TARGET_RED)
         self.assertEqual(widget._rank_text(), "Không đạt")
+        widget.set_target_rounds({1: [("single", ((1, "miss"),))]})
         for state in (None, (1, False), (1, True)):
             widget.set_target_presentation(state)
             image = widget.compose_target_image()
-            self.assertFalse(widget._single_shot_icon.isNull())
-            widget.single_shot_targets.clear()
+            self.assertTrue(widget._target_rounds[1])
+            groups = widget._target_rounds
+            widget._target_rounds = {}
             without = widget.compose_target_image()
             self.assertGreater(np.count_nonzero(np.any(image != without, axis=2)), 100)
-            widget.single_shot_targets.add(1)
+            widget._target_rounds = groups
 
     def test_file_picker_load_assign_next_group_and_clear(self):
         with patch("gui.shooting_roster.QFileDialog.getOpenFileName", return_value=(str(self.path), "")):

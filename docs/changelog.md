@@ -1,3 +1,9 @@
+# V47-071126 — Dải đạn riêng từng bia
+
+- Hiển thị toàn bộ viên đã nhận theo từng bia, căn trái phía trên ảnh, giữ số phát và xuống hàng khi cần.
+- Trúng xanh lá, trượt đỏ, đang chấm xám; viên lẻ cũng là ô vuông và có khung đỏ, các loạt có khung vàng. Thay icon bắn lẻ đơn lẻ.
+- Nhóm theo receipt trước inference; giữ đúng loạt khi chấm xong khác thứ tự, không bỏ viên thiếu điểm chạm.
+
 # V46-071126 — Giới hạn đạn xem lại và icon bắn lẻ
 
 - Chỉ nhận chấm và xem lại tối đa max_bullets viên mỗi bệ/phiên (mặc định 16), chặn phát vượt giới hạn trước khi phân loạt.

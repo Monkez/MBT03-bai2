@@ -1,7 +1,7 @@
 import unittest
 
 from gui.client_widget import classify_hits
-from gui.shot_groups import single_shot_violations
+from gui.shot_groups import single_shot_violations, target_round_groups
 
 
 class SingleShotTests(unittest.TestCase):
@@ -52,3 +52,24 @@ class SingleShotTests(unittest.TestCase):
         receipts = {1: {"received_at": 100}, 2: {"received_at": 100.3},
                     17: {"received_at": 110, "expected_target_index": 3}}
         self.assertEqual(self.assess(receipts=receipts), ((1, 2), frozenset()))
+
+
+class TargetRoundGroupsTests(unittest.TestCase):
+    def test_pending_misses_and_singles_follow_displayed_target(self):
+        receipts = {1: {"received_at": 10, "displayed_target_index": 1},
+                    2: {"received_at": 11, "displayed_target_index": 0},
+                    3: {"received_at": 11.1, "displayed_target_index": 0}}
+        shots = [{"shot_number": 2, "target_index": 3, "hit": True},
+                 {"shot_number": 1, "target_index": None, "hit": None}]
+        groups = target_round_groups(shots, receipts, .3, limit=16, singles=(1,))
+        self.assertEqual(groups[1], [("single", ((1, "miss"),))])
+        self.assertEqual(groups[0], [("burst", ((2, "hit"), (3, "pending")))])
+        self.assertEqual(groups[3], [])
+
+    def test_burst_split_across_targets_is_not_marked_as_single(self):
+        shots = [{"shot_number": n, "target_index": target, "burst_id": 1, "hit": False}
+                 for n, target in ((1, 1), (2, 0), (17, 3))]
+        groups = target_round_groups(shots, {}, .3, limit=16)
+        self.assertEqual(groups[1], [("burst", ((1, "miss"),))])
+        self.assertEqual(groups[0], [("burst", ((2, "miss"),))])
+        self.assertEqual(groups[3], [])

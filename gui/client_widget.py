@@ -63,6 +63,7 @@ class ClientWidget(QFrame):
         self.hit_targets = set()
         self.has_single_shots = False
         self.single_shot_targets = set()
+        self._target_rounds = {}
         self.hit_counts = [0] * 4
         self.shots = []
         self.testing = False
@@ -92,9 +93,6 @@ class ClientWidget(QFrame):
         self.result_label.setTextFormat(Qt.RichText)
 
         self._target_images = self._load_target_images()
-        self._single_shot_icon = QImage(os.path.join(cf.DATA_DIR, "assets", "images", "single_shot.png"))
-        self._single_shot_icons = {scale: self._single_shot_icon.scaled(30 * scale, 30 * scale,
-                                   Qt.KeepAspectRatio, Qt.SmoothTransformation) for scale in (1, 2)}
         self._localize_text()
         self._configure_ui()
         self.reset_all()
@@ -230,6 +228,7 @@ class ClientWidget(QFrame):
         self.hit_targets.clear()
         self.has_single_shots = False
         self.single_shot_targets.clear()
+        self._target_rounds = {}
         self.hit_counts = [0] * 4
         self.shots.clear()
         self.testing = False
@@ -384,6 +383,7 @@ class ClientWidget(QFrame):
         self.hit_targets.clear()
         self.has_single_shots = False
         self.single_shot_targets.clear()
+        self._target_rounds = {}
         self.hit_counts = [0] * 4
         self.shots.clear()
         self.update_result_label()
@@ -447,6 +447,11 @@ class ClientWidget(QFrame):
         self.has_single_shots, self.single_shot_targets = state
         self.update_result_label()
         self.show_target_simulation()
+
+    def set_target_rounds(self, groups):
+        if groups != self._target_rounds:
+            self._target_rounds = groups
+            self.show_target_simulation()
 
     def _target_border_color(self, target):
         return TARGET_GREEN if target in self.hit_targets else TARGET_RED
@@ -619,7 +624,9 @@ class ClientWidget(QFrame):
         painter.end()
 
         padding = 12 * scale
-        inner = (x + padding, y + padding, w - 2 * padding, h - 2 * padding)
+        strip_height = self._draw_target_rounds(surface, target_index, x + padding, y + padding,
+                                                w - 2 * padding, h - 2 * padding, scale)
+        inner = (x + padding, y + padding + strip_height, w - 2 * padding, h - 2 * padding - strip_height)
         image = self._fit_image(self._target_images[target_index],
                                 max(1, round(inner[2] * TARGET_IMAGE_SCALE)),
                                 max(1, round(inner[3] * TARGET_IMAGE_SCALE)))
@@ -631,14 +638,50 @@ class ClientWidget(QFrame):
         canvas[oy:oy + ih, ox:ox + iw] = image
         self._rendered_target_rects[target_index] = (ox, oy, iw, ih)
         self._marker_clip_rects[target_index] = inner
-        if target_index in self.single_shot_targets:
-            size = 30 * scale
-            margin = 14 * scale
-            painter = QPainter(surface)
-            painter.setRenderHint(QPainter.SmoothPixmapTransform)
-            painter.drawImage(QRectF(x + w - margin - size, y + margin, size, size),
-                              self._single_shot_icons[scale])
-            painter.end()
+
+    def _draw_target_rounds(self, surface, target, x, y, width, height, scale):
+        groups = self._target_rounds.get(target, ())
+        if not groups:
+            return 0
+        # Fit every received round without letting the strip overlap the target.
+        for cell in range(20 * scale, 2, -1):
+            pad, gap = max(1, cell // 5), max(2, cell * 2 // 5)
+            cursor, row, segments = 0, 0, []
+            row_height = cell + 2 * pad + gap
+            for kind, rounds in groups:
+                remaining = list(rounds)
+                if cursor and cursor + len(remaining) * (cell + pad) + pad > width:
+                    cursor, row = 0, row + 1
+                while remaining:
+                    count = max(1, min(len(remaining), int((width - cursor - pad) // (cell + pad))))
+                    segment, remaining = remaining[:count], remaining[count:]
+                    group_width = count * (cell + pad) + pad
+                    segments.append((kind, segment, QRectF(x + cursor, y + row * row_height,
+                                                          group_width, cell + 2 * pad)))
+                    cursor += group_width + gap
+                    if remaining:
+                        cursor, row = 0, row + 1
+            strip_height = (row + 1) * row_height
+            if strip_height <= height * .4:
+                break
+        painter = QPainter(surface)
+        painter.setRenderHint(QPainter.Antialiasing)
+        font = QFont("Segoe UI"); font.setPixelSize(max(6, round(cell * .55))); font.setBold(True)
+        painter.setFont(font)
+        for kind, rounds, outer in segments:
+            painter.setBrush(Qt.NoBrush)
+            painter.setPen(QPen(QColor("#df3949" if kind == "single" else "#eab52c"), max(1, cell / 10)))
+            if kind in ("single", "burst"):
+                painter.drawRoundedRect(outer, pad, pad)
+            for index, (number, status) in enumerate(rounds):
+                rect = QRectF(outer.x() + pad + index * (cell + pad), outer.y() + pad, cell, cell)
+                painter.setPen(Qt.NoPen)
+                painter.setBrush(QColor({"hit": "#1a9b58", "miss": "#df3949", "pending": "#dce2ea"}[status]))
+                painter.drawRoundedRect(rect, 3, 3)
+                painter.setPen(QColor("#64748b" if status == "pending" else "white"))
+                painter.drawText(rect, Qt.AlignCenter, str(number))
+        painter.end()
+        return strip_height
 
     def _draw_shot(self, canvas, target_index, px, py, hit):
         if (self._target_presentation is not None and target_index != self._target_presentation[0]

@@ -64,3 +64,29 @@ def single_shot_violations(shots, receipts, threshold, *, limit, final=True, now
         if target in (0, 1, 2, 3):
             targets.add(target)
     return tuple(singles), frozenset(targets)
+
+
+def target_round_groups(shots, receipts, threshold, *, limit, singles=()):
+    """Group all received rounds per displayed target, including pending/missed rounds."""
+    records = {n: dict(info) for n, info in receipts.items() if 1 <= n <= limit}
+    for index, shot in enumerate(shots):
+        n = shot.get("shot_number", index + 1)
+        if 1 <= n <= limit:
+            records[n] = {**shot, **records.get(n, {}), "complete": True}
+    result = {target: [] for target in range(4)}
+    for group in burst_groups(records, threshold):
+        per_target = {}
+        for n in group:
+            record = records.get(n, {})
+            target = record.get("displayed_target_index")
+            if target not in range(4):
+                target = record.get("target_index")
+            if target not in range(4):
+                continue
+            hit = record.get("hit")
+            status = "hit" if hit is True else "miss" if hit is False or record.get("complete") else "pending"
+            per_target.setdefault(target, []).append((n, status))
+        for target, rounds in per_target.items():
+            kind = "single" if len(group) == 1 and group[0] in singles else "burst" if len(group) > 1 else "pending"
+            result[target].append((kind, tuple(rounds)))
+    return result
