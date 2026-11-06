@@ -1,6 +1,9 @@
 {
     "save_raw_data": true,
     "shooting": {
+        "hardware_delay_time": 1.5,
+        "target_times": [],
+        "control_channel": 1,
         "show_rejected_shots_on_target": false,
         "hit_announcement_playback_rate": 1.75,
         "start_uart_command": "0F016\n",

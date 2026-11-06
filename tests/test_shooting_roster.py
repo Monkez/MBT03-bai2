@@ -216,6 +216,10 @@ class ShootingRosterTests(unittest.TestCase):
 
     def begin(self):
         self.window.start_test()
+        # Roster fixtures represent received shots after a successful raise.
+        session = self.window._shooting_session
+        session.open_target(1, session.started_at + 13.5)
+        session.confirm_command_sent(1, session.started_at + 13.5, raised=True)
         self.window._cancel_lora_script()
         self.window._start_followup_timer.stop()
 

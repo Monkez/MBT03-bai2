@@ -5,7 +5,7 @@ import cv2
 import numpy as np
 from PyQt5 import sip, uic
 from PyQt5.QtCore import QEvent, QRectF, QTimer, Qt, pyqtSignal
-from PyQt5.QtGui import QColor, QImage, QPainter, QPen
+from PyQt5.QtGui import QColor, QFont, QImage, QPainter, QPen
 from PyQt5.QtWidgets import QLabel, QPushButton, QWidget, QFrame, QSizePolicy
 
 import config as cf
@@ -66,6 +66,7 @@ class ClientWidget(QFrame):
         self.testing = False
         self._target_presentation = None
         self._show_final_results = False
+        self._visible_target_classes = ()
         self.connected = False
         self.connection_info = ""
         self._pedestal_default_style = self.pedestal_name_label.styleSheet()
@@ -228,6 +229,7 @@ class ClientWidget(QFrame):
         self._target_presentation = None
         self._show_final_results = False
         self.pedestal_name_label.setText(f"BỆ SỐ {self.id}")
+        self._visible_target_classes = ()
         self.reset_shooter()
         self.show_target_simulation()
 
@@ -381,6 +383,7 @@ class ClientWidget(QFrame):
     def stop_test(self):
         self.testing = False
         self._show_final_results = True
+        self._visible_target_classes = ()
         self._target_presentation = None
         self.show_target_simulation()
         self.update_result_label()
@@ -451,9 +454,12 @@ class ClientWidget(QFrame):
         self.sign_image.set_image(self.compose_target_image())
         self._update_target_status()
 
-    def set_target_presentation(self, state):
-        if state != self._target_presentation:
+    def set_target_presentation(self, state, visible_targets=None):
+        visible_targets = tuple(visible_targets) if visible_targets is not None else (
+            (state[0],) if state is not None and state[1] else ())
+        if state != self._target_presentation or visible_targets != self._visible_target_classes:
             self._target_presentation = state
+            self._visible_target_classes = visible_targets
             self.show_target_simulation()
 
     def _position_target_status(self):
@@ -464,6 +470,11 @@ class ClientWidget(QFrame):
         self.target_status_label.setVisible(state is not None)
         if state is None:
             self.sign_image.setAccessibleName("Toàn bộ bốn bia và các điểm chạm")
+            return
+        if len(self._visible_target_classes) > 1:
+            self.target_status_label.hide()
+            self.sign_image.setAccessibleName("; ".join(
+                f"{TARGET_NAMES[target]} đang hiện" for target in self._visible_target_classes))
             return
         target, visible = state
         status = "ĐANG HIỆN" if visible else "ĐANG GẬP"
@@ -480,6 +491,8 @@ class ClientWidget(QFrame):
 
     def compose_target_image(self):
         if self._target_presentation is not None:
+            if len(self._visible_target_classes) > 1:
+                return self._compose_visible_targets()
             return self._compose_focused_target()
         layout = self._current_target_layout()
         canvas_w, canvas_h = self._current_canvas_size()
@@ -496,6 +509,39 @@ class ClientWidget(QFrame):
         for target_index, px, py, hit in self.shots:
             self._draw_shot(canvas, target_index, px, py, hit)
 
+        return canvas
+
+    def _compose_visible_targets(self):
+        width = max(160, self.sign_image.frame.width()) * 2
+        height = max(160, self.sign_image.frame.height()) * 2
+        canvas = np.full((height, width, 3), 255, dtype=np.uint8)
+        self._rendered_target_rects, self._marker_clip_rects = {}, {}
+        targets = self._visible_target_classes
+        columns = 2 if width >= height or len(targets) > 2 else 1
+        rows = (len(targets) + columns - 1) // columns
+        cell_w = (width - 20 * (columns + 1)) // columns
+        cell_h = (height - 16 - 20 * rows) // rows
+        captions = []
+        for index, target in enumerate(targets):
+            x = 20 + (index % columns) * (cell_w + 20)
+            y = 16 + (index // columns) * (cell_h + 20)
+            self._draw_target(canvas, target, x, y + 34, cell_w, cell_h - 34,
+                              TARGET_GREEN if target in self.hit_targets else TARGET_RED)
+            captions.append((QRectF(x, y, cell_w, 30), f"{TARGET_NAMES[target]} · ĐANG HIỆN"))
+        for target, px, py, hit in self.shots:
+            if target in targets:
+                self._draw_shot(canvas, target, px, py, hit)
+        surface = QImage(sip.voidptr(canvas.ctypes.data), width, height, canvas.strides[0], QImage.Format_BGR888)
+        painter = QPainter(surface)
+        painter.setRenderHint(QPainter.TextAntialiasing)
+        font = QFont("Segoe UI")
+        font.setPixelSize(26)
+        font.setBold(True)
+        painter.setFont(font)
+        painter.setPen(QColor("#15803d"))
+        for rectangle, text in captions:
+            painter.drawText(rectangle, Qt.AlignCenter, text)
+        painter.end()
         return canvas
 
     def _compose_focused_target(self):
@@ -521,7 +567,7 @@ class ClientWidget(QFrame):
     def _folded_image(image):
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         gray = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
-        return cv2.addWeighted(gray, 0.28, np.full_like(gray, 255), 0.72, 0)
+        return cv2.addWeighted(gray, 0.16, np.full_like(gray, 255), 0.84, 0)
 
     def _current_target_layout(self):
         if self.target_layout_mode == "two_pedestals":
@@ -569,7 +615,8 @@ class ClientWidget(QFrame):
         self._marker_clip_rects[target_index] = inner
 
     def _draw_shot(self, canvas, target_index, px, py, hit):
-        if self._target_presentation is not None and target_index != self._target_presentation[0]:
+        if (self._target_presentation is not None and target_index != self._target_presentation[0]
+                and target_index not in self._visible_target_classes):
             return
         rendered_rect = getattr(self, "_rendered_target_rects", {}).get(target_index)
         clip = getattr(self, "_marker_clip_rects", {}).get(target_index)

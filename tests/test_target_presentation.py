@@ -3,6 +3,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 import numpy as np
+import config as cf
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
@@ -62,6 +63,8 @@ class TargetPresentationFlowTests(unittest.TestCase):
         for name in ("LoraController", "ShotSound", "HitSound", "ResultSound"):
             patch(f"gui.main_window.{name}").start()
         self.window = MainWindow()
+        self.window.lora.send_command.side_effect = lambda command: self.window._on_lora_command_sent(
+            command, self.clock.return_value, self.clock.return_value)
         self.window.servers = [MagicMock(), MagicMock()]
         self.addCleanup(self.window.close)
 
@@ -74,7 +77,7 @@ class TargetPresentationFlowTests(unittest.TestCase):
             if state is not None and not state[1]:
                 np.testing.assert_array_equal(image[:, :, 0], image[:, :, 1])
                 np.testing.assert_array_equal(image[:, :, 1], image[:, :, 2])
-                self.assertGreaterEqual(image.min(), 183)
+                self.assertGreaterEqual(image.min(), 214)
                 self.assertIn("ĐANG GẬP", widget.target_status_label.text())
                 self.assertNotIn("\n", widget.target_status_label.text())
 
@@ -83,9 +86,11 @@ class TargetPresentationFlowTests(unittest.TestCase):
         self.window._cancel_lora_script()
 
     def raise_target(self, index, at):
-        self.clock.return_value = at
+        self.clock.return_value = at - 1.5
         _, command, description = self.window.LORA_SCRIPT[index]
         self.window._send_lora_script_command(command, description, (1, 0, 2, 3)[index])
+        self.clock.return_value = at
+        self.window._refresh_target_presentation()
 
     def test_start_each_target_fold_preview_and_stop_restore_overview(self):
         self.assert_state(None)
@@ -94,13 +99,15 @@ class TargetPresentationFlowTests(unittest.TestCase):
         for index, target, at in ((0, 1, 115), (1, 0, 132), (2, 2, 142), (3, 3, 164)):
             self.raise_target(index, at)
             self.assert_state((target, True))
-            self.clock.return_value = at + (18 if target == 3 else 7)
+            self.clock.return_value = at + (18 if target == 3 else 7) - 1.5
+            self.window._send_scheduled_target_hide(target)
+            self.clock.return_value += 1.5
             self.window._refresh_target_presentation()
             self.assert_state((target, False))
             self.clock.return_value += .801
             self.window._refresh_target_presentation()
             self.assert_state(({1: 0, 0: 2, 2: 3, 3: 3}[target], False))
-        self.clock.return_value = 185
+        self.clock.return_value = 186.5
         self.window.update_app()
         self.assertFalse(self.window._target_presentation_timer.isActive())
         self.assert_state(None)
@@ -116,9 +123,10 @@ class TargetPresentationFlowTests(unittest.TestCase):
         self.assert_state((1, True))
         self.window.automatic_close_target_enabled = True
         self.assertTrue(self.window._maybe_close_hit_target(1, True))
+        self.clock.return_value = 117.5
         self.window._refresh_target_presentation()
         self.assert_state((1, False))
-        self.clock.return_value = 117
+        self.clock.return_value = 118.5
         self.window._refresh_target_presentation()
         self.assert_state((0, False))
         self.raise_target(1, 132)
@@ -147,9 +155,10 @@ class TargetPresentationFlowTests(unittest.TestCase):
         self.raise_target(0, 115)
         self.clock.return_value = 116
         self.window._maybe_close_hit_target(1, True)
+        self.clock.return_value = 117.5
         QTest.qWait(150)
         self.assert_state((1, False))
-        self.clock.return_value = 117
+        self.clock.return_value = 118.5
         QTest.qWait(150)
         self.assert_state((0, False))
         self.window.stop_test()

@@ -32,6 +32,12 @@ class ShootingScriptTests(unittest.TestCase):
     def setUpClass(cls):
         cls.app = QApplication.instance() or QApplication([])
 
+    def setUp(self):
+        # These tests cover calibration/device actions; persistence is covered
+        # with a real temporary configuration in test_target_timing.
+        self.save_timing = patch("gui.setting_window.save_timing_settings").start()
+        self.addCleanup(patch.stopall)
+
     def test_start_loads_ammunition_to_every_server_and_schedules_followup(self):
         servers = [MagicMock(), MagicMock()]
         window = type("WindowState", (), {})()
@@ -277,7 +283,7 @@ class ShootingScriptTests(unittest.TestCase):
     def test_lora_commands_match_the_required_timeline(self):
         self.assertEqual(
             [(seconds, command) for seconds, command, _ in MainWindow.LORA_SCRIPT],
-            [(15, "@111#"), (32, "@221#"), (42, "@331#"), (64, "@444#")],
+            [(13.5, "@114#"), (30.5, "@224#"), (40.5, "@334#"), (62.5, "@441#")],
         )
 
     def test_single_pedestal_defaults_auto_close_on_and_allows_toggle(self):
@@ -353,6 +359,8 @@ class ShootingScriptTests(unittest.TestCase):
         window.testing = True
         window._test_start_time = 100.0
         window.start_btn = FakeButton()
+        window._shooting_session = ShootingSession(100)
+        window._test_timeout_timer = MagicMock()
 
         with patch("gui.main_window.time.monotonic", return_value=142.9):
             MainWindow.update_app(window)

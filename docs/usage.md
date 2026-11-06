@@ -150,7 +150,8 @@ Trong bài bắn, mỗi bệ chỉ hiển thị một bia được phóng to the
 Tên bia và trạng thái nằm trên một hàng, ví dụ **BIA SỐ 8C · ĐANG GẬP** (không ghi góc alpha).
 Đến thời điểm hiện bia, ảnh chuyển sang màu rõ và nhãn **ĐANG HIỆN**.
 Hết thời gian, hoặc có phát trúng hợp lệ khi bật tự động gập bia, ảnh trở lại mờ.
-Sau khoảng 0,8 giây, chuyển sang bia tiếp theo ở trạng thái gập, chờ đến lượt hiện.
+Sau khoảng 0,8 giây, chuyển sang bia tiếp theo đang gập nếu chưa có bia khác đang hiện.
+Khi nhiều bia cùng hiện, màn hình chia khung để hiển thị tất cả các bia đang hiện.
 Sau lượt bia cuối, giữ bia cuối ở trạng thái gập đến khi kết thúc bài.
 Viền bo góc đỏ biểu thị chưa trúng, xanh biểu thị đã trúng; lớp viền ngoài nhạt cùng màu
 giúp dễ phân biệt từng bia. Khi bia gập, viền chuyển xám nhẹ.
@@ -220,7 +221,7 @@ Nút CẤP ĐẠN đã gộp vào **BẮT ĐẦU**. Khi nhấn `BẮT ĐẦU`, �
 `0F016\n` cấp 16 viên cho súng ở mỗi bệ, lập lịch bài bắn và sau khoảng **300 ms**
 gửi `0A000\n`. Lệnh cấp đạn dùng khóa cấu hình `shooting.start_uart_command`.
 Không tự gửi lệnh ẩn tất cả bia; lịch hiện bia trong bài bắn vẫn dùng
-`shooting.lora_timeline` (mặc định `@111#`, `@221#`, `@331#`, `@444#`).
+`shooting.target_times`, dùng lệnh hiện thủ công `@114#`, `@224#`, `@334#`, `@441#` và lệnh ẩn tương ứng.
 Lệnh đang chờ được hủy nếu kết thúc bài hoặc đóng ứng dụng trước khi hết thời gian chờ.
 
 Khi bật **Q0**, phần mềm gửi `0F003` đến súng của bệ đang chọn, chờ **300 ms** rồi
@@ -229,29 +230,33 @@ Tắt Q0, đổi bệ hoặc đóng cửa sổ sẽ hủy lệnh còn chờ; đ�
 bệ trước. Nếu gửi `0F003` thất bại hoặc bệ mất kết nối trước khi hết thời gian chờ,
 phần mềm không gửi tiếp `0Q000`.
 
-Bài bắn tự kết thúc sau **85 giây**; vẫn có thể kết thúc sớm bằng nút trên màn hình.
+Bài bắn tự kết thúc sau lệnh ẩn cuối cùng thêm **4 × hardware_delay_time**; có thể kết thúc sớm bằng nút trên màn hình.
 Khi kết thúc bài (thủ công, hết giờ hoặc thoát ứng dụng trong bài), phần mềm gửi
 `0S000` kèm xuống dòng đến tất cả súng. Đóng cửa sổ cài đặt bằng Chấp nhận, Hủy,
 Esc hoặc nút X cũng gửi lệnh này đến tất cả súng.
-Bia hiện theo thứ tự **6 → 10 → 7B → 8**, mặc định tại giây **15 / 32 / 42 / 64**.
-Bia 6, 10 và 7B có thời lượng cơ sở **7 giây**; riêng bia 8 là **18 giây**.
-Cửa sổ nhận trúng mở **sớm 2 giây** so với lúc gửi lệnh dựng và đóng **muộn 4 giây** so
-với thời điểm kết thúc cơ sở. Mốc được cập nhật khi lệnh thực sự gửi ra cổng LoRa,
-không tính thời gian chờ trong hàng đợi gửi. Theo lịch mặc định, khi không gập sớm
-và lệnh được gửi đúng lịch:
+Bia hiện theo thứ tự **6 → 10 → 7B → 8C**. Trong Cài đặt thiết bị, phần THỜI GIAN
+HIỆN / ẨN BIA cho phép nhập hai mốc giây của từng bia. Nhấn CHẤP NHẬN để lưu và
+áp dụng từ bài tiếp theo; HỦY không lưu. Mặc định Hiện là **15 / 32 / 42 / 64**,
+Ẩn là **22 / 39 / 49 / 82**. Tên kênh có ba mục, hiện chỉ lưu lựa chọn để phát triển sau.
 
-| Bia | Khoảng nhận trúng từ lúc bắt đầu bài |
-| --- | --- |
-| 6 | Từ giây 13 đến trước giây 26 |
-| 10 | Từ giây 30 đến trước giây 43 |
-| 7B | Từ giây 40 đến trước giây 53 |
-| 8 | Từ giây 62 đến trước giây 85 (giới hạn toàn bài) |
+`shooting.hardware_delay_time` trong config mặc định **1,5 giây**. Phần mềm gửi cả
+lệnh hiện và ẩn sớm hơn mốc trên màn hình 1,5 giây. Khoảng nhận điểm bắt đầu khi
+gửi lệnh hiện, kết thúc sau lệnh ẩn **3 giây** (hai lần tham số bù trễ), kể cả khi
+gập sớm do trúng. Mốc thực sự ghi lệnh ra cổng LoRa được dùng để hiệu chỉnh nếu
+hàng đợi gửi bị trễ. Bài tự kết thúc sau lệnh ẩn cuối cùng thêm **6 giây** (bốn lần bù trễ), tính theo lần gửi thực tế.
+Nếu lệnh chưa gửi được, có thể kết thúc thủ công bằng nút KẾT THÚC.
 
-Nếu bật `Gập bia` và có lệnh gập sớm do trúng, vẫn nhận thêm **4 giây sau lệnh gập**.
-Trong khoảng chồng nhau (ví dụ giây 40 đến trước 43 của bia 10 và 7B), phần mềm
-xét thời gian riêng của bia được nhận diện; dựng bia tiếp theo không cắt mất phần
-nhận thêm của bia trước. Mọi khoảng nhận đều kết thúc chậm nhất tại giây 85.
-Phát nhận sớm không gửi lệnh gập trước khi bia được dựng. Chỉ tính trúng khi nhận
+| Bia | Hiện / Ẩn đặt trước | Gửi lệnh hiện / ẩn | Khoảng nhận mặc định |
+| --- | --- | --- | --- |
+| 6 | 15 / 22 | 13,5 / 20,5 | [13,5; 23,5) giây |
+| 10 | 32 / 39 | 30,5 / 37,5 | [30,5; 40,5) giây |
+| 7B | 42 / 49 | 40,5 / 47,5 | [40,5; 50,5) giây |
+| 8C | 64 / 82 | 62,5 / 80,5 | [62,5; 83,5) giây |
+
+Theo lịch mặc định, bài tự kết thúc ở giây **86,5** nếu các lệnh gửi đúng lịch.
+Khi chồng lịch hoặc gập sớm, tính theo lệnh ẩn thực tế cuối cùng của các bia.
+
+Phát nhận trước khi lệnh hiện thực sự gửi đi không được tính trúng. Chỉ tính trúng khi nhận
 diện đúng bia trong cửa sổ nhận tại thời điểm PC nhận ảnh; ngoài cửa sổ hoặc nhận
 nhầm bia vẫn tính đạn nhưng không tính trúng. Thời điểm nhận ảnh được ghi ngay
 tại luồng nhận mạng trên PC, trước hàng đợi giải mã và giao diện; không dùng đồng
@@ -264,7 +269,7 @@ Nếu nhận diện khác bia được phép tính điểm, thông báo ghi tên
 `server.log` lưu số phiên, bệ, phát, kết quả trúng trên ảnh trước kiểm tra thời gian,
 kết quả tính trúng sau kiểm tra và lý do để đối chiếu.
 Các ảnh đã nhận trước khi kết thúc vẫn được chấm tiếp; kết quả đến muộn không làm
-gập bia của lượt sau. Ảnh nhận từ mốc 85 giây trở đi không được nhận vào bài.
+gập bia của lượt sau. Ảnh nhận từ mốc kết thúc bài trở đi không được nhận vào bài.
 
 Mỗi phát nhận trong bài hoặc khi bắn Q0 phát tiếng nổ `assets/sounds/TN.mp3`, giống
 `MBT03-wireless`, kể cả phát trượt hoặc nhận diện lỗi. Âm thanh chạy qua Qt và hỗ trợ

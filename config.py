@@ -13,6 +13,9 @@ ASSETS_CUSTOM_WIDGETS_DIR = os.path.join(DATA_DIR, "assets", "MonkezCustomWidget
 DEFAULT_CONFIG = {
     "save_raw_data": True,
     "shooting": {
+        "target_times": [],
+        "control_channel": 1,
+        "hardware_delay_time": 1.5,
         "show_rejected_shots_on_target": False,
         "hit_announcement_playback_rate": 1.75,
         "start_uart_command": "0F016\n",

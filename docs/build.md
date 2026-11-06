@@ -40,4 +40,4 @@ EXE. `server.log`, `system_config.json` và `raw_camera_images` được tạo d
 
 Trước bàn giao, chạy `test.bat`, build và thử EXE trên máy đích: mở màn hình chính,
 kết nối bệ/LoRa, nhận và chấm ảnh, phát tiếng nổ/đọc số bệ, tính điểm bia 8 trong
-18 giây, kết thúc ở 85 giây và xem lại.
+theo mốc hiện/ẩn đã lưu, kết thúc sau gửi lệnh ẩn cuối +4 lần bù trễ và xem lại.

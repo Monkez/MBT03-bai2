@@ -1,6 +1,6 @@
 # Cấu hình ứng dụng
 
-Ứng dụng đọc `assets/configurations/config.json` một lần khi khởi động. Sau khi sửa tệp, cần đóng và mở lại ứng dụng. Nếu thiếu khóa hoặc giá trị sai kiểu, ứng dụng dùng giá trị mặc định an toàn trong `config.py`. Khóa không được tài liệu hóa sẽ bị bỏ qua.
+Ứng dụng đọc `assets/configurations/config.json` khi khởi động. Sửa tệp bằng tay cần đóng/mở lại ứng dụng; thời gian và kênh lưu qua Cài đặt thiết bị có hiệu lực ở bài tiếp theo. Nếu thiếu khóa hoặc giá trị sai kiểu, ứng dụng dùng giá trị mặc định an toàn trong `config.py`. Khóa không được tài liệu hóa sẽ bị bỏ qua.
 
 ## Thu thập ảnh camera gốc
 
@@ -14,30 +14,39 @@ Nhóm `shooting`:
 
 | Khóa | Ý nghĩa |
 | --- | --- |
-| `start_uart_command` | Giữ tên khóa cũ để tương thích: lệnh cấp đạn thủ công khi nhấn **CẤP ĐẠN**, mặc định `0F016\n`; không tự gửi khi bắt đầu bài. Ký tự `\n` trong JSON là ký tự xuống dòng thật. |
+| `start_uart_command` | Lệnh cấp đạn khi BẮT ĐẦU, mặc định `0F016\n`; gửi tiếp `0A000\n` sau 300 ms. Ký tự `\n` trong JSON là ký tự xuống dòng thật. |
 | `automatic_close_target.default_single_pedestal` | Mặc định bật/tắt gập bia tự động khi chọn 1 bệ. |
 | `automatic_close_target.default_multiple_pedestals` | Mặc định bật/tắt gập bia tự động khi chọn từ 2 bệ. |
 | `automatic_close_target.commands_by_class` | Lệnh gập/ẩn bia theo class mô hình. Để `command` thành chuỗi rỗng nếu muốn vô hiệu hóa một bia. |
-| `lora_timeline` | Đúng 4 lệnh LoRa theo thứ tự bia 6 → 10 → 7B → 8. Các mốc phải cách nhau ít nhất 7 giây để thời lượng hiện cơ sở không chồng nhau. Bia 8 phải dựng chậm nhất giây 67 để đủ 18 giây cơ sở trước hạn 85 giây; phần nhận thêm được giới hạn tại giây 85. Lịch sai dùng lại mặc định 15/32/42/64 giây. |
+| `target_times` | Bốn cặp `show_seconds` / `hide_seconds` theo thứ tự 6 → 10 → 7B → 8C; nhập và lưu trong Cài đặt thiết bị. Mốc tính từ lúc bắt đầu bài. |
+| `hardware_delay_time` | Thời gian bù trễ phần cứng, mặc định `1.5` giây. Cả lệnh hiện và ẩn gửi sớm hơn mốc đã đặt một khoảng này. |
+| `control_channel` | Lưu Kênh 1/2/3, chưa ảnh hưởng lệnh điều khiển. |
+| `lora_timeline` | Cấu hình cũ: khi chưa có `target_times`, lấy các mốc hiện cũ và thời lượng 7/7/7/18 giây làm giá trị ban đầu; chuyển sang dùng lệnh thủ công bên dưới. |
 
-Bài bắn tự kết thúc sau 85 giây, độc lập với chu kỳ cập nhật giao diện. Thời lượng
-cơ sở của bia 6, 10, 7B là 7 giây, bia 8 là 18 giây. Cửa sổ nhận mở từ 2 giây trước
-mốc dựng trong lịch, kết thúc sau thời lượng cơ sở tính từ lệnh dựng thực tế thêm
-4 giây; khi gập sớm thì kết thúc 4 giây sau lệnh gập. Không vượt thời hạn bài bắn.
-Các khoảng nhận thêm được phép chồng nhau; kết quả chấm dùng khoảng của đúng bia
-được nhận diện, không tự cắt phần nhận muộn của bia trước khi bia sau dựng lên.
-Việc nới cửa sổ không đổi lịch lệnh LoRa. Đây là thời gian trên PC; giao thức hiện
-không trả trạng thái vị trí bia thực tế. Thời điểm xét phát bắn là lúc PC nhận ảnh
-để đưa vào hàng đợi chấm, không phải lúc model xử lý xong.
+Bài bắn tự kết thúc khi lệnh ẩn cuối cùng thực sự gửi đi cộng `4 × hardware_delay_time`. Với từng bia, cần
+`hardware_delay_time ≤ Hiện < Ẩn ≤ 3600`; thứ tự mốc hiện là 6 → 10 → 7B → 8C, có thể bằng nhau.
+Cho phép các khoảng hiện chồng nhau, mốc ẩn không cần cùng thứ tự.
+Khi chỉnh xong, nhấn CHẤP NHẬN để lưu vào JSON và dùng cho bài kế tiếp; khởi động
+lại vẫn giữ các mốc và kênh. Hủy/Esc/X không lưu thay đổi. Lỗi ghi file giữ nguyên
+cấu hình cũ và không đóng hộp thoại.
 
-Quy ước class hiện tại:
+Lệnh được hẹn tại `Hiện - hardware_delay_time` và `Ẩn - hardware_delay_time`.
+Khoảng nhận trúng bắt đầu tại lúc lệnh hiện thực sự ghi ra cổng LoRa, kết thúc
+**trước** lúc ghi lệnh ẩn cộng `2 × hardware_delay_time`.
+Công thức áp dụng cả khi gập sớm do trúng. Không dùng padding 2 giây sớm/4 giây
+muộn của bản trước. Ảnh được xét theo thời điểm PC nhận, không phải khi model chấm xong.
+Chỉ bắt đầu nhận điểm sau khi đã gửi lệnh hiện. Nếu chưa gửi đủ lệnh ẩn, phần mềm
+chờ gửi xong hoặc người vận hành kết thúc thủ công; gửi trễ thì mốc tự kết thúc cũng dịch theo.
 
-| Class | Bia | Lệnh dựng | Lệnh gập |
+Mô phỏng dự kiến bia đổi trạng thái sau lệnh một khoảng `hardware_delay_time`;
+giao thức không trả vị trí cơ khí thực tế.
+
+| Class | Bia | Hiện thủ công | Ẩn thủ công |
 | --- | --- | --- | --- |
-| `0` | Bia số 10 | `@221#` | `@222#` |
-| `1` | Bia số 6 | `@111#` | `@112#` |
-| `2` | Bia số 7B | `@331#` | `@332#` |
-| `3` | Bia số 8 | `@444#` điều khiển xe bia | `@442#` ẩn bia |
+| `1` | BIA SỐ 6 | `@114#` | `@112#` |
+| `0` | BIA SỐ 10 | `@224#` | `@222#` |
+| `2` | BIA SỐ 7B | `@334#` | `@332#` |
+| `3` | BIA SỐ 8C | `@441#` | `@442#` |
 
 ## Nhận diện và tính điểm
 

@@ -206,8 +206,19 @@ class LoraController(QObject):
             except (OSError, serial.SerialException):
                 pass
 
-    def close(self):
+    def close(self, final_commands=()):
         self._closing = True
         self._stop_event.set()
+        # Abort pending raises before the final hides; shutdown must not cancel
+        # the only hide of a target raised with a persistent manual command.
+        with self._lock:
+            device = self._serial
+            if device is not None and device.is_open:
+                for command in final_commands:
+                    try:
+                        device.write(command.encode("ascii"))
+                        device.flush()
+                    except (OSError, serial.SerialException):
+                        break
         self.disconnect_port()
         self._executor.shutdown(wait=False, cancel_futures=True)

@@ -182,6 +182,16 @@ class LoraControllerTests(unittest.TestCase):
         self.assertEqual(results, [("@661#", False, 1)])
         self.assertEqual(sent, [])
 
+    def test_close_writes_final_hides_before_closing_port_without_waiting_for_ack(self):
+        controller = LoraController()
+        device = FakeSerialPort()
+        controller._serial = device
+        with patch.object(device, "write", wraps=device.write) as write, patch.object(
+                device, "read", side_effect=AssertionError("Shutdown must not wait for ACK")):
+            controller.close(final_commands=("@112#", "@222#"))
+        self.assertEqual([call.args[0] for call in write.call_args_list], [b"@112#", b"@222#"])
+        self.assertFalse(device.is_open)
+
 
 if __name__ == "__main__":
     unittest.main()

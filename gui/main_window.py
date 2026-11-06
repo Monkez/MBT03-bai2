@@ -29,8 +29,9 @@ from gui.hit_sound import HitSound
 from gui.result_sound import ResultSound
 from gui.uart_debug_dialog import UartDebugDialog
 from gui.shooting_roster import ShootingRoster
+from gui.target_timing import get_target_times, hardware_delay_time, RAISE_COMMANDS, HIDE_COMMANDS, TARGET_LABELS
 from gui.shooting_session import (
-    MAX_DURATION_SECONDS, TARGET_CLASS_SEQUENCE, TARGET_VISIBLE_SECONDS_BY_CLASS,
+    TARGET_CLASS_SEQUENCE,
     ShootingSession,
 )
 
@@ -63,40 +64,8 @@ def _configured_auto_close_commands():
 
 
 def _configured_lora_script():
-    configured = cf.get_setting("shooting.lora_timeline", [])
-    script = []
-    if isinstance(configured, list):
-        for item in configured:
-            if not isinstance(item, dict):
-                continue
-            command = item.get("command")
-            if not isinstance(command, str) or not command:
-                continue
-            try:
-                delay_seconds = float(item.get("delay_seconds", 0))
-            except (TypeError, ValueError):
-                continue
-            script.append(
-                (
-                    delay_seconds,
-                    command,
-                    str(item.get("description") or command),
-                )
-            )
-    # Validate commanded visibility; grace periods may overlap or meet the deadline.
-    if (len(script) != len(TARGET_CLASS_SEQUENCE)
-            or not isinstance(configured, list) or len(configured) != len(script)
-            or any(not math.isfinite(item[0]) or item[0] < 0
-                   or item[0] + TARGET_VISIBLE_SECONDS_BY_CLASS[class_id] > MAX_DURATION_SECONDS
-                   for class_id, item in zip(TARGET_CLASS_SEQUENCE, script))
-            or any(right[0] < left[0] + TARGET_VISIBLE_SECONDS_BY_CLASS[class_id]
-                   for class_id, left, right in zip(TARGET_CLASS_SEQUENCE, script, script[1:]))):
-        print("[Config] Lich bia khong hop le, dung lich mac dinh 6 -> 10 -> 7 -> 8")
-        script = [
-            (item["delay_seconds"], item["command"], item["description"])
-            for item in cf.DEFAULT_CONFIG["shooting"]["lora_timeline"]
-        ]
-    return tuple(script)
+    return tuple((item["show_seconds"] - hardware_delay_time(), command, f"hiện {label}")
+                 for item, command, label in zip(get_target_times(), RAISE_COMMANDS, TARGET_LABELS))
 
 
 class MainWindow(QMainWindow):
@@ -143,7 +112,7 @@ class MainWindow(QMainWindow):
         self._test_timeout_timer = QTimer(self)
         self._test_timeout_timer.setSingleShot(True)
         self._test_timeout_timer.setTimerType(Qt.PreciseTimer)
-        self._test_timeout_timer.timeout.connect(self.stop_test)
+        self._test_timeout_timer.timeout.connect(self.update_app)
         self._start_followup_timer = QTimer(self)
         self._start_followup_timer.setSingleShot(True)
         self._start_followup_timer.setTimerType(Qt.PreciseTimer)
@@ -845,16 +814,23 @@ class MainWindow(QMainWindow):
         self._hit_sound.reset()
         self._auto_closed_target_classes.clear()
         self.testing = True
+        self.start_btn.setToolTip("Kết thúc bài bắn")
         self._roster.begin_session(self._active_review_session_id)
         self._test_start_time = time.monotonic()
+        self._target_timings = get_target_times()
+        self.LORA_SCRIPT = _configured_lora_script()
         self._shooting_session = ShootingSession(
-            self._test_start_time, tuple(item[0] for item in self.LORA_SCRIPT)
+            self._test_start_time, tuple(item[0] for item in self.LORA_SCRIPT),
+            {target: item["hide_seconds"] - item["show_seconds"]
+             for target, item in zip(TARGET_CLASS_SEQUENCE, self._target_timings)},
+            hardware_delay_time=hardware_delay_time(),
         )
         logging.getLogger("mbt03_server").info(
             "[Exercise] session=%s | bắt đầu | %s bệ | giới hạn %ss",
-            self._active_review_session_id, self.p_num, MAX_DURATION_SECONDS,
+            self._active_review_session_id, self.p_num, self._shooting_session.deadline - self._test_start_time,
         )
-        self._test_timeout_timer.start(MAX_DURATION_SECONDS * 1000)
+        self._armed_deadline = self._shooting_session.deadline
+        self._test_timeout_timer.start(max(1, round((self._armed_deadline - time.monotonic()) * 1000)))
         self.setting_btn.setEnabled(False)
         self._update_manual_target_buttons()
         self._send_start_uart_command()
@@ -917,13 +893,14 @@ class MainWindow(QMainWindow):
             return False
         command, description = command_info
         self._auto_closed_target_classes.add(class_id)
-        print(f"[LoRa] Gui {command}: {description}")
+        print(f"[LoRa] Gui {command}: {description!a}")
         self.lora.send_command(command)
         return True
 
     def stop_test(self):
         if not self.testing:
             return
+        self.testing = False
         self._start_sound.stop()
         self._target_presentation_timer.stop()
         session_id = self._active_review_session_id
@@ -934,8 +911,12 @@ class MainWindow(QMainWindow):
                 "[Exercise] session=%s | Bệ %s | dừng bài: nhận=%s, chấm xong=%s, đang chờ=%s, đạn hiển thị=%s",
                 session_id, widget.id, received, completed, received - completed, widget.bullet_count,
             )
+        for target in self._shooting_session.raised_target_classes:
+            if target not in self._auto_closed_target_classes:
+                self._shooting_session.close_target(target, time.monotonic(), scheduled=True)
+                self._auto_closed_target_classes.add(target)
+                self.lora.send_command(HIDE_COMMANDS[target])
         self._shooting_session.stop(time.monotonic())
-        self.testing = False
         self._test_timeout_timer.stop()
         self._update_manual_target_buttons()
         self._start_followup_timer.stop()
@@ -946,6 +927,7 @@ class MainWindow(QMainWindow):
         self._cancel_lora_script()
         self._set_start_button_active(False)
         self.start_btn.setText(self._start_button_text)
+        self.start_btn.setToolTip("Bắt đầu bài bắn")
         for widget in self.client_widgets:
             widget.stop_test()
         self._roster.update_results(self._previous_review_session_id)
@@ -954,19 +936,30 @@ class MainWindow(QMainWindow):
     def _refresh_target_presentation(self):
         if not self.testing or self._shooting_session is None:
             return
-        state = self._shooting_session.target_presentation(time.monotonic())
+        now = time.monotonic()
+        if self._shooting_session.expired(now):
+            self.stop_test()
+            return
+        if self._shooting_session.deadline != self._armed_deadline:
+            self._armed_deadline = self._shooting_session.deadline
+            self._test_timeout_timer.start(max(1, round((self._armed_deadline - now) * 1000)))
+        state = self._shooting_session.target_presentation(now)
         for widget in self.client_widgets:
-            widget.set_target_presentation(state)
+            widget.set_target_presentation(state, visible_targets=self._shooting_session.visible_target_classes(now))
 
     def update_app(self):
         if not self.testing:
             return
 
         elapsed = int(time.monotonic() - self._test_start_time)
-        if elapsed >= MAX_DURATION_SECONDS:
+        if self._shooting_session.expired(time.monotonic()):
             self.stop_test()
             return
         self.start_btn.setText(f"KẾT THÚC ({elapsed}s)")
+        if time.monotonic() >= self._shooting_session.deadline and not self._shooting_session.all_hides_sent:
+            self.start_btn.setToolTip("Chờ gửi đủ lệnh ẩn bia. Bấm để kết thúc thủ công nếu LoRa chưa kết nối.")
+        if not self._test_timeout_timer.isActive():
+            self._test_timeout_timer.start(250)
 
     def _set_start_button_active(self, active):
         if hasattr(self.start_btn, "setChecked"):
@@ -1021,16 +1014,29 @@ class MainWindow(QMainWindow):
 
     def _schedule_lora_script(self):
         self._cancel_lora_script()
-        for class_id, (seconds, command, description) in zip(TARGET_CLASS_SEQUENCE, self.LORA_SCRIPT):
+        events = [(seconds, 1, target, command, description)
+                  for target, (seconds, command, description) in zip(TARGET_CLASS_SEQUENCE, self.LORA_SCRIPT)]
+        events.extend((item["hide_seconds"] - hardware_delay_time(), 0, target, "", "")
+                      for target, item in zip(TARGET_CLASS_SEQUENCE, self._target_timings))
+        for seconds, raised, target, command, description in sorted(events, key=lambda event: (event[0], event[1])):
             timer = QTimer(self)
             timer.setSingleShot(True)
             timer.setTimerType(Qt.PreciseTimer)
-            timer.timeout.connect(
-                lambda cmd=command, desc=description, target=class_id:
-                    self._send_lora_script_command(cmd, desc, target)
-            )
-            timer.start(int(round(seconds * 1000)))
+            if raised:
+                timer.timeout.connect(lambda cmd=command, desc=description, target=target:
+                                      self._send_lora_script_command(cmd, desc, target))
+            else:
+                timer.timeout.connect(lambda target=target: self._send_scheduled_target_hide(target))
+            timer.start(max(0, int(round((seconds - (time.monotonic() - self._test_start_time)) * 1000))))
             self._lora_schedule_timers.append(timer)
+
+    def _send_scheduled_target_hide(self, target):
+        if not self.testing or target in self._auto_closed_target_classes:
+            return
+        self._shooting_session.close_target(target, time.monotonic(), scheduled=True)
+        self._auto_closed_target_classes.add(target)
+        self.lora.send_command(HIDE_COMMANDS[target])
+        self._refresh_target_presentation()
 
     def _cancel_lora_script(self):
         for timer in self._lora_schedule_timers:
@@ -1048,7 +1054,7 @@ class MainWindow(QMainWindow):
         if not self._shooting_session.open_target(class_id, now):
             return
         self._refresh_target_presentation()
-        print(f"[LoRa] Gui {command}: {description}")
+        print(f"[LoRa] Gui {command}: {description!a}")
         self.lora.send_command(command)
 
     def _on_lora_connection_changed(self, connected, message):
@@ -1078,6 +1084,8 @@ class MainWindow(QMainWindow):
         for class_id, (close_command, _) in self.AUTO_CLOSE_TARGET_COMMANDS.items():
             if command == close_command:
                 session.confirm_command_sent(class_id, sent_at, raised=False)
+                if session.all_hides_sent:
+                    self.start_btn.setToolTip("Kết thúc bài bắn")
                 self._refresh_target_presentation()
                 return
 
@@ -1109,7 +1117,8 @@ class MainWindow(QMainWindow):
         if self.hub_registrar is not None:
             self.hub_registrar.close()
         self._cancel_lora_script()
-        self.lora.close()
+        final_targets = self._shooting_session.raised_target_classes if self._shooting_session is not None else ()
+        self.lora.close(final_commands=tuple(HIDE_COMMANDS[target] for target in final_targets))
         if self._raw_image_pool is not None:
             self._raw_image_pool.shutdown(wait=True)
         self._scoring_pool.shutdown(wait=False, cancel_futures=True)

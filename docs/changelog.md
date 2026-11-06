@@ -134,3 +134,10 @@
 - Thu nhỏ ảnh bia 10% trong khung, giữ đúng vị trí tương đối của dấu chạm. Cho phép điểm lệch ngoài ảnh hiện trong phần trống của khung bia, ẩn điểm xa và cắt dấu tại vùng bên trong khung.
 - Giữ tọa độ ngoài khoảng 0–1; không kéo phát trượt vào mép ảnh. Tọa độ lỗi không làm mất số đạn; tính điểm không thay đổi.
 - Nền nhãn CHƯA KẾT NỐI đổi sang rgb(0, 170, 255).
+
+## 2026-11-06 — Cài đặt thời gian và bù trễ phần cứng
+
+- Bia gập mờ hơn; thêm bảng ảnh và mốc Hiện/Ẩn bốn bia trong time_setting_frame, thêm ba mục vào channel_combo có sẵn (chưa điều khiển theo kênh).
+- Lưu/nạp các mốc và kênh qua JSON, ghi nguyên tử và báo lỗi tại form; giữ các cấu hình khác. Mốc không hợp lệ không được lưu.
+- Dùng lệnh hiện/ẩn thủ công, gửi sớm hardware_delay_time (mặc định 1,5 giây). Nhận điểm từ lúc gửi hiện đến gửi ẩn + 2 lần bù trễ. Dừng bài hủy lịch và gập các bia đã dựng còn lại. Cho phép chồng lịch và cùng hiển thị nhiều bia. Tự kết thúc sau lệnh ẩn cuối thực tế +4 lần bù trễ, thay cho hạn cố định 85 giây.
+- Với nhiều bia cùng hiện, đặt “ĐANG HIỆN” cạnh tên từng bia và bỏ nhãn chung để tăng diện tích ảnh bia.

@@ -39,7 +39,7 @@ class TargetMarginTests(unittest.TestCase):
             area = self.image_area(final, target)
             np.testing.assert_array_equal(area[:, :, 0], area[:, :, 1])
             np.testing.assert_array_equal(area[:, :, 1], area[:, :, 2])
-            self.assertGreaterEqual(area.min(), 183)
+            self.assertGreaterEqual(area.min(), 214)
         hit = self.image_area(final, 1)
         self.assertFalse(np.array_equal(hit[:, :, 0], hit[:, :, 1]))
         for color in (TARGET_GREEN, TARGET_RED):

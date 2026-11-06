@@ -3,10 +3,13 @@ import os
 import cv2
 from PyQt5 import QtGui, uic
 from PyQt5.QtCore import QTimer, Qt
-from PyQt5.QtWidgets import QDialog
+from PyQt5.QtWidgets import QAbstractSpinBox, QDialog, QGridLayout, QLabel, QDoubleSpinBox
 
 import config as cf
 import scoring
+from gui.target_timing import get_target_times, save_timing_settings, validate_times, hardware_delay_time, TARGET_LABELS, MAX_SETTING_SECONDS
+from gui.client_widget import TARGET_IMAGE_FILES
+from gui.shooting_session import TARGET_CLASS_SEQUENCE
 
 
 class SettingWindow(QDialog):
@@ -42,6 +45,7 @@ class SettingWindow(QDialog):
         self._q0_start_timer.timeout.connect(self._send_q0_command)
 
         self._configure_ui()
+        self._configure_target_times()
         self._configure_lora_ports()
         self._show_offline_image()
 
@@ -88,16 +92,84 @@ class SettingWindow(QDialog):
             return
         current_port = self.lora_controller.port_name
         self.comport_combo.clear()
-        self.comport_combo.addItem("Không sử dụng LoRa", "")
+        self.comport_combo.addItem("Không sử dụng LoRa", userData="")
         selected_index = 0
         for port in self.lora_controller.available_ports():
             device = port["device"]
             description = port["description"]
             label = f"{device} - {description}" if description else device
-            self.comport_combo.addItem(label, device)
+            self.comport_combo.addItem(label, userData=device)
             if device == current_port:
                 selected_index = self.comport_combo.count() - 1
         self.comport_combo.setCurrentIndex(selected_index)
+
+    def _configure_target_times(self):
+        self.channel_combo.clear()
+        for channel in (1, 2, 3):
+            self.channel_combo.addItem(f"Kênh {channel}", userData=channel)
+        self._initial_channel = cf.config_int("shooting.control_channel", 1, minimum=1, maximum=3)
+        self.channel_combo.setCurrentIndex(self._initial_channel - 1)
+        self.channel_combo.setToolTip("Lưu lựa chọn kênh; chức năng điều khiển theo kênh sẽ bổ sung sau.")
+        self._initial_times = get_target_times()
+        grid = QGridLayout(self.time_setting_frame)
+        grid.setContentsMargins(12, 10, 12, 10)
+        grid.setHorizontalSpacing(10)
+        grid.setVerticalSpacing(6)
+        self.time_setting_frame.setStyleSheet("QFrame#time_setting_frame {background: #f8fafc; border: 1px solid #dbe3eb; border-radius: 10px;}")
+        title = QLabel("THỜI GIAN HIỆN / ẨN BIA", self.time_setting_frame)
+        title.setStyleSheet("font-size: 13px; font-weight: bold; color: #24364b;")
+        grid.addWidget(title, 0, 0, 1, 5)
+        hint = QLabel("Mốc từ BẮT ĐẦU · giây · cho phép nhiều bia cùng hiện", self.time_setting_frame)
+        hint.setStyleSheet("font-size: 11px; color: #64748b;")
+        grid.addWidget(hint, 1, 0, 1, 5)
+        for row, text in ((4, "Hiện"), (5, "Ẩn")):
+            grid.addWidget(QLabel(text, self.time_setting_frame), row, 0)
+        self.target_time_inputs = []
+        for column, (target, label, item) in enumerate(zip(TARGET_CLASS_SEQUENCE, TARGET_LABELS, self._initial_times), 1):
+            thumbnail = QLabel(self.time_setting_frame)
+            thumbnail.setAlignment(Qt.AlignCenter)
+            image = QtGui.QPixmap(os.path.join(cf.DATA_DIR, "assets", "signs", TARGET_IMAGE_FILES[target]))
+            thumbnail.setPixmap(image.scaled(80, 42, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+            grid.addWidget(thumbnail, 2, column)
+            name = QLabel(label, self.time_setting_frame)
+            name.setAlignment(Qt.AlignCenter)
+            name.setStyleSheet("font-size: 11px; font-weight: bold; color: #334155;")
+            grid.addWidget(name, 3, column)
+            inputs = {}
+            for row, key, action in ((4, "show_seconds", "Hiện"), (5, "hide_seconds", "Ẩn")):
+                field = QDoubleSpinBox(self.time_setting_frame)
+                field.setRange(0, MAX_SETTING_SECONDS)
+                field.setDecimals(1)
+                field.setSingleStep(1)
+                field.setValue(item[key])
+                field.setAlignment(Qt.AlignCenter)
+                field.setButtonSymbols(QAbstractSpinBox.NoButtons)
+                field.setMinimumSize(80, 30)
+                field.setAccessibleName(f"{action} {label} ở giây")
+                field.setStyleSheet("QDoubleSpinBox {background: white; border: 1px solid #cbd5e1; border-radius: 6px; padding: 3px; font-size: 13px;} QDoubleSpinBox:focus {border: 1px solid #008ed6;}")
+                field.valueChanged.connect(self._validate_target_times)
+                grid.addWidget(field, row, column)
+                inputs[key] = field
+            self.target_time_inputs.append(inputs)
+            grid.setColumnStretch(column, 1)
+        self.timing_error_label = QLabel(self.time_setting_frame)
+        self.timing_error_label.setWordWrap(True)
+        self.timing_error_label.setStyleSheet("font-size: 11px; color: #b91c1c;")
+        grid.addWidget(self.timing_error_label, 6, 0, 1, 5)
+        self._validate_target_times()
+        self.setMinimumWidth(max(self.minimumWidth(), 540))
+
+    def _target_time_values(self):
+        return [{key: field.value() for key, field in pair.items()} for pair in self.target_time_inputs]
+
+    def _validate_target_times(self):
+        try:
+            validate_times(self._target_time_values(), hardware_delay_time())
+        except ValueError as error:
+            self.timing_error_label.setText(str(error))
+            return False
+        self.timing_error_label.clear()
+        return True
 
     def _on_client_changed(self, index):
         self._stop_stream()
@@ -198,6 +270,15 @@ class SettingWindow(QDialog):
             )
             return
 
+        if not self._validate_target_times():
+            return
+        times = self._target_time_values()
+        channel = self.channel_combo.currentData()
+        try:
+            save_timing_settings(times, channel)
+        except (OSError, ValueError) as error:
+            self.timing_error_label.setText(f"Chưa lưu được cài đặt: {error}")
+            return
         self._apply_lora_selection()
         if not self.Q0:
             self.accept()
@@ -313,6 +394,7 @@ class SettingWindow(QDialog):
         server.request_stream_stop()
 
     def done(self, result):
+        self._frame_timer.stop()
         self._stop_stream()
         parent = self.parent()
         if parent is not None and hasattr(parent, "q0_done_signal"):

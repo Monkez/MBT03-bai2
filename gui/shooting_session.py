@@ -22,7 +22,12 @@ class TargetExposure:
 class ShootingSession:
     """Track scoring windows separately from commanded visibility."""
 
-    def __init__(self, started_at, target_delays=()):
+    def __init__(self, started_at, target_delays=(), visible_seconds=None, hardware_delay_time=None):
+        self.visible_seconds = dict(TARGET_VISIBLE_SECONDS_BY_CLASS if visible_seconds is None else visible_seconds)
+        self.hardware_delay_time = hardware_delay_time or 0
+        self._hardware_mode = hardware_delay_time is not None
+        self._early = TARGET_EARLY_SECONDS if hardware_delay_time is None else 0
+        self._late = TARGET_LATE_SECONDS if hardware_delay_time is None else 2 * hardware_delay_time
         self.started_at = started_at
         self.deadline = started_at + MAX_DURATION_SECONDS
         self.stopped_at = None
@@ -32,28 +37,66 @@ class ShootingSession:
         self._visible_until = None
         self._raised_times = {}
         self._lowered_times = {}
+        self._confirmed_hides = set()
+        self._confirmed_raises = set()
+        self._planned_hides = {
+            target: started_at + delay + self.visible_seconds[target]
+            for target, delay in zip(TARGET_CLASS_SEQUENCE, target_delays)
+        }
+        if self._hardware_mode and self._planned_hides:
+            self.deadline = max(self._planned_hides.values()) + 4 * self.hardware_delay_time
         self._scheduled = {
             class_id: TargetExposure(
-                class_id, max(started_at, started_at + delay - TARGET_EARLY_SECONDS),
-                min(started_at + delay + TARGET_VISIBLE_SECONDS_BY_CLASS[class_id]
-                    + TARGET_LATE_SECONDS, self.deadline),
+                class_id, max(started_at, started_at + delay - self._early),
+                min(started_at + delay + self.visible_seconds[class_id]
+                    + self._late, self.deadline),
             )
             for class_id, delay in zip(TARGET_CLASS_SEQUENCE, target_delays)
         }
 
     def expired(self, now):
+        if self._hardware_mode and not self.all_hides_sent:
+            return False
         return now >= self.deadline
+
+    @property
+    def all_hides_sent(self):
+        return all(target in self._confirmed_hides for target in TARGET_CLASS_SEQUENCE)
+
+    def visible_target_classes(self, now):
+        if self.stopped_at is not None or self.expired(now):
+            return ()
+        visible = []
+        for target, raised in self._raised_times.items():
+            if self._hardware_mode and target not in self._confirmed_raises:
+                continue
+            hidden = self._lowered_times.get(target, raised + self.visible_seconds[target])
+            if self._hardware_mode and target not in self._confirmed_hides:
+                hidden = float("inf")
+            if raised + self.hardware_delay_time <= now < hidden + self.hardware_delay_time:
+                visible.append(target)
+        return tuple(visible)
 
     def target_presentation(self, now):
         """Return the focused target and commanded visibility, without scoring grace."""
         if self.stopped_at is not None or self.expired(now):
             return None
+        visible = self.visible_target_classes(now)
+        if visible:
+            return visible[-1], True
         if not self.next_target:
             return TARGET_CLASS_SEQUENCE[0], False
         class_id = TARGET_CLASS_SEQUENCE[self.next_target - 1]
-        raised_at = self._raised_times[class_id]
-        closed_at = min(raised_at + TARGET_VISIBLE_SECONDS_BY_CLASS[class_id],
-                        self._lowered_times.get(class_id, self.deadline), self.deadline)
+        if self._hardware_mode and class_id not in self._confirmed_raises:
+            return class_id, False
+        raised_at = self._raised_times[class_id] + self.hardware_delay_time
+        if self._hardware_mode:
+            closed_at = min(self._lowered_times.get(
+                class_id, self._raised_times[class_id] + self.visible_seconds[class_id])
+                + self.hardware_delay_time, self.deadline)
+        else:
+            closed_at = min(raised_at + self.visible_seconds[class_id],
+                            self._lowered_times.get(class_id, self.deadline), self.deadline)
         if now < raised_at:
             return class_id, False
         if now < closed_at:
@@ -69,6 +112,8 @@ class ShootingSession:
 
     def accepts_receipt(self, received_at):
         end = self.deadline if self.stopped_at is None else self.stopped_at
+        if self.stopped_at is None and self._hardware_mode and not self.all_hides_sent:
+            end = float("inf")
         return self.started_at <= received_at < end
 
     def window_for_target(self, class_id):
@@ -78,7 +123,7 @@ class ShootingSession:
         if (self.expired(now) or self.next_target >= len(TARGET_CLASS_SEQUENCE)
                 or class_id != TARGET_CLASS_SEQUENCE[self.next_target]):
             return False
-        opened_at = max(self.started_at, now - TARGET_EARLY_SECONDS)
+        opened_at = max(self.started_at, now - self._early)
         # Reuse the object already attached to shots received before the command.
         self.exposure = self._scheduled.get(class_id) or TargetExposure(class_id, opened_at, now)
         self._scheduled[class_id] = self.exposure
@@ -89,11 +134,19 @@ class ShootingSession:
         return True
 
     def _update_windows(self):
+        if self._hardware_mode and self._planned_hides:
+            self.deadline = max(self._lowered_times.get(target, hidden)
+                                for target, hidden in self._planned_hides.items()) + 4 * self.hardware_delay_time
         for class_id in self._raised_times:
             raised_at = self._raised_times[class_id]
-            visible_until = min(raised_at + TARGET_VISIBLE_SECONDS_BY_CLASS[class_id], self.deadline)
-            visible_until = min(visible_until, self._lowered_times.get(class_id, visible_until))
-            closed_at = min(visible_until + TARGET_LATE_SECONDS, self.deadline)
+            visible_until = min(raised_at + self.visible_seconds[class_id], self.deadline)
+            if self._hardware_mode:
+                visible_until = self._lowered_times.get(class_id, visible_until)
+            else:
+                visible_until = min(visible_until, self._lowered_times.get(class_id, visible_until))
+            closed_at = min(visible_until + self._late, self.deadline)
+            if self._hardware_mode and class_id not in self._confirmed_hides:
+                closed_at = float("inf")
             self._scheduled[class_id].closed_at = closed_at
             if self.exposure.class_id == class_id:
                 self._raised_at = raised_at
@@ -101,12 +154,15 @@ class ShootingSession:
 
     def confirm_command_sent(self, class_id, sent_at, *, raised):
         """Align the window with the first serial write, not executor queueing."""
-        if class_id not in self._raised_times or not self.started_at <= sent_at < self.deadline:
+        if (class_id not in self._raised_times or sent_at < self.started_at
+                or (not self._hardware_mode and sent_at >= self.deadline)):
             return False
         if raised:
+            self._confirmed_raises.add(class_id)
             self._raised_times[class_id] = sent_at
-            self._scheduled[class_id].opened_at = max(self.started_at, sent_at - TARGET_EARLY_SECONDS)
+            self._scheduled[class_id].opened_at = max(self.started_at, sent_at - self._early)
         elif class_id in self._lowered_times:
+            self._confirmed_hides.add(class_id)
             self._lowered_times[class_id] = sent_at
         else:
             return False
@@ -121,26 +177,48 @@ class ShootingSession:
         upcoming_class = (TARGET_CLASS_SEQUENCE[self.next_target]
                           if self.next_target < len(TARGET_CLASS_SEQUENCE) else None)
         if preferred_class_id is not None and (
-                preferred_class_id in self._raised_times or preferred_class_id == upcoming_class):
+                preferred_class_id in self._raised_times or preferred_class_id == upcoming_class) and (
+                not self._hardware_mode or preferred_class_id in self._confirmed_raises):
             preferred = self._scheduled.get(preferred_class_id)
             if preferred is not None and preferred.contains(now):
                 return preferred
         if self.next_target < len(TARGET_CLASS_SEQUENCE):
             class_id = TARGET_CLASS_SEQUENCE[self.next_target]
             upcoming = self._scheduled.get(class_id)
-            if upcoming is not None and upcoming.contains(now):
+            if (upcoming is not None and upcoming.contains(now)
+                    and (not self._hardware_mode or class_id in self._confirmed_raises)):
                 return upcoming
         # Decoding/UI dispatch can finish after the next target has been raised.
         for class_id in reversed(self._raised_times):
+            if self._hardware_mode and class_id not in self._confirmed_raises:
+                continue
             exposure = self._scheduled[class_id]
             if exposure.contains(now):
                 return exposure
         return None
 
-    def close_target(self, class_id, now):
+    @property
+    def raised_target_classes(self):
+        return tuple(self._raised_times)
+
+    def close_target(self, class_id, now, *, scheduled=False):
+        if scheduled:
+            if (class_id not in self._raised_times or now < self._raised_times[class_id]
+                    or (not self._hardware_mode and now >= self.deadline)):
+                return False
+            self._lowered_times[class_id] = now
+            self._update_windows()
+            return True
+        if self._hardware_mode:
+            if (class_id not in self._raised_times or class_id in self._lowered_times
+                    or not self._raised_times[class_id] <= now < self._raised_times[class_id] + self.visible_seconds[class_id]):
+                return False
+            self._lowered_times[class_id] = now
+            self._update_windows()
+            return True
         exposure = self.exposure
         if (exposure is None or exposure.class_id != class_id
-                or not self._raised_at <= now < self._visible_until):
+                or not self._raised_at <= now < (self.deadline if scheduled else self._visible_until)):
             return False
         self._lowered_times[class_id] = now
         self._update_windows()

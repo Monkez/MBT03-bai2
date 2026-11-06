@@ -1,3 +1,12 @@
+## Thời gian bia và bù trễ — 2026-11-06
+
+- SettingWindow dùng time_setting_frame và channel_combo người dùng bố trí: ảnh + mốc Hiện/Ẩn bốn bia; Kênh 1–3 chỉ lưu lựa chọn. userData dùng keyword cho cả ComboBox Fluent và MonkezComboBox. CHẤP NHẬN ghi JSON nguyên tử, giữ khóa khác; Hủy/validation/lỗi ghi giữ dữ liệu cũ. Nạp lại sau restart, áp dụng ở bài tiếp theo.
+- shooting.target_times gồm 4 cặp show_seconds/hide_seconds theo 6/10/7B/8C (tối đa 3600 s). Cho phép chồng lịch và mốc hiện bằng nhau; giữ thứ tự hiện theo cột, mốc ẩn độc lập. Chưa có thì lấy mốc lora_timeline cũ và thời lượng 7/7/7/18. shooting.control_channel và shooting.hardware_delay_time (mặc định 1.5); gửi sớm một delay bằng lệnh thủ công hiện @114#/@224#/@334#/@441#, ẩn @112#/@222#/@332#/@442#.
+- Nhận điểm chỉ sau actual command_sent của lệnh hiện, kết thúc trước lệnh ẩn thực tế +2*delay. Tự kết thúc sau khi đủ bốn lệnh ẩn thực sự gửi và lệnh cuối +4*delay; bỏ hạn 85 s cố định. Nếu chưa gửi đủ lệnh ẩn thì chờ hoặc kết thúc thủ công. Gập sớm cũng cập nhật các mốc; chỉnh theo serial write thực tế nếu hàng đợi trễ. ShootingSession giữ API legacy khi không truyền delay; MainWindow luôn dùng mode mới.
+- Mô phỏng đổi trạng thái sau gửi thực tế +delay; khi lệnh ẩn chưa ghi ra serial thì không cắt sớm khoảng nhận theo lịch dự báo. Nhiều bia cùng hiện chia khung theo viewport, mỗi tên bia kèm ĐANG HIỆN trên cùng hàng (bỏ nhãn chung), từng bia nhận điểm/gập độc lập; không còn ép về chỉ bia mới nhất. Bia gập nhạt hơn (16% ảnh xám).
+- Dừng hủy lịch, gửi ẩn các bia đã dựng còn lại. Thoát chặn lệnh hiện còn chờ rồi ghi lệnh ẩn cuối trước khi đóng serial, không chờ ACK lúc thoát.
+- 340 tests đạt; native Qt kiểm tra form, 2/4 bia chồng ở 1/2/4 bệ và tự kết thúc theo lần ghi lệnh ẩn trễ. Bản cuối V37-061126; kiểm tra PYZ/tài nguyên cùng lưu/nạp qua file tạm. Chưa thử phần cứng thật hay UI EXE mặc định. Giữ dữ liệu/cấu hình Desktop V32 trước khi chuyển bản cũ vào Recycle Bin.
+
 ## Kết quả và điểm chạm quanh bia — 2026-11-06
 
 - Sau stop/kết thúc bài, `_show_final_results` làm ảnh bia chưa trúng mờ đen trắng nhưng giữ viền đỏ; bia đã trúng giữ màu/viền xanh. Reset/mở app trả ảnh màu; kết quả trúng đến trễ cập nhật lại màu đúng bia.

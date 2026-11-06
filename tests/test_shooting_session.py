@@ -47,9 +47,8 @@ class ShootingSessionTests(unittest.TestCase):
 
     def test_invalid_timeline_falls_back_without_shifting_target_identity(self):
         defaults = cf.DEFAULT_CONFIG["shooting"]["lora_timeline"]
-        expected = tuple((item["delay_seconds"], item["command"], item["description"])
-                         for item in defaults)
-        for delays in ((15, 18, 42, 64), (15, 32, 38, 64), (15, 32, 42, 70), (15, 32, 42),
+        expected = _configured_lora_script()
+        for delays in ((15, 14, 42, 64), (15, 32, 31, 64), (15, 32, 42, 4000), (15, 32, 42),
                        (15, 32, float("nan"), 64), (15, 32, float("inf"), 64),
                        (-1, 32, 42, 64)):
             configured = [dict(item, delay_seconds=delay)
@@ -78,12 +77,12 @@ class ShootingSessionTests(unittest.TestCase):
         self.assertTrue(session.expired(185))
         self.assertFalse(session.open_target(1, 186))
 
-    def test_last_target_timeline_must_fit_visibility_with_grace_capped_at_deadline(self):
-        for seconds, accepted in ((65, True), (67, True), (67.001, False)):
+    def test_timeline_can_extend_past_85_seconds(self):
+        for seconds, accepted in ((65, True), (67, True), (90, True), (4000, False)):
             script = [dict(item) for item in cf.DEFAULT_CONFIG["shooting"]["lora_timeline"]]
             script[-1]["delay_seconds"] = seconds
             with self.subTest(seconds=seconds), patch("gui.main_window.cf.get_setting", return_value=script):
-                self.assertEqual(_configured_lora_script()[-1][0], seconds if accepted else 64)
+                self.assertEqual(_configured_lora_script()[-1][0], (seconds if accepted else 64) - 1.5)
 
     def test_delayed_target_eight_is_capped_at_exercise_deadline(self):
         session = ShootingSession(100)
@@ -145,7 +144,7 @@ class ShootingSessionTests(unittest.TestCase):
         script[2]["delay_seconds"] = 41
         script[2]["command"] = "@333#"
         with patch("gui.main_window.cf.get_setting", return_value=script):
-            self.assertEqual(_configured_lora_script()[2][:2], (41, "@333#"))
+            self.assertEqual(_configured_lora_script()[2][:2], (39.5, "@334#"))
 
 
 class ShootingFlowTests(unittest.TestCase):
@@ -156,6 +155,11 @@ class ShootingFlowTests(unittest.TestCase):
     def setUp(self):
         self.clock = patch("gui.main_window.time.monotonic", return_value=100.0).start()
         self.addCleanup(patch.stopall)
+        # A valid custom timeline with overlapping receipt padding and a last
+        # target ending at the exercise deadline exercises the full flow.
+        patch.dict(cf.APP_CONFIG["shooting"], target_times=[
+            {"show_seconds": show, "hide_seconds": hide}
+            for show, hide in ((15,22),(32,39),(41,48),(64,85))]).start()
         option = patch("gui.main_window.OptionWindow").start().return_value
         option.exec_.return_value = option.Accepted = 1
         option.start = True
@@ -166,6 +170,8 @@ class ShootingFlowTests(unittest.TestCase):
         patch("gui.main_window.ShotSound").start()
         patch("gui.main_window.HitSound").start()
         self.window = MainWindow()
+        self.window.lora.send_command.side_effect = lambda command: self.window._on_lora_command_sent(
+            command, self.clock.return_value, self.clock.return_value)
         self.window._scoring_pool.shutdown(wait=True)
         self.window._scoring_pool = MagicMock()
         self.window.start_test()
@@ -174,10 +180,25 @@ class ShootingFlowTests(unittest.TestCase):
         self.window.lora.send_command.reset_mock()
         self.addCleanup(self.window.close)
 
+    def advance(self, at):
+        for target, item in zip((1,0,2,3), self.window._target_timings):
+            hidden = 100 + item["hide_seconds"] - 1.5
+            if (target in self.window._shooting_session.raised_target_classes
+                    and target not in self.window._auto_closed_target_classes and hidden <= at):
+                self.clock.return_value = hidden
+                self.window._send_scheduled_target_hide(target)
+        self.clock.return_value = at
+
     def open_target(self, index):
         seconds, command, description = self.window.LORA_SCRIPT[index]
-        self.clock.return_value = 100 + seconds
+        self.advance(100 + seconds)
         self.window._send_lora_script_command(command, description, (1, 0, 2, 3)[index])
+
+    def send_planned_hides(self):
+        for target, item in zip((1,0,2,3), self.window._target_timings):
+            if target in self.window._shooting_session.raised_target_classes:
+                self.clock.return_value = 100 + item["hide_seconds"] - 1.5
+                self.window._send_scheduled_target_hide(target)
 
     def test_delayed_image_dispatch_uses_server_receipt_before_target_change(self):
         self.open_target(0)
@@ -185,27 +206,28 @@ class ShootingFlowTests(unittest.TestCase):
         self.clock.return_value = 134
         with patch.object(self.window, "_queue_raw_camera_image"):
             self.window._on_shoot_image(1, np.zeros((8, 8, 3), dtype=np.uint8),
-                                       {"q0": [.5, .5], "_server_received_at": 123.5})
+                                       {"q0": [.5, .5], "_server_received_at": 123.499})
         self.complete(1)
         self.assertEqual(self.window.client_widgets[0].hit_targets, {1})
-        self.assertEqual(self.window._scoring_pool.submit.call_args.args[-2], 123.5)
-        self.assertEqual(self.window.lora.send_command.call_count, 2)
+        self.assertEqual(self.window._scoring_pool.submit.call_args.args[-2], 123.499)
+        self.assertEqual(self.window.lora.send_command.call_count, 3)
 
-    def test_late_serial_confirmation_corrects_a_pending_scoring_result(self):
+    def test_late_serial_hide_confirmation_corrects_a_pending_scoring_result(self):
         self.open_target(0)
         self.receive(127)
         self.assertIsNone(self.window._scoring_pool.submit.call_args.args[-1])
-        self.window._on_lora_command_sent("@111#", 115, 118)
+        self.window._on_lora_command_sent("@112#", 120.5, 125)
         self.complete(1)
         self.assertEqual(self.window.client_widgets[0].hit_targets, {1})
 
     def test_previous_session_serial_command_does_not_shift_current_window(self):
         self.open_target(0)
-        self.window._on_lora_command_sent("@111#", 99, 118)
+        self.advance(127)
+        self.window._on_lora_command_sent("@114#", 99, 118)
         self.assertIsNone(self.window._shooting_session.active_target(127))
         self.clock.return_value = 117
         self.window.stop_test()
-        self.window._on_lora_command_sent("@111#", 118, 119)
+        self.window._on_lora_command_sent("@114#", 118, 119)
         self.assertIsNone(self.window._shooting_session.active_target(127))
 
     def test_previous_session_image_does_not_consume_current_round(self):
@@ -222,8 +244,8 @@ class ShootingFlowTests(unittest.TestCase):
         status = self.window._review_sessions[1][1][0]["status"]
         self.assertIn("ảnh nhận ngoài thời gian cho phép tính điểm", status)
         self.assertIn("PC nhận ảnh lúc 27.000s tính từ đầu bài", status)
-        self.assertIn("từ 13.000s đến trước 26.000s", status)
-        self.assertIn("Muộn 1.000s so với mốc đóng", status)
+        self.assertIn("từ 13.500s đến trước 23.500s", status)
+        self.assertIn("Muộn 3.500s so với mốc đóng", status)
         self.assertIn("Bệ 1 | Phát 1 | class=1", logs.output[0])
         self.assertIn("Trúng trên ảnh=True | Tính trúng=False", logs.output[0])
         self.assertIn(status, logs.output[0])
@@ -232,8 +254,8 @@ class ShootingFlowTests(unittest.TestCase):
         self.receive(112.5)
         self.complete(1)
         status = self.window._review_sessions[1][1][0]["status"]
-        self.assertIn("Sớm 0.500s so với mốc mở", status)
-        self.assertIn("từ 13.000s đến trước 26.000s", status)
+        self.assertIn("Sớm 1.000s so với mốc mở", status)
+        self.assertIn("từ 13.500s đến trước 23.500s", status)
 
     def test_image_received_before_stop_is_scored_after_late_ui_dispatch(self):
         self.open_target(0)
@@ -356,7 +378,7 @@ class ShootingFlowTests(unittest.TestCase):
 
     def test_manual_open_commands_are_independent_of_exercise_schedule(self):
         self.window.stop_test()
-        with patch.object(self.window, "LORA_SCRIPT", ((1, "@111#", "test"),)):
+        with patch.object(self.window, "LORA_SCRIPT", ((1, "@114#", "test"),)):
             self.window.open_target_btn.click()
         self.window.lora.send_sequence.assert_called_once_with(
             ("@114#", "@224#", "@334#", "@441#"))
@@ -386,7 +408,7 @@ class ShootingFlowTests(unittest.TestCase):
                     self.window.start_test()
 
     def receive(self, at):
-        self.clock.return_value = at
+        self.advance(at)
         return self.window.process_shot(1, np.zeros((8, 8, 3), dtype=np.uint8), (0.5, 0.5))
 
     def complete(self, class_id, hit=True, job_index=-1):
@@ -410,7 +432,7 @@ class ShootingFlowTests(unittest.TestCase):
         widget = self.window.client_widgets[0]
         self.assertEqual(widget.bullet_count, 1)
         self.assertEqual(widget.hit_targets, set())
-        self.assertEqual(self.window.lora.send_command.call_count, 3)
+        self.assertEqual(self.window.lora.send_command.call_count, 5)
         shot = self.window._review_sessions[1][1][0]
         self.assertFalse(shot["hit"])
         self.assertIn("nhận diện khác bia", shot["status"])
@@ -441,27 +463,27 @@ class ShootingFlowTests(unittest.TestCase):
         self.open_target(1)
         self.complete(1)
         self.assertEqual(self.window.client_widgets[0].hit_targets, {1})
-        self.assertEqual(self.window.lora.send_command.call_count, 2)
+        self.assertEqual(self.window.lora.send_command.call_count, 3)
         self.assertEqual(self.window._shooting_session.active_target(133).class_id, 0)
 
-    def test_early_hit_is_scored_before_raise_without_sending_premature_close(self):
-        self.receive(113)
+    def test_scheduled_time_before_actual_raise_does_not_score_or_close(self):
+        self.receive(113.5)
         self.complete(1)
-        self.assertEqual(self.window.client_widgets[0].hit_targets, {1})
+        self.assertEqual(self.window.client_widgets[0].hit_targets, set())
         self.window.lora.send_command.assert_not_called()
         self.open_target(0)
-        self.window.lora.send_command.assert_called_once_with("@111#")
+        self.window.lora.send_command.assert_called_once_with("@114#")
 
     def test_early_result_arriving_after_raise_retains_its_window(self):
-        self.receive(113)
+        self.receive(113.5)
         self.open_target(0)
         self.complete(1)
         self.assertEqual(self.window.client_widgets[0].hit_targets, {1})
         self.window.lora.send_command.assert_called_with("@112#")
 
-    def test_four_seconds_after_early_close_counts_without_resending_close(self):
+    def test_twice_hardware_delay_after_early_close_counts_without_resending_close(self):
         self.open_target(0)
-        for received_at in (116, 118, 119.999, 120):
+        for received_at in (116, 117, 118.999, 119):
             self.receive(received_at)
             self.complete(1)
         self.assertEqual([shot["hit"] for shot in self.window._review_sessions[1][1]],
@@ -469,31 +491,32 @@ class ShootingFlowTests(unittest.TestCase):
         self.assertEqual(self.window.client_widgets[0].bullet_count, 4)
         self.assertEqual([shot[3] for shot in self.window.client_widgets[0].shots], [True] * 3)
         self.assertEqual(self.window.lora.send_command.call_args_list,
-                         [call("@111#"), call("@112#")])
+                         [call("@114#"), call("@112#")])
 
     def test_overlapping_grace_windows_accept_each_detected_target(self):
         self.window.automatic_close_target_enabled = False
         self.open_target(0)
         self.open_target(1)
-        for received_at, class_id in ((139.999, 2), (140, 0), (140, 2), (142.999, 0), (143, 0), (143, 2)):
+        self.open_target(2)
+        for received_at, class_id in ((139.499, 2), (140, 0), (140, 2), (140.499, 0), (140.5, 0), (140.5, 2)):
             self.receive(received_at)
             self.complete(class_id)
         self.assertEqual([shot["hit"] for shot in self.window._review_sessions[1][1]],
                          [False, True, True, True, False, True])
         self.assertEqual(self.window.client_widgets[0].bullet_count, 6)
         self.assertEqual([shot[3] for shot in self.window.client_widgets[0].shots], [True] * 4)
-        self.assertEqual(self.window.lora.send_command.call_count, 2)
+        self.assertEqual(self.window.lora.send_command.call_count, 5)
 
     def test_overlap_preserves_previous_target_after_next_raise_and_delayed_scoring(self):
         self.window.automatic_close_target_enabled = False
         self.open_target(0)
         self.open_target(1)
-        self.receive(142.5)
+        self.receive(140.25)
         self.open_target(2)
         self.complete(0)
         self.assertEqual(self.window.client_widgets[0].hit_targets, {0})
         self.assertTrue(self.window._review_sessions[1][1][0]["hit"])
-        self.assertEqual(self.window.lora.send_command.call_count, 3)
+        self.assertEqual(self.window.lora.send_command.call_count, 5)
 
     def test_multiple_pedestals_without_auto_close_keep_window_open(self):
         self.window.automatic_close_target_enabled = False
@@ -516,27 +539,31 @@ class ShootingFlowTests(unittest.TestCase):
         self.assertEqual(self.window.client_widgets[0].bullet_count, 2)
         self.assertEqual([shot[3] for shot in self.window.client_widgets[0].shots], [True, True])
         self.assertEqual(self.window.lora.send_command.call_count, 2)
-        self.assertIsNotNone(self.window._shooting_session.active_target(120.999))
-        self.assertIsNone(self.window._shooting_session.active_target(121))
+        self.assertIsNotNone(self.window._shooting_session.active_target(119.999))
+        self.assertIsNone(self.window._shooting_session.active_target(120))
 
     def test_deadline_rejects_new_shots_but_counts_pending_result(self):
         for index in range(4):
             self.open_target(index)
+        self.send_planned_hides()
         self.receive(183.999)
-        self.clock.return_value = 185
+        self.clock.return_value = 189.5
         self.window.update_app()
         self.assertFalse(self.window.testing)
         self.assertFalse(self.window._test_timeout_timer.isActive())
         self.assertTrue(self.window.setting_btn.isEnabled())
-        self.assertFalse(self.receive(185))
+        self.assertFalse(self.receive(189.5))
         self.complete(3)
         self.assertEqual(self.window.client_widgets[0].hit_targets, {3})
         self.assertEqual(self.window.client_widgets[0].bullet_count, 1)
         self.assertTrue(self.window._review_sessions[1][1][0]["hit"])
-        self.assertEqual(self.window.lora.send_command.call_count, 4)
+        self.assertEqual(self.window.lora.send_command.call_count, 8)
 
     def test_receipt_enforces_deadline_even_before_timer_callback(self):
-        self.assertFalse(self.receive(185))
+        for index in range(4):
+            self.open_target(index)
+        self.send_planned_hides()
+        self.assertFalse(self.receive(189.5))
         self.assertFalse(self.window.testing)
         self.window._scoring_pool.submit.assert_not_called()
         self.window._shot_sound.play.assert_not_called()
@@ -562,6 +589,7 @@ class ShootingFlowTests(unittest.TestCase):
         self.window.automatic_close_target_enabled = False
         for index in range(4):
             self.open_target(index)
+        self.send_planned_hides()
         for received_at in (171, 175, 181.999, 182, 183.999, 184, 184.999):
             self.assertTrue(self.receive(received_at))
             self.complete(3)
@@ -570,15 +598,18 @@ class ShootingFlowTests(unittest.TestCase):
         self.clock.return_value = 184.999
         self.window.update_app()
         self.assertTrue(self.window.testing)
-        self.clock.return_value = 185
+        self.clock.return_value = 189.5
         self.window.update_app()
         self.assertFalse(self.window.testing)
 
     def test_timeout_timer_stops_and_cancels_lora_without_status_refresh(self):
-        self.assertEqual(self.window._test_timeout_timer.interval(), 85000)
+        self.assertEqual(self.window._test_timeout_timer.interval(), 89500)
         self.window._schedule_lora_script()
+        for index in range(4):
+            self.open_target(index)
+        self.send_planned_hides()
         self.window.timer.stop()
-        self.clock.return_value = 185
+        self.clock.return_value = 189.5
         timeout = QSignalSpy(self.window._test_timeout_timer.timeout)
         self.window._test_timeout_timer.start(1)
         self.assertTrue(timeout.wait(1000), "Exercise timeout signal was not delivered")
