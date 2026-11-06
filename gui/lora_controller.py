@@ -111,6 +111,7 @@ class LoraController(QObject):
     def disconnect_port(self):
         with self._lock:
             self._close_locked()
+            self._port_name = None
 
     def send_command(self, command):
         if not self._closing:

@@ -40,6 +40,10 @@ muộn của bản trước. Ảnh được xét theo thời điểm PC nhận, 
 Chỉ bắt đầu nhận điểm sau khi đã gửi lệnh hiện. Nếu chưa gửi đủ lệnh ẩn, phần mềm
 chờ gửi xong hoặc người vận hành kết thúc thủ công; gửi trễ thì mốc tự kết thúc cũng dịch theo.
 
+Khi chọn **Không sử dụng LoRa**, bài dùng mốc mô phỏng thay cho ghi serial để
+hiện/ẩn, nhận điểm và tự kết thúc theo cùng công thức; không gửi lệnh đến bia vật lý.
+Khi chọn COM, vẫn cần lần ghi thực tế, kể cả khi kết nối đang lỗi.
+
 Mô phỏng dự kiến bia đổi trạng thái sau lệnh một khoảng `hardware_delay_time`;
 giao thức không trả vị trí cơ khí thực tế.
 

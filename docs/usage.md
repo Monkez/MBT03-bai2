@@ -192,6 +192,12 @@ làm nghẽn tín hiệu kết nối. Nếu Orange Pi đang lưu IP server cũ v
 client tự dò các cổng MBT03 ổn định trong subnet hiện tại rồi cập nhật lại server
 sau khi bắt tay hợp lệ.
 
+Chọn **Không sử dụng LoRa** để chạy mô phỏng trên màn hình theo các mốc Hiện/Ẩn đã lưu,
+bao gồm chồng bia, gập khi trúng và tự kết thúc. Chế độ này không điều khiển bia vật lý.
+Khi đã chọn cổng COM, thời điểm hiện bia/nhận điểm vẫn theo lần ghi lệnh serial thực tế;
+lỗi kết nối không tự chuyển sang mô phỏng. Cổng đã chọn nhưng không còn trong danh sách
+được ghi rõ “chưa kết nối”.
+
 Nút `Cài đặt thiết bị` mở cửa sổ cài đặt từ `assets/qt/setting.ui`, cho phép chọn bệ đang kết nối, xem luồng camera, hiệu chỉnh camera và thực hiện quy không.
 
 Khi mở cửa sổ này, phần mềm gửi LoRa `@114#` để dựng bia số 6 phục vụ bắn Q0. Khi đóng bằng Chấp nhận, Hủy, Esc hoặc nút X, phần mềm gửi `@112#` để gập bia xuống, độc lập với tùy chọn gập bia tự động trong bài bắn. Cần kết nối LoRa để bia nhận được lệnh.

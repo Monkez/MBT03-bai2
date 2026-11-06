@@ -109,6 +109,18 @@ class LoraControllerTests(unittest.TestCase):
         with patch.object(LoraController, "available_ports", return_value=ports):
             self.assertEqual(LoraController.default_port_name(), "COM7")
 
+    def test_disconnect_clears_selection_and_does_not_reopen_previous_port(self):
+        controller = LoraController()
+        self.addCleanup(controller.close)
+        device = FakeSerialPort()
+        controller._serial, controller._port_name = device, "COM7"
+        controller.disconnect_port()
+        self.assertIsNone(controller.port_name)
+        self.assertFalse(device.is_open)
+        with patch("gui.lora_controller.serial.Serial") as factory:
+            controller._send_with_retry("@114#")
+        factory.assert_not_called()
+
     def test_retries_until_the_command_is_echoed(self):
         controller = LoraController()
         device = FakeSerialPort(echo_on_attempt=2)

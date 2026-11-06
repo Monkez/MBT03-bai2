@@ -154,3 +154,9 @@
 - Hai ảnh lớn trên nền tối, dải ô đạn phía trên điều hướng, không còn chú giải và text debug trên giao diện chính. Xem log cạnh Đóng mở riêng thông tin chi tiết.
 - Ô đạn theo max_bullets: chưa có kết quả xám, trúng xanh, trượt đỏ; viên đang chọn viền blue. Loạt khung vàng có khoảng cách lớn hơn, ghi nhận theo thời gian PC nhận ảnh trước khi chấm. Ngưỡng burst_gap_seconds mặc định 0,3 giây, so sánh nhỏ hơn.
 - Bia mô phỏng thu nhỏ với nền trắng mở rộng, bỏ viền kết quả và giữ đúng phép chiếu điểm. Kết quả đến trễ cập nhật dải đạn mà giữ lựa chọn.
+
+## 2026-11-06 — Sửa mô phỏng khi không sử dụng LoRa
+
+- Không sử dụng LoRa chạy mô phỏng đầy đủ theo lịch thay vì chờ tín hiệu ghi serial không thể xảy ra; chế độ có COM vẫn yêu cầu gửi thực tế.
+- Ngắt cổng xóa lựa chọn cũ để không tự mở lại; cổng không còn khả dụng hiển thị đúng trạng thái.
+- Ẩn hoàn toàn dòng báo lỗi thời gian khi rỗng; hiện lại khi sai mốc hoặc không lưu được.

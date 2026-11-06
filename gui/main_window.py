@@ -100,6 +100,7 @@ class MainWindow(QMainWindow):
         self._start_button_text = self.start_btn.text()
         self._test_start_time = 0.0
         self._shooting_session = None
+        self._simulate_targets = False
         self._shot_sound = ShotSound(self)
         self._hit_sound = HitSound(self)
         self._result_sound = ResultSound(self)
@@ -842,6 +843,7 @@ class MainWindow(QMainWindow):
         self._roster.begin_session(self._active_review_session_id)
         self._test_start_time = time.monotonic()
         self._target_timings = get_target_times()
+        self._simulate_targets = not bool(self.lora.port_name)
         self.LORA_SCRIPT = _configured_lora_script()
         self._shooting_session = ShootingSession(
             self._test_start_time, tuple(item[0] for item in self.LORA_SCRIPT),
@@ -918,7 +920,7 @@ class MainWindow(QMainWindow):
         command, description = command_info
         self._auto_closed_target_classes.add(class_id)
         print(f"[LoRa] Gui {command}: {description!a}")
-        self.lora.send_command(command)
+        self._send_exercise_target_command(command)
         return True
 
     def stop_test(self):
@@ -939,7 +941,8 @@ class MainWindow(QMainWindow):
             if target not in self._auto_closed_target_classes:
                 self._shooting_session.close_target(target, time.monotonic(), scheduled=True)
                 self._auto_closed_target_classes.add(target)
-                self.lora.send_command(HIDE_COMMANDS[target])
+                if not self._simulate_targets:
+                    self.lora.send_command(HIDE_COMMANDS[target])
         self._shooting_session.stop(time.monotonic())
         self._test_timeout_timer.stop()
         self._update_manual_target_buttons()
@@ -1059,7 +1062,7 @@ class MainWindow(QMainWindow):
             return
         self._shooting_session.close_target(target, time.monotonic(), scheduled=True)
         self._auto_closed_target_classes.add(target)
-        self.lora.send_command(HIDE_COMMANDS[target])
+        self._send_exercise_target_command(HIDE_COMMANDS[target])
         self._refresh_target_presentation()
 
     def _cancel_lora_script(self):
@@ -1079,7 +1082,14 @@ class MainWindow(QMainWindow):
             return
         self._refresh_target_presentation()
         print(f"[LoRa] Gui {command}: {description!a}")
-        self.lora.send_command(command)
+        self._send_exercise_target_command(command)
+
+    def _send_exercise_target_command(self, command):
+        if self._simulate_targets:
+            now = time.monotonic()
+            self._on_lora_command_sent(command, now, now)
+        else:
+            self.lora.send_command(command)
 
     def _on_lora_connection_changed(self, connected, message):
         state = "da ket noi" if connected else "chua ket noi"
@@ -1141,7 +1151,8 @@ class MainWindow(QMainWindow):
         if self.hub_registrar is not None:
             self.hub_registrar.close()
         self._cancel_lora_script()
-        final_targets = self._shooting_session.raised_target_classes if self._shooting_session is not None else ()
+        final_targets = (self._shooting_session.raised_target_classes
+                         if self._shooting_session is not None and not self._simulate_targets else ())
         self.lora.close(final_commands=tuple(HIDE_COMMANDS[target] for target in final_targets))
         if self._raw_image_pool is not None:
             self._raw_image_pool.shutdown(wait=True)

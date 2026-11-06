@@ -99,6 +99,9 @@ class SettingWindow(QDialog):
             self.comport_combo.addItem(label, userData=device)
             if device == current_port:
                 selected_index = self.comport_combo.count() - 1
+        if isinstance(current_port, str) and current_port and selected_index == 0:
+            self.comport_combo.addItem(f"{current_port} (chưa kết nối)", userData=current_port)
+            selected_index = self.comport_combo.count() - 1
         self.comport_combo.setCurrentIndex(selected_index)
 
     def _configure_target_times(self):
@@ -152,7 +155,7 @@ class SettingWindow(QDialog):
             grid.setColumnStretch(column, 1)
         self.timing_error_label = QLabel(self.time_setting_frame)
         self.timing_error_label.setWordWrap(True)
-        self.timing_error_label.setStyleSheet("font-size: 11px; color: #b91c1c;")
+        self.timing_error_label.setStyleSheet("background: transparent; font-size: 11px; color: #b91c1c;")
         grid.addWidget(self.timing_error_label, 5, 0, 1, 5)
         self._validate_target_times()
         self.setMinimumWidth(max(self.minimumWidth(), 540))
@@ -164,10 +167,14 @@ class SettingWindow(QDialog):
         try:
             validate_times(self._target_time_values(), hardware_delay_time())
         except ValueError as error:
-            self.timing_error_label.setText(str(error))
+            self._set_timing_error(str(error))
             return False
-        self.timing_error_label.clear()
+        self._set_timing_error("")
         return True
+
+    def _set_timing_error(self, message):
+        self.timing_error_label.setText(message)
+        self.timing_error_label.setVisible(bool(message))
 
     def _on_client_changed(self, index):
         self._stop_stream()
@@ -273,7 +280,7 @@ class SettingWindow(QDialog):
         try:
             save_timing_settings(times, channel)
         except (OSError, ValueError) as error:
-            self.timing_error_label.setText(f"Chưa lưu được cài đặt: {error}")
+            self._set_timing_error(f"Chưa lưu được cài đặt: {error}")
             return
         self._apply_lora_selection()
         if not self.Q0:

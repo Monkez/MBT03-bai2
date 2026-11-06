@@ -254,6 +254,8 @@ class ShootingScriptTests(unittest.TestCase):
         window.AUTO_CLOSE_TARGET_COMMANDS = MainWindow.AUTO_CLOSE_TARGET_COMMANDS
         window._auto_closed_target_classes = set()
         window.lora = MagicMock()
+        window._simulate_targets = False
+        window._send_exercise_target_command = lambda command: MainWindow._send_exercise_target_command(window, command)
         now = time.monotonic()
         window._shooting_session = ShootingSession(now)
         window._shooting_session.open_target(1, now)
@@ -271,6 +273,8 @@ class ShootingScriptTests(unittest.TestCase):
         window.AUTO_CLOSE_TARGET_COMMANDS = MainWindow.AUTO_CLOSE_TARGET_COMMANDS
         window._auto_closed_target_classes = set()
         window.lora = MagicMock()
+        window._simulate_targets = False
+        window._send_exercise_target_command = lambda command: MainWindow._send_exercise_target_command(window, command)
         now = time.monotonic()
         window._shooting_session = ShootingSession(now)
         for class_id in (1, 0, 2, 3):

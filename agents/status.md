@@ -1,3 +1,10 @@
+## Sửa chế độ không LoRa — 2026-11-06
+
+- Lỗi bia không hiện do đợi command_sent dù không chọn COM. MainWindow chốt _simulate_targets theo port_name ở đầu bài; không LoRa dùng mốc mô phỏng để chạy cả lịch/nhận điểm/tự kết thúc, không gọi gửi serial. Có COM vẫn theo tín hiệu ghi thực tế, không giả lập khi COM lỗi.
+- disconnect_port xóa port_name để không mở lại COM cũ; Settings giữ hiển thị tên COM chưa khả dụng thay vì báo nhầm Không sử dụng LoRa.
+- timing_error_label chỉ hiện khi có lỗi, nền trong suốt; không còn dải trống khi hợp lệ.
+- 354 tests đạt, gồm timer Qt thật ở chế độ không LoRa, chồng bia, kết thúc, COM lỗi và dòng lỗi. Native Qt từ mã/tài nguyên đóng gói V42-061126 xác nhận bia hiện đúng giây 15 và gập ở giây 22. Chưa thử cơ cấu bia thật.
+
 ## Xem lại style B — 2026-11-06
 
 - Hai ảnh lớn, dải đạn trên điều hướng, không có chú giải ngoài giao diện chính. Xem log mở riêng; viên đang chọn viền blue, loạt khung vàng. Ảnh mô phỏng có nền trắng rộng, không viền kết quả.
