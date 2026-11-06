@@ -1,3 +1,8 @@
+# V48-071126 — Cố định bia trước khi bắn
+
+- Chừa sẵn vùng dải đạn theo giới hạn đạn ngay từ đầu; thêm viên hoặc xuống hàng không dịch/thu nhỏ bia.
+- Áp dụng cho toàn bộ bia, bia đang gập, bia đang hiện và chồng bia.
+
 # V47-071126 — Dải đạn riêng từng bia
 
 - Hiển thị toàn bộ viên đã nhận theo từng bia, căn trái phía trên ảnh, giữ số phát và xuống hàng khi cần.

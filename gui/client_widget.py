@@ -641,9 +641,10 @@ class ClientWidget(QFrame):
 
     def _draw_target_rounds(self, surface, target, x, y, width, height, scale):
         groups = self._target_rounds.get(target, ())
-        if not groups:
-            return 0
-        # Fit every received round without letting the strip overlap the target.
+        # Reserve a fixed band before the first receipt; only cells adapt to it.
+        columns = max(1, int((width + 8 * scale) // (36 * scale)))
+        rows = min(2, math.ceil(self.bullet_limit / columns))
+        strip_height = min(rows * 36 * scale, int(height * .3))
         for cell in range(20 * scale, 2, -1):
             pad, gap = max(1, cell // 5), max(2, cell * 2 // 5)
             cursor, row, segments = 0, 0, []
@@ -661,8 +662,7 @@ class ClientWidget(QFrame):
                     cursor += group_width + gap
                     if remaining:
                         cursor, row = 0, row + 1
-            strip_height = (row + 1) * row_height
-            if strip_height <= height * .4:
+            if (row + 1) * row_height <= strip_height:
                 break
         painter = QPainter(surface)
         painter.setRenderHint(QPainter.Antialiasing)

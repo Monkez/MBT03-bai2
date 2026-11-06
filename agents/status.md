@@ -1,3 +1,9 @@
+## Vùng đạn cố định từ đầu — 2026-11-07
+
+- _draw_target_rounds chừa band cố định theo kích thước khung/giới hạn đạn, kể cả chưa bắn; chỉ ô đạn thích ứng trong band. Ảnh và tọa độ marker không dịch/thu nhỏ khi phát đầu, thêm phát hoặc xuống dòng.
+- Test so sánh nguyên rect ảnh trước bắn và sau 1/8/16 viên trên overview/focused/overlap; giữ kiểm tra tỷ lệ ảnh theo sai số 1 pixel vì vùng mới nhỏ hơn.
+- 42 tests đạt. Build V48-071126 và native Qt từ PYZ xác nhận rect trước/sau giống nhau ở 1/2/4 bệ; bàn giao Desktop giữ cấu hình/dữ liệu. Chưa thử EXE mặc định hoặc thiết bị thật.
+
 ## Dải đạn từng bia — 2026-11-07
 
 - target_round_groups ghép shots/receipt, ưu tiên displayed_target_index, pending xám/completed miss đỏ/hit xanh; phân loạt toàn bài trước khi chia bia, không biến loạt đi qua hai bia thành viên lẻ.

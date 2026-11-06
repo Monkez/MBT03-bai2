@@ -27,6 +27,18 @@ class TargetMarginTests(unittest.TestCase):
         x, y, w, h = self.widget._rendered_target_rects[target]
         return canvas[y:y + h, x:x + w]
 
+    def test_target_position_and_size_are_fixed_before_first_shot_and_after_wrap(self):
+        widget = self.widget
+        for state, visible in ((None, ()), ((1, False), ()), ((1, True), (1, 0, 2, 3))):
+            widget.set_target_rounds({})
+            widget.set_target_presentation(state, visible_targets=visible)
+            widget.compose_target_image()
+            before = dict(widget._rendered_target_rects)
+            for count in (1, 8, 16):
+                widget.set_target_rounds({1: [("single", ((n, "miss"),)) for n in range(1, count + 1)]})
+                widget.compose_target_image()
+                self.assertEqual(widget._rendered_target_rects, before)
+
     def test_sixteen_rounds_fit_left_strip_above_target_in_compact_views(self):
         widget = self.widget
         widget.resize(320, 320)
@@ -84,8 +96,8 @@ class TargetMarginTests(unittest.TestCase):
                 self.widget.compose_target_image()
                 for target, (x, y, w, h) in self.widget._rendered_target_rects.items():
                     left, top, width, height = self.widget._marker_clip_rects[target]
-                    self.assertAlmostEqual(w / min(width, height), .9, delta=.01)
-                    self.assertAlmostEqual(h / min(width, height), .9, delta=.01)
+                    self.assertLessEqual(abs(w - round(min(width, height) * .9)), 1)
+                    self.assertLessEqual(abs(h - round(min(width, height) * .9)), 1)
                     self.assertLessEqual(abs((x + w / 2) - (left + width / 2)), 1)
                     self.assertLessEqual(abs((y + h / 2) - (top + height / 2)), 1)
 
