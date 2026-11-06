@@ -73,10 +73,8 @@ class SettingWindow(QDialog):
         self.confirm_btn.clicked.connect(self._confirm_settings)
 
         self.adjust_btn.setEnabled(False)
-        self.adjust_btn.setStyleSheet("color: #666666;")
         self.adjust_btn.setCheckable(True)
         self.Q0_btn.setEnabled(False)
-        self.Q0_btn.setStyleSheet("color: #666666;")
         self.Q0_btn.setCheckable(True)
         target_name = scoring.CLASS_NAMES.get(
             scoring.Q0_TARGET_CLASS_ID,
@@ -117,26 +115,26 @@ class SettingWindow(QDialog):
         grid.setVerticalSpacing(6)
         self.time_setting_frame.setStyleSheet("QFrame#time_setting_frame {background: #f8fafc; border: 1px solid #dbe3eb; border-radius: 10px;}")
         title = QLabel("THỜI GIAN HIỆN / ẨN BIA", self.time_setting_frame)
-        title.setStyleSheet("font-size: 13px; font-weight: bold; color: #24364b;")
+        title.setStyleSheet("background: transparent; font-size: 13px; font-weight: bold; color: #24364b;")
         grid.addWidget(title, 0, 0, 1, 5)
-        hint = QLabel("Mốc từ BẮT ĐẦU · giây · cho phép nhiều bia cùng hiện", self.time_setting_frame)
-        hint.setStyleSheet("font-size: 11px; color: #64748b;")
-        grid.addWidget(hint, 1, 0, 1, 5)
-        for row, text in ((4, "Hiện"), (5, "Ẩn")):
-            grid.addWidget(QLabel(text, self.time_setting_frame), row, 0)
+        for row, text in ((3, "Hiện"), (4, "Ẩn")):
+            row_label = QLabel(text, self.time_setting_frame)
+            row_label.setStyleSheet("background: transparent;")
+            grid.addWidget(row_label, row, 0)
         self.target_time_inputs = []
         for column, (target, label, item) in enumerate(zip(TARGET_CLASS_SEQUENCE, TARGET_LABELS, self._initial_times), 1):
             thumbnail = QLabel(self.time_setting_frame)
+            thumbnail.setStyleSheet("background-color: #ffffff;")
             thumbnail.setAlignment(Qt.AlignCenter)
             image = QtGui.QPixmap(os.path.join(cf.DATA_DIR, "assets", "signs", TARGET_IMAGE_FILES[target]))
             thumbnail.setPixmap(image.scaled(80, 42, Qt.KeepAspectRatio, Qt.SmoothTransformation))
-            grid.addWidget(thumbnail, 2, column)
+            grid.addWidget(thumbnail, 1, column)
             name = QLabel(label, self.time_setting_frame)
             name.setAlignment(Qt.AlignCenter)
-            name.setStyleSheet("font-size: 11px; font-weight: bold; color: #334155;")
-            grid.addWidget(name, 3, column)
+            name.setStyleSheet("background: transparent; font-size: 11px; font-weight: bold; color: #334155;")
+            grid.addWidget(name, 2, column)
             inputs = {}
-            for row, key, action in ((4, "show_seconds", "Hiện"), (5, "hide_seconds", "Ẩn")):
+            for row, key, action in ((3, "show_seconds", "Hiện"), (4, "hide_seconds", "Ẩn")):
                 field = QDoubleSpinBox(self.time_setting_frame)
                 field.setRange(0, MAX_SETTING_SECONDS)
                 field.setDecimals(1)
@@ -155,7 +153,7 @@ class SettingWindow(QDialog):
         self.timing_error_label = QLabel(self.time_setting_frame)
         self.timing_error_label.setWordWrap(True)
         self.timing_error_label.setStyleSheet("font-size: 11px; color: #b91c1c;")
-        grid.addWidget(self.timing_error_label, 6, 0, 1, 5)
+        grid.addWidget(self.timing_error_label, 5, 0, 1, 5)
         self._validate_target_times()
         self.setMinimumWidth(max(self.minimumWidth(), 540))
 
@@ -194,9 +192,7 @@ class SettingWindow(QDialog):
             self._show_offline_image()
             return
         self.adjust_btn.setEnabled(True)
-        self.adjust_btn.setStyleSheet("")
         self.Q0_btn.setEnabled(True)
-        self.Q0_btn.setStyleSheet("")
 
     def _on_stream_frame(self, frame):
         if frame is not None:
@@ -372,8 +368,6 @@ class SettingWindow(QDialog):
         self.Q0_btn.setChecked(False)
         self.adjust_btn.setEnabled(False)
         self.Q0_btn.setEnabled(False)
-        self.adjust_btn.setStyleSheet("color: #666666;")
-        self.Q0_btn.setStyleSheet("color: #666666;")
 
     def _stop_stream(self):
         self._cancel_q0_start()

@@ -141,3 +141,10 @@
 - Lưu/nạp các mốc và kênh qua JSON, ghi nguyên tử và báo lỗi tại form; giữ các cấu hình khác. Mốc không hợp lệ không được lưu.
 - Dùng lệnh hiện/ẩn thủ công, gửi sớm hardware_delay_time (mặc định 1,5 giây). Nhận điểm từ lúc gửi hiện đến gửi ẩn + 2 lần bù trễ. Dừng bài hủy lịch và gập các bia đã dựng còn lại. Cho phép chồng lịch và cùng hiển thị nhiều bia. Tự kết thúc sau lệnh ẩn cuối thực tế +4 lần bù trễ, thay cho hạn cố định 85 giây.
 - Với nhiều bia cùng hiện, đặt “ĐANG HIỆN” cạnh tên từng bia và bỏ nhãn chung để tăng diện tích ảnh bia.
+
+## 2026-11-06 — Giữ stylesheet cửa sổ cài đặt
+
+- Bỏ ghi đè stylesheet hai nút Hiệu chỉnh camera và Bắn quy không khi khởi tạo, kết nối và đặt lại; dùng định dạng trong setting.ui.
+- Tiêu đề THỜI GIAN HIỆN / ẨN BIA dùng nền trong suốt; bỏ dòng ghi chú và hàng trống bên dưới.
+- Bốn ô ảnh bia trong Cài đặt dùng nền trắng.
+- Nền tên bia, nhãn Hiện/Ẩn trong suốt; bo góc hai nút camera/Q0 còn 8 px qua thuộc tính radius trong setting.ui.

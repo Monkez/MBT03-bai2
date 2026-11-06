@@ -1,3 +1,8 @@
+## Chỉnh hình thức Cài đặt — 2026-11-06
+
+- SettingWindow giữ nguyên stylesheet hai nút adjust_btn/Q0_btn từ setting.ui, kể cả chuyển kết nối/reset. Bỏ nền tiêu đề thời gian (transparent) và bỏ dòng ghi chú, dồn các hàng trong grid; bốn ô ảnh bia dùng nền trắng, tên bia/Hiện/Ẩn nền trong suốt. Hai nút camera/Q0 radius=8 được khai báo trong setting.ui để MonkezButton giữ đúng khi hover/check/reset.
+- 35 test liên quan đạt; probe native Qt đối chiếu stylesheet trước/sau khởi tạo/kết nối/ngắt, xác nhận note đã xóa. Bản V40-061126, ảnh mới ở outputs/giao-dien-v40/setting.png; giữ cấu hình/dữ liệu khi thay bản Desktop.
+
 ## Thời gian bia và bù trễ — 2026-11-06
 
 - SettingWindow dùng time_setting_frame và channel_combo người dùng bố trí: ảnh + mốc Hiện/Ẩn bốn bia; Kênh 1–3 chỉ lưu lựa chọn. userData dùng keyword cho cả ComboBox Fluent và MonkezComboBox. CHẤP NHẬN ghi JSON nguyên tử, giữ khóa khác; Hủy/validation/lỗi ghi giữ dữ liệu cũ. Nạp lại sau restart, áp dụng ở bài tiếp theo.

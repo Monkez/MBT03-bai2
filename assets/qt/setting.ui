@@ -213,7 +213,7 @@ ComboBox:disabled {
           </property>
           <property name="styleSheet">
            <string notr="true">QPushButton {
-    border-radius: 10px;
+    border-radius: 8px;
     background-color: rgba(255, 255, 255, 255);
     color: #000000;
     border: none;
@@ -252,6 +252,9 @@ ComboBox:disabled {
             <blue>68</blue>
            </color>
           </property>
+          <property name="radius" stdset="0">
+           <number>8</number>
+          </property>
          </widget>
         </item>
         <item>
@@ -275,7 +278,7 @@ ComboBox:disabled {
           </property>
           <property name="styleSheet">
            <string notr="true">QPushButton {
-    border-radius: 10px;
+    border-radius: 8px;
     background-color: rgba(255, 255, 255, 255);
     color: #000000;
     border: none;
@@ -313,6 +316,9 @@ ComboBox:disabled {
             <green>68</green>
             <blue>68</blue>
            </color>
+          </property>
+          <property name="radius" stdset="0">
+           <number>8</number>
           </property>
          </widget>
         </item>
