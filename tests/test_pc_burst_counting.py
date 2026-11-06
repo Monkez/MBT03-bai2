@@ -183,6 +183,7 @@ class PcBurstCountingTests(unittest.TestCase):
             testing=True, _active_review_session_id=1, _previous_review_session_id=None,
             client_widgets=[widget], _reference_images={0: np.zeros((100, 200, 3))},
             _review_sessions={1: {1: []}}, _review_shot_counters={},
+            _review_receipts={}, _last_burst_receipt={},
             _scoring_pool=_DeferredExecutor(), _get_scoring_session=lambda: None,
             _maybe_close_hit_target=MagicMock(), scoring_done_signal=MagicMock(),
             _setting_window=None, _queue_raw_camera_image=MagicMock(side_effect=saves),
@@ -193,7 +194,7 @@ class PcBurstCountingTests(unittest.TestCase):
         window._shooting_session.open_target(1, now)
         window._shooting_session.open_target(0, now)
         window._store_review_shot = lambda result: MainWindow._store_review_shot(window, result)
-        window._next_review_shot_number = lambda sid, pid: MainWindow._next_review_shot_number(window, sid, pid)
+        window._next_review_shot_number = lambda sid, pid, at=None: MainWindow._next_review_shot_number(window, sid, pid, at)
         window._score_shot_worker = lambda *args: MainWindow._score_shot_worker(window, *args)
         window.process_shot = lambda *args, **kwargs: MainWindow.process_shot(window, *args, **kwargs)
         window.scoring_done_signal.emit.side_effect = lambda result: MainWindow._on_scoring_done(window, result)

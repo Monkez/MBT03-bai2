@@ -148,3 +148,9 @@
 - Tiêu đề THỜI GIAN HIỆN / ẨN BIA dùng nền trong suốt; bỏ dòng ghi chú và hàng trống bên dưới.
 - Bốn ô ảnh bia trong Cài đặt dùng nền trắng.
 - Nền tên bia, nhãn Hiện/Ẩn trong suốt; bo góc hai nút camera/Q0 còn 8 px qua thuộc tính radius trong setting.ui.
+
+## 2026-11-06 — Xem lại theo concept B
+
+- Hai ảnh lớn trên nền tối, dải ô đạn phía trên điều hướng, không còn chú giải và text debug trên giao diện chính. Xem log cạnh Đóng mở riêng thông tin chi tiết.
+- Ô đạn theo max_bullets: chưa có kết quả xám, trúng xanh, trượt đỏ; viên đang chọn viền blue. Loạt khung vàng có khoảng cách lớn hơn, ghi nhận theo thời gian PC nhận ảnh trước khi chấm. Ngưỡng burst_gap_seconds mặc định 0,3 giây, so sánh nhỏ hơn.
+- Bia mô phỏng thu nhỏ với nền trắng mở rộng, bỏ viền kết quả và giữ đúng phép chiếu điểm. Kết quả đến trễ cập nhật dải đạn mà giữ lựa chọn.

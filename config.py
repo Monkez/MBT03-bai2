@@ -1,6 +1,7 @@
 import copy
 import json
 import os
+import re
 import sys
 
 
@@ -13,6 +14,8 @@ ASSETS_CUSTOM_WIDGETS_DIR = os.path.join(DATA_DIR, "assets", "MonkezCustomWidget
 DEFAULT_CONFIG = {
     "save_raw_data": True,
     "shooting": {
+        "max_bullets": 16,
+        "burst_gap_seconds": 0.3,
         "target_times": [],
         "control_channel": 1,
         "hardware_delay_time": 1.5,
@@ -138,6 +141,12 @@ def load_app_config(path=CONFIG_PATH):
     except (OSError, ValueError, TypeError, json.JSONDecodeError) as exc:
         print(f"[Config] Khong doc duoc {path}, dung gia tri mac dinh: {exc}")
         overrides = {}
+    shooting = overrides.get("shooting")
+    if isinstance(shooting, dict) and "max_bullets" not in shooting:
+        legacy = shooting.get("start_uart_command", "")
+        match = re.fullmatch(r"0F(\d{3})\n", legacy) if isinstance(legacy, str) else None
+        if match and int(match[1]) > 0:
+            shooting["max_bullets"] = int(match[1])
     review = overrides.get("review")
     if isinstance(review, dict) and "show_simulation_aim_point" not in review:
         # Preserve the previous setting when opening an older config file.
@@ -196,6 +205,18 @@ def config_float(path, default, minimum=None, maximum=None):
     if maximum is not None:
         value = min(float(maximum), value)
     return value
+
+
+def max_bullets():
+    return config_int("shooting.max_bullets", 16, minimum=1, maximum=999)
+
+
+def burst_gap_seconds():
+    return config_float("shooting.burst_gap_seconds", .3, minimum=.001, maximum=10)
+
+
+def ammunition_command():
+    return f"0F{max_bullets():03d}\n"
 
 
 for path in (CUSTOM_WIDGETS_DIR, ASSETS_CUSTOM_WIDGETS_DIR):

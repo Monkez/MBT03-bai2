@@ -393,7 +393,8 @@ class ShootingRoster(QObject):
         self.refresh_controls()
 
     def _session_result(self, port):
-        shots = self.window._review_sessions.get(self.session_id, {}).get(port, [])[:16]
+        limit = self.window.client_widgets[port - 1].bullet_limit
+        shots = self.window._review_sessions.get(self.session_id, {}).get(port, [])[:limit]
         hits = {shot["target_index"] for shot in shots if shot.get("hit") is True}
         return RosterResult(frozenset(hits))
 

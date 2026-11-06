@@ -90,7 +90,7 @@ class AppConfigTests(unittest.TestCase):
         self.assertEqual(SHOW_SIMULATION_AIM_POINT, config.config_bool("review.show_simulation_aim_point", False))
         self.assertEqual(
             MainWindow.START_UART_COMMAND,
-            config.get_setting("shooting.start_uart_command"),
+            config.ammunition_command(),
         )
         self.assertEqual(
             REVIEW_CAMERA_ZOOM,

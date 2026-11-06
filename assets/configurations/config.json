@@ -1,6 +1,8 @@
 {
     "save_raw_data": true,
     "shooting": {
+        "max_bullets": 16,
+        "burst_gap_seconds": 0.3,
         "hardware_delay_time": 1.5,
         "target_times": [],
         "control_channel": 1,

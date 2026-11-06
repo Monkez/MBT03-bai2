@@ -23,6 +23,7 @@ from gui.client_widget import ClientWidget
 from gui.lora_controller import LoraController
 from gui.option_window import OptionWindow
 from gui.review_window import ShotReviewDialog
+from gui.shot_groups import same_burst
 from gui.setting_window import SettingWindow
 from gui.shot_sound import ShotSound
 from gui.hit_sound import HitSound
@@ -71,9 +72,7 @@ def _configured_lora_script():
 class MainWindow(QMainWindow):
     scoring_done_signal = pyqtSignal(object)
     q0_done_signal = pyqtSignal(object)
-    START_UART_COMMAND = cf.config_str(
-        "shooting.start_uart_command", "0F016\n"
-    )
+    START_UART_COMMAND = cf.ammunition_command()
     MANUAL_OPEN_TARGET_COMMANDS = ("@114#", "@224#", "@334#", "@441#")
     AUTO_CLOSE_TARGET_COMMANDS = _configured_auto_close_commands()
     LORA_SCRIPT = _configured_lora_script()
@@ -95,6 +94,7 @@ class MainWindow(QMainWindow):
             option_dialog.automatic_close_target_enabled
         )
         self.testing = False
+        self.START_UART_COMMAND = cf.ammunition_command()
         self._manual_targets_busy = False
         self.client_widgets = []
         self._start_button_text = self.start_btn.text()
@@ -133,6 +133,8 @@ class MainWindow(QMainWindow):
         self._uart_debug_dialog = None
         self._review_sessions = {}
         self._review_shot_counters = {}
+        self._review_receipts = {}
+        self._last_burst_receipt = {}
         self._review_session_counter = 0
         self._active_review_session_id = None
         self._previous_review_session_id = None
@@ -464,7 +466,7 @@ class MainWindow(QMainWindow):
             return False
         exposure = self._shooting_session.active_target(received_at)
         self._shot_sound.play()
-        shot_number = self._next_review_shot_number(session_id, port_id)
+        shot_number = self._next_review_shot_number(session_id, port_id, received_at)
         logging.getLogger("mbt03_server").info(
             "[ShotReceipt] session=%s | Bệ %s | Phát %s | đã nhận để chấm lúc %.3fs | received_at=%.6f | ui_delay_ms=%.0f",
             session_id, port_id, shot_number, received_at - self._shooting_session.started_at,
@@ -483,10 +485,18 @@ class MainWindow(QMainWindow):
         )
         return True
 
-    def _next_review_shot_number(self, session_id, port_id):
+    def _next_review_shot_number(self, session_id, port_id, received_at=None):
         counter_key = (session_id, port_id)
         shot_number = self._review_shot_counters.get(counter_key, 0) + 1
         self._review_shot_counters[counter_key] = shot_number
+        if received_at is not None:
+            previous = self._last_burst_receipt.get(counter_key)
+            burst_id = 1 if previous is None else previous[1] + (
+                0 if same_burst(previous[0], received_at, cf.burst_gap_seconds()) else 1)
+            self._last_burst_receipt[counter_key] = (received_at, burst_id)
+            self._review_receipts[(session_id, port_id, shot_number)] = {
+                "received_at": received_at, "burst_id": burst_id,
+            }
         return shot_number
 
     def process_q0_calibration(self, port_id, frame):
@@ -717,6 +727,9 @@ class MainWindow(QMainWindow):
 
         shot = {
             "shot_number": int(result.get("shot_number", 0)),
+            "received_at": result.get("received_at"),
+            "burst_id": getattr(self, "_review_receipts", {}).get(
+                (session_id, port_id, int(result.get("shot_number", 0))), {}).get("burst_id"),
             "frame": result.get("frame"),
             "raw_image_save": result.get("raw_image_save"),
             "camera_point": result.get("bullet_point"),
@@ -749,6 +762,8 @@ class MainWindow(QMainWindow):
             self.client_widgets[port_id - 1].set_review_available(True)
 
     def _begin_review_session(self):
+        self._review_receipts = {}
+        self._last_burst_receipt = {}
         self._review_session_counter += 1
         session_id = self._review_session_counter
         self._review_sessions = {
@@ -781,8 +796,17 @@ class MainWindow(QMainWindow):
         shots = session.get(port_id, [])
         if not shots:
             return
-        dialog = ShotReviewDialog(port_id, shots, self)
-        dialog.exec_()
+        receipts = {number: dict(info) for (sid, port, number), info in self._review_receipts.items()
+                    if sid == self._previous_review_session_id and port == port_id}
+        dialog = ShotReviewDialog(port_id, shots, self,
+                                  max_bullets=self.client_widgets[port_id - 1].bullet_limit,
+                                  fired_count=self._review_shot_counters.get(
+                                      (self._previous_review_session_id, port_id), len(shots)),
+                                  receipt_info=receipts)
+        try:
+            dialog.exec_()
+        finally:
+            dialog.deleteLater()
 
     def _client_positions(self, count):
         if count == 1:

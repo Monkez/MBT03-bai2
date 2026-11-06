@@ -160,7 +160,8 @@ class ReviewWindowTests(unittest.TestCase):
         }
 
         preview = dialog._simulation_preview(shot)
-        center = preview[250:351, 350:451]
+        cy, cx = preview.shape[0] // 2, preview.shape[1] // 2
+        center = preview[cy-50:cy+51, cx-50:cx+51]
         red_pixels = np.all(center == np.array([0, 0, 255]), axis=2)
 
         self.assertGreater(np.count_nonzero(red_pixels), 100)
@@ -284,7 +285,7 @@ class ReviewWindowTests(unittest.TestCase):
 
     @patch("gui.review_window.SHOW_SIMULATION_AIM_POINT", True)
     def test_simulation_shows_separate_overlapping_and_outside_points(self):
-        reference = np.full((300, 400, 3), 255, dtype=np.uint8)
+        reference = np.full((300, 400, 3), (220, 225, 230), dtype=np.uint8)
         dialog = ShotReviewDialog.__new__(ShotReviewDialog)
         dialog._reference_images = {1: reference}
         for before, after in (
@@ -304,9 +305,9 @@ class ReviewWindowTests(unittest.TestCase):
                     # The red point must be in the expanded background, not
                     # clamped to the original target's left border.
                     red_x = np.where(np.all(preview == [0, 0, 255], axis=2))[1]
-                    border_x = np.where(np.all(preview == [40, 40, 220], axis=2))[1]
-                    self.assertLess(red_x.max(), border_x.min())
-        np.testing.assert_array_equal(reference, 255)
+                    reference_x = np.where(np.all(preview == [220, 225, 230], axis=2))[1]
+                    self.assertLess(red_x.max(), reference_x.min())
+        np.testing.assert_array_equal(reference, np.full_like(reference, (220, 225, 230)))
 
     @patch("gui.review_window.SHOW_SIMULATION_AIM_POINT", False)
     def test_hidden_before_point_does_not_draw_or_expand_canvas(self):

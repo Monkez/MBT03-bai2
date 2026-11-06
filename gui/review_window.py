@@ -1,3 +1,4 @@
+import json
 import os
 
 import cv2
@@ -6,6 +7,9 @@ from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QFont, QImage, QKeySequence, QPixmap
 from PyQt5.QtWidgets import (
     QComboBox,
+    QPlainTextEdit,
+    QScrollArea,
+    QWidget,
     QDialog,
     QFrame,
     QHBoxLayout,
@@ -18,6 +22,7 @@ from PyQt5.QtWidgets import (
 
 import config as cf
 import scoring
+from gui.shot_groups import burst_groups
 
 
 SHOW_CAMERA_AIM_POINT = cf.config_bool("review.show_camera_aim_point", True)
@@ -118,10 +123,16 @@ class AspectImageLabel(QLabel):
 
 
 class ShotReviewDialog(QDialog):
-    def __init__(self, pedestal_id, shots, parent=None):
+    def __init__(self, pedestal_id, shots, parent=None, *, max_bullets=None, fired_count=None, receipt_info=None):
         super().__init__(parent)
         self.pedestal_id = pedestal_id
+        self._shot_source = shots
         self.shots = sorted(shots, key=lambda shot: shot.get("shot_number", 0))
+        self._max_bullets = max_bullets if max_bullets is not None else cf.max_bullets()
+        self._fired_count = fired_count or 0
+        self._receipt_info = dict(receipt_info or {})
+        self._history_signature = tuple(id(shot) for shot in self.shots)
+        self.round_buttons = {}
         self.current_index = 0
         self._reference_images = self._load_reference_images()
 
@@ -130,144 +141,262 @@ class ShotReviewDialog(QDialog):
         self.setMinimumSize(920, 600)
         self.resize(1180, 740)
         self.setModal(True)
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         self._build_ui()
         self._raw_file_timer = QTimer(self)
         self._raw_file_timer.setInterval(250)
         self._raw_file_timer.timeout.connect(self._update_raw_file_label)
         self.finished.connect(self._raw_file_timer.stop)
+        self._history_timer = QTimer(self)
+        self._history_timer.setInterval(200)
+        self._history_timer.timeout.connect(self._refresh_history)
+        self.finished.connect(self._history_timer.stop)
+        self.finished.connect(self.log_dialog.close)
         self._bind_shortcuts()
         self._show_current_shot()
 
     def _build_ui(self):
         self.setStyleSheet(
-            "QDialog { background: #f1f5f9; }"
-            "QLabel#dialogTitle { color: #0f172a; font-size: 22px; font-weight: 700; }"
-            "QLabel#dialogSubtitle { color: #64748b; font-size: 13px; }"
-            "QLabel#panelTitle { color: #334155; font-size: 13px; font-weight: 700; }"
-            "QLabel#shotStatus { color: #0f172a; font-size: 15px; font-weight: 600; }"
-            "QLabel#shotDetails { color: #475569; font-size: 13px; }"
-            "QComboBox { background: white; color: #0f172a; border: 1px solid #94a3b8;"
-            "border-radius: 6px; min-height: 36px; padding: 0 10px; font-size: 13px; }"
-            "QComboBox:focus, QPushButton:focus { border: 2px solid #2563eb; }"
-            "QPushButton {"
-            "min-height: 38px; padding: 0 18px; border-radius: 7px;"
-            "background: white; color: #1e293b; border: 1px solid #cbd5e1;"
-            "font-size: 13px; font-weight: 600;"
-            "}"
-            "QPushButton:hover { background: #e2e8f0; }"
-            "QPushButton:disabled { color: #94a3b8; background: #f8fafc; }"
-            "QPushButton#primaryButton { background: #2563eb; color: white; border: none; }"
-            "QPushButton#primaryButton:hover { background: #1d4ed8; }"
+            "QDialog { background: #f8fafc; }"
+            "QLabel { background: transparent; color: #334155; }"
+            "QLabel#dialogTitle { color: #0f172a; font-size: 20px; font-weight: 700; }"
+            "QLabel#panelTitle { color: #f1f5f9; font-size: 13px; font-weight: 600; }"
+            "QComboBox { background: white; border: 1px solid #cbd5e1; border-radius: 6px; min-height: 32px; padding: 0 8px; }"
+            "QPushButton { min-height: 36px; padding: 0 16px; border-radius: 7px;"
+            "background: white; color: #1e293b; border: 1px solid #cbd5e1; font-size: 13px; font-weight: 600; }"
+            "QPushButton:hover { background: #eef2f7; }"
+            "QPushButton:focus { border: 2px solid #2563eb; }"
+            "QPushButton:disabled { color: #94a3b8; background: #f1f5f9; }"
+            "QPushButton#closeButton { border: 1px solid #2563eb; }"
         )
-
         root = QVBoxLayout(self)
         root.setContentsMargins(16, 14, 16, 14)
         root.setSpacing(10)
-
         header = QHBoxLayout()
         title = QLabel(f"Xem lại phát bắn · Bệ {self.pedestal_id}")
         title.setObjectName("dialogTitle")
+        self.log_btn = QPushButton("Xem log")
+        self.log_btn.clicked.connect(self.open_log)
         close_btn = QPushButton("Đóng")
+        close_btn.setObjectName("closeButton")
         close_btn.setToolTip("Đóng cửa sổ (Esc)")
         close_btn.clicked.connect(self.accept)
         header.addWidget(title)
         header.addStretch()
+        header.addWidget(self.log_btn)
         header.addWidget(close_btn)
         root.addLayout(header)
-
-        summary = QHBoxLayout()
-        self.status_label = QLabel()
-        self.status_label.setObjectName("shotStatus")
-        self.status_label.setTextFormat(Qt.PlainText)
-        self.status_label.setWordWrap(True)
-        self.counter_label = QLabel()
-        self.counter_label.setStyleSheet("color: #475569; font-size: 13px;")
-        summary.addWidget(self.status_label, 1)
-        summary.addWidget(self.counter_label)
-        root.addLayout(summary)
+        self._build_log_dialog()
 
         panels = QHBoxLayout()
         panels.setSpacing(12)
         self.camera_view = self._create_panel(
-            panels, "ĐIỂM NGẮM NGƯỜI TẬP", "Không có ảnh camera",
+            panels, "Điểm ngắm người tập", "Không có ảnh camera",
             f"Zoom {REVIEW_CAMERA_ZOOM:g}× · Khung vàng: bia được chọn · Khung xanh: bia khác<br>"
-            + marker_legend(SHOW_CAMERA_AIM_POINT, SHOW_CAMERA_IMPACT_POINT),
-        )
+            + marker_legend(SHOW_CAMERA_AIM_POINT, SHOW_CAMERA_IMPACT_POINT))
         self.simulation_view = self._create_panel(
-            panels, "ĐIỂM CHẠM TRÊN BIA", "Không có ảnh mô phỏng",
-            marker_legend(SHOW_SIMULATION_AIM_POINT, SHOW_SIMULATION_IMPACT_POINT),
-        )
+            panels, "Điểm chạm trên bia", "Không có ảnh mô phỏng",
+            marker_legend(SHOW_SIMULATION_AIM_POINT, SHOW_SIMULATION_IMPACT_POINT))
         root.addLayout(panels, 1)
 
-        self.raw_file_label = QLabel()
-        self.raw_file_label.setTextFormat(Qt.PlainText)
-        self.raw_file_label.setTextInteractionFlags(Qt.TextSelectableByMouse | Qt.TextSelectableByKeyboard)
-        self.raw_file_label.setWordWrap(True)
-        self.raw_file_label.setStyleSheet("color: #334155; font-size: 13px;")
-        root.addWidget(self.raw_file_label)
-
-        self.details_label = QLabel()
-        self.details_label.setObjectName("shotDetails")
-        self.details_label.setWordWrap(True)
-        self.details_label.setTextFormat(Qt.PlainText)
-        root.addWidget(self.details_label)
+        self.ammo_scroll = QScrollArea()
+        self.ammo_scroll.setWidgetResizable(True)
+        self.ammo_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        self.ammo_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.ammo_scroll.setFixedHeight(72)
+        self.ammo_scroll.setStyleSheet("QScrollArea { background: transparent; border: none; }")
+        self.ammo_content = QWidget()
+        self.ammo_content.setStyleSheet("background: transparent;")
+        self.ammo_layout = QHBoxLayout(self.ammo_content)
+        self.ammo_layout.setContentsMargins(6, 4, 6, 4)
+        self.ammo_layout.setSpacing(14)
+        self.ammo_scroll.setWidget(self.ammo_content)
+        root.addWidget(self.ammo_scroll)
+        self._rebuild_round_strip()
 
         controls = QHBoxLayout()
-        controls.setSpacing(8)
+        controls.setSpacing(16)
         self.previous_btn = QPushButton("◀  Phát trước")
         self.previous_btn.setToolTip("Phát trước (←)")
         self.next_btn = QPushButton("Phát sau  ▶")
         self.next_btn.setToolTip("Phát sau (→)")
-        self.shot_selector = QComboBox()
-        self.shot_selector.setAccessibleName("Chọn phát bắn")
-        self.shot_selector.setMinimumWidth(250)
-        self.shot_selector.setSizeAdjustPolicy(QComboBox.AdjustToMinimumContentsLengthWithIcon)
-        for shot in self.shots:
-            hit = shot.get("hit")
-            result = "Trúng" if hit is True else "Trượt" if hit is False else "Chưa xác định"
-            if shot.get("scoring_eligible") is False:
-                result = "Không tính điểm"
-            self.shot_selector.addItem(
-                f"Phát {shot.get('shot_number', 0)} · {shot.get('target_name') or 'Không rõ bia'} · {result}"
-            )
-        self.shot_selector.currentIndexChanged.connect(self._set_index)
-        self.shot_selector.setEnabled(bool(self.shots))
+        self.counter_label = QLabel()
+        self.counter_label.setAlignment(Qt.AlignCenter)
+        self.counter_label.setMinimumWidth(76)
+        self.counter_label.setStyleSheet("font-size: 16px; font-weight: 600; background: transparent;")
         self.previous_btn.clicked.connect(self.show_previous)
         self.next_btn.clicked.connect(self.show_next)
-        for button in (self.previous_btn, self.next_btn, close_btn):
-            button.setAutoDefault(False)
+        controls.addStretch()
         controls.addWidget(self.previous_btn)
-        controls.addWidget(self.shot_selector, 1)
+        controls.addWidget(self.counter_label)
         controls.addWidget(self.next_btn)
-        hint = QLabel("← → Duyệt phát · Home / End Đầu / Cuối")
-        hint.setObjectName("dialogSubtitle")
-        controls.addSpacing(8)
-        controls.addWidget(hint)
+        controls.addStretch()
         root.addLayout(controls)
+        for button in (self.previous_btn, self.next_btn, self.log_btn, close_btn):
+            button.setAutoDefault(False)
+
+    def _build_log_dialog(self):
+        self.log_dialog = QDialog(self)
+        self.log_dialog.setWindowTitle(f"Log phát bắn · Bệ {self.pedestal_id}")
+        self.log_dialog.setWindowFlags(self.log_dialog.windowFlags() & ~Qt.WindowContextHelpButtonHint)
+        self.log_dialog.resize(760, 540)
+        layout = QVBoxLayout(self.log_dialog)
+        self.shot_selector = QComboBox(self.log_dialog)
+        self.shot_selector.setAccessibleName("Chọn phát bắn để xem log")
+        self.shot_selector.currentIndexChanged.connect(self._set_index)
+        layout.addWidget(self.shot_selector)
+        self.status_label = QLabel(self.log_dialog)
+        self.raw_file_label = QLabel(self.log_dialog)
+        self.details_label = QLabel(self.log_dialog)
+        for label in (self.status_label, self.raw_file_label, self.details_label):
+            label.setTextFormat(Qt.PlainText)
+            label.setWordWrap(True)
+            label.setTextInteractionFlags(Qt.TextSelectableByMouse | Qt.TextSelectableByKeyboard)
+            layout.addWidget(label)
+        self._log_guides = QVBoxLayout()
+        layout.addLayout(self._log_guides)
+        self.log_text = QPlainTextEdit(self.log_dialog)
+        self.log_text.setReadOnly(True)
+        self.log_text.setFont(QFont("Consolas", 10))
+        self.log_text.setStyleSheet("background: white; color: #24364b; border: 1px solid #cbd5e1; border-radius: 6px;")
+        layout.addWidget(self.log_text, 1)
+        close = QPushButton("Đóng log", self.log_dialog)
+        close.clicked.connect(self.log_dialog.close)
+        layout.addWidget(close, 0, Qt.AlignRight)
+        self._populate_selector()
+
+    def _populate_selector(self):
+        self.shot_selector.blockSignals(True)
+        self.shot_selector.clear()
+        for shot in self.shots:
+            result = ("Không tính điểm" if shot.get("scoring_eligible") is False else
+                      "Trúng" if shot.get("hit") is True else "Trượt" if shot.get("hit") is False else "Chưa xác định")
+            self.shot_selector.addItem(f"Phát {shot.get('shot_number', 0)} · {shot.get('target_name') or 'Không rõ bia'} · {result}")
+        self.shot_selector.setEnabled(bool(self.shots))
+        self.shot_selector.blockSignals(False)
 
     def _create_panel(self, panels, title_text, placeholder, legend):
         frame = QFrame()
         frame.setObjectName("reviewPanel")
-        frame.setStyleSheet(
-            "QFrame#reviewPanel {"
-            "background: white; border: 1px solid #dbe3ec; border-radius: 10px;"
-            "}"
-        )
+        frame.setStyleSheet("QFrame#reviewPanel { background: #272c36; border: 1px solid #303744; border-radius: 10px; }")
         layout = QVBoxLayout(frame)
-        layout.setContentsMargins(10, 10, 10, 10)
-        layout.setSpacing(8)
+        layout.setContentsMargins(8, 8, 8, 8)
+        layout.setSpacing(6)
         title = QLabel(title_text)
         title.setObjectName("panelTitle")
         view = AspectImageLabel(placeholder)
         layout.addWidget(title)
         layout.addWidget(view, 1)
-        caption = QLabel(legend)
-        caption.setObjectName("shotDetails")
-        caption.setWordWrap(True)
-        caption.setMinimumHeight(36)
-        layout.addWidget(caption)
         panels.addWidget(frame, 1)
+        # Technical legends belong to the detailed log, not the image deck.
+        caption = QLabel(legend, self.log_dialog)
+        caption.setWordWrap(True)
+        self._log_guides.addWidget(caption)
         return view
+
+    def _rebuild_round_strip(self):
+        while self.ammo_layout.count():
+            item = self.ammo_layout.takeAt(0)
+            if item.widget() is not None:
+                item.widget().deleteLater()
+        self.round_buttons = {}
+        self._shot_indices = {int(shot.get("shot_number", index + 1)): index
+                              for index, shot in enumerate(self.shots)}
+        records = dict(self._receipt_info)
+        for index, shot in enumerate(self.shots):
+            number = int(shot.get("shot_number", index + 1))
+            records[number] = {**shot, **records.get(number, {})}
+        self._total_fired = max([self._fired_count, *self._shot_indices.keys(), *records.keys()], default=0)
+        capacity = max(self._max_bullets, self._total_fired)
+        groups = burst_groups(records, cf.burst_gap_seconds())
+        starts = {group[0]: group for group in groups}
+        self.ammo_layout.addStretch()
+        number = 1
+        while number <= capacity:
+            grouped = number in starts
+            slots = starts[number] if grouped else []
+            if not grouped:
+                while number <= capacity and number not in starts:
+                    slots.append(number)
+                    number += 1
+            else:
+                number = slots[-1] + 1
+            frame = QFrame(self.ammo_content)
+            frame.setStyleSheet("QFrame { background: transparent; border: "
+                                + ("2px solid #eab52c;" if grouped else "2px solid transparent;")
+                                + "border-radius: 8px; }")
+            frame.setFixedHeight(48)
+            row = QHBoxLayout(frame)
+            row.setContentsMargins(4, 4, 4, 4)
+            row.setSpacing(6)
+            for slot in slots:
+                button = QPushButton(str(slot), frame)
+                button.setFixedSize(36, 36)
+                button.setAutoDefault(False)
+                button.setEnabled(slot in self._shot_indices)
+                button.clicked.connect(lambda _checked=False, n=slot: self._set_index(self._shot_indices[n]))
+                self.round_buttons[slot] = button
+                row.addWidget(button)
+            self.ammo_layout.addWidget(frame, 0, Qt.AlignVCenter)
+        self.ammo_layout.addStretch()
+
+    def _update_round_selection(self):
+        selected = int(self.shots[self.current_index].get("shot_number", self.current_index + 1)) if self.shots else None
+        for number, button in self.round_buttons.items():
+            index = self._shot_indices.get(number)
+            shot = self.shots[index] if index is not None else None
+            hit = shot is not None and shot.get("hit") is True and shot.get("scoring_eligible") is not False
+            color = "#1a9b58" if hit else "#df3949" if shot is not None else "#dce1e8"
+            text = "#ffffff" if shot is not None else "#687385"
+            border = "3px solid #1769ff" if number == selected else "2px solid transparent"
+            button.setStyleSheet("QPushButton, QPushButton:disabled, QPushButton:focus {"
+                                f"min-height: 0; padding: 0; border-radius: 5px; background: {color}; color: {text};"
+                                f"border: {border}; font-size: 13px; font-weight: 600; }}")
+            result = "Trúng" if hit else "Trượt / không tính điểm" if shot is not None else (
+                "Đang chấm" if number <= self._total_fired else "Chưa bắn")
+            button.setToolTip(f"Phát {number} · {result}")
+            button.setAccessibleName(f"Phát {number}: {result}" + (" · Đang xem" if number == selected else ""))
+        if selected in self.round_buttons:
+            self.ammo_scroll.ensureWidgetVisible(self.round_buttons[selected], 40, 0)
+        self.log_btn.setEnabled(bool(self.shots))
+
+    def open_log(self):
+        self._update_log_text()
+        self.log_dialog.show()
+        self.log_dialog.raise_()
+        self.log_dialog.activateWindow()
+
+    def _update_log_text(self):
+        if not self.shots:
+            self.log_text.clear()
+            return
+        shot = self.shots[self.current_index]
+        details = {key: value for key, value in shot.items() if key not in ("frame", "raw_image_save")}
+        text = json.dumps(details, ensure_ascii=False, indent=2, default=str)
+        text += "\n\n" + self.raw_file_label.text()
+        if self.raw_file_label.toolTip():
+            text += "\n" + self.raw_file_label.toolTip()
+        if text != self.log_text.toPlainText():
+            position = self.log_text.verticalScrollBar().value()
+            self.log_text.setPlainText(text)
+            self.log_text.verticalScrollBar().setValue(position)
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        self._history_timer.start()
+
+    def _refresh_history(self):
+        latest = sorted(self._shot_source, key=lambda shot: shot.get("shot_number", 0))
+        signature = tuple(id(shot) for shot in latest)
+        if signature == self._history_signature:
+            return
+        selected = self.shots[self.current_index].get("shot_number") if self.shots else None
+        self.shots = latest
+        self._history_signature = signature
+        self.current_index = next((index for index, shot in enumerate(latest) if shot.get("shot_number") == selected), 0)
+        self._populate_selector()
+        self._rebuild_round_strip()
+        self._show_current_shot()
 
     def _bind_shortcuts(self):
         QShortcut(QKeySequence(Qt.Key_Left), self, activated=self.show_previous)
@@ -304,6 +433,7 @@ class ShotReviewDialog(QDialog):
             self.details_label.setText("")
             for button in (self.previous_btn, self.next_btn):
                 button.setEnabled(False)
+            self._update_round_selection()
             return
 
         shot = self.shots[self.current_index]
@@ -320,7 +450,8 @@ class ShotReviewDialog(QDialog):
         self.status_label.setText(
             f"Phát {shot_number} · {target_name} · {result_text}"
         )
-        status_color = "#166534" if hit is True else "#b91c1c" if hit is False else "#475569"
+        status_color = ("#b91c1c" if shot.get("scoring_eligible") is False else
+                        "#166534" if hit is True else "#b91c1c" if hit is False else "#475569")
         self.status_label.setStyleSheet(f"color: {status_color};")
         detection_count = len(shot.get("detections", []))
         before = shot.get("target_point_before_offset") if SHOW_SIMULATION_AIM_POINT else None
@@ -346,7 +477,7 @@ class ShotReviewDialog(QDialog):
         self.details_label.setText(
             f"{status} · Phát hiện {detection_count} bia. {offset_note}"
         )
-        self.counter_label.setText(f"{self.current_index + 1} / {len(self.shots)} phát")
+        self.counter_label.setText(f"{shot_number} / {self._total_fired}")
         self.shot_selector.blockSignals(True)
         self.shot_selector.setCurrentIndex(self.current_index)
         self.shot_selector.blockSignals(False)
@@ -355,6 +486,8 @@ class ShotReviewDialog(QDialog):
         at_end = self.current_index == len(self.shots) - 1
         self.previous_btn.setEnabled(not at_start)
         self.next_btn.setEnabled(not at_end)
+        self._update_round_selection()
+        self._update_log_text()
 
     def _update_raw_file_label(self):
         self._raw_file_timer.stop()
@@ -378,6 +511,9 @@ class ShotReviewDialog(QDialog):
                 self.raw_file_label.setToolTip(path)
             else:
                 self.raw_file_label.setText("Ảnh gốc: Lưu file thất bại")
+
+        if self.log_dialog.isVisible():
+            self._update_log_text()
 
     def _camera_preview(self, shot):
         frame = shot.get("frame")
@@ -418,7 +554,6 @@ class ShotReviewDialog(QDialog):
     @staticmethod
     def _draw_detection_boxes(image, detections):
         height, width = image.shape[:2]
-        scale = max(0.55, min(1.1, max(height, width) / 900.0))
         for detection in detections:
             bbox = detection.get("bbox", (0, 0, 0, 0))
             x1, y1, x2, y2 = (
@@ -432,39 +567,6 @@ class ShotReviewDialog(QDialog):
             )
             cv2.rectangle(image, (x1, y1), (x2, y2), (0, 0, 0), thickness + 2)
             cv2.rectangle(image, (x1, y1), (x2, y2), color, thickness)
-
-            class_id = detection.get("class_id")
-            class_name = scoring.CLASS_NAMES.get(class_id, f"Class {class_id}")
-            prefix = "CHON" if selected else "DET"
-            label = (
-                f"{prefix} C{class_id} {class_name} "
-                f"{detection.get('confidence', 0.0):.2f}"
-            )
-            font = cv2.FONT_HERSHEY_SIMPLEX
-            font_scale = 0.55 * scale
-            text_thickness = max(1, int(round(2 * scale)))
-            (text_width, text_height), baseline = cv2.getTextSize(
-                label, font, font_scale, text_thickness
-            )
-            label_top = max(0, y1 - text_height - baseline - 8)
-            label_right = min(width - 1, x1 + text_width + 10)
-            cv2.rectangle(
-                image,
-                (x1, label_top),
-                (label_right, min(height - 1, label_top + text_height + baseline + 8)),
-                (0, 0, 0),
-                -1,
-            )
-            cv2.putText(
-                image,
-                label,
-                (x1 + 5, label_top + text_height + 3),
-                font,
-                font_scale,
-                color,
-                text_thickness,
-                cv2.LINE_AA,
-            )
 
     @staticmethod
     def _zoom_around_point(image, point, zoom):
@@ -503,16 +605,6 @@ class ShotReviewDialog(QDialog):
             return self._placeholder_image("KHONG PHAT HIEN BIA")
 
         preview = reference.copy()
-        hit = shot.get("hit")
-        border_color = (40, 170, 40) if hit is True else (40, 40, 220)
-        thickness = max(5, int(round(max(preview.shape[:2]) * 0.012)))
-        cv2.rectangle(
-            preview,
-            (thickness // 2, thickness // 2),
-            (preview.shape[1] - thickness // 2 - 1, preview.shape[0] - thickness // 2 - 1),
-            border_color,
-            thickness,
-        )
         height, width = preview.shape[:2]
         points = []
         for key, enabled in (("target_point_before_offset", SHOW_SIMULATION_AIM_POINT),
@@ -523,26 +615,25 @@ class ShotReviewDialog(QDialog):
                 if normalized is not None and np.all(np.isfinite(normalized)) else None
             )
         present = [point for point in points if point is not None]
+        # Keep the reference at about 80% of the normal canvas, with white
+        # space for nearby misses. Apply the same transform to both markers.
+        padding = max(height, width) * .125
+        marker_margin = max(height, width) * .07 * SIMULATION_MARKER_SCALE
+        left, top, right, bottom = -padding, -padding, width + padding, height + padding
         if present:
-            # Fit the complete displacement, including misses outside the image.
-            # Bound the rendered canvas instead of allocating huge padding for
-            # an unusually large configured offset.
-            margin = max(height, width) * 0.07 * SIMULATION_MARKER_SCALE
-            left = min(0.0, min(point[0] for point in present) - margin)
-            top = min(0.0, min(point[1] for point in present) - margin)
-            right = max(float(width), max(point[0] for point in present) + margin)
-            bottom = max(float(height), max(point[1] for point in present) + margin)
-            scale = min(1.0, 1600 / max(right - left, bottom - top))
-            transform = np.asarray([[scale, 0, -left * scale], [0, scale, -top * scale]])
-            preview = cv2.warpAffine(
-                preview, transform,
-                (int(np.ceil((right - left) * scale)), int(np.ceil((bottom - top) * scale))),
-                borderValue=(235, 239, 244),
-            )
-            points = [
-                ((point[0] - left) * scale, (point[1] - top) * scale)
-                if point is not None else None for point in points
-            ]
+            left = min(left, min(point[0] for point in present) - marker_margin)
+            top = min(top, min(point[1] for point in present) - marker_margin)
+            right = max(right, max(point[0] for point in present) + marker_margin)
+            bottom = max(bottom, max(point[1] for point in present) + marker_margin)
+        scale = min(1.0, 1600 / max(right - left, bottom - top))
+        transform = np.asarray([[scale, 0, -left * scale], [0, scale, -top * scale]])
+        preview = cv2.warpAffine(
+            preview, transform,
+            (int(np.ceil((right - left) * scale)), int(np.ceil((bottom - top) * scale))),
+            borderValue=(255, 255, 255),
+        )
+        points = [((point[0] - left) * scale, (point[1] - top) * scale)
+                  if point is not None else None for point in points]
         before, after = points
         if before is not None and after is not None:
             start = tuple(int(round(value)) for value in before)

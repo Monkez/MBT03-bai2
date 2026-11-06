@@ -58,7 +58,7 @@ class ClientWidget(QFrame):
 
         self.id = pedestal_id
         self.target_layout_mode = target_layout_mode
-        self.bullet_limit = 16
+        self.bullet_limit = cf.max_bullets()
         self.bullet_count = 0
         self.hit_targets = set()
         self.hit_counts = [0] * 4

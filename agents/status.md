@@ -1,3 +1,9 @@
+## Xem lại style B — 2026-11-06
+
+- Hai ảnh lớn, dải đạn trên điều hướng, không có chú giải ngoài giao diện chính. Xem log mở riêng; viên đang chọn viền blue, loạt khung vàng. Ảnh mô phỏng có nền trắng rộng, không viền kết quả.
+- shooting.max_bullets=16 dùng chung bộ đếm/UART/roster/dải đạn; burst_gap_seconds=0.3 nhóm theo receipt trước inference, riêng bệ/phiên. Giữ nhóm khi chấm xong khác thứ tự; cập nhật kết quả trễ và giữ lựa chọn.
+- 348 tests đạt; build V41-061126 và chụp giao diện từ mã PYZ đóng gói đạt. Chưa thử phần cứng thật. Ảnh ở outputs/review-b-v41.
+
 ## Chỉnh hình thức Cài đặt — 2026-11-06
 
 - SettingWindow giữ nguyên stylesheet hai nút adjust_btn/Q0_btn từ setting.ui, kể cả chuyển kết nối/reset. Bỏ nền tiêu đề thời gian (transparent) và bỏ dòng ghi chú, dồn các hàng trong grid; bốn ô ảnh bia dùng nền trắng, tên bia/Hiện/Ẩn nền trong suốt. Hai nút camera/Q0 radius=8 được khai báo trong setting.ui để MonkezButton giữ đúng khi hover/check/reset.
