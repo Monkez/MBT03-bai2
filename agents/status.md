@@ -1,3 +1,8 @@
+## Nâng nhẹ bia — 2026-11-07
+
+- Band dải đạn giảm từ min(rows*36*scale, 30% chiều cao) xuống min(rows*30*scale, 24% chiều cao). Ảnh dịch lên nhẹ nhưng giữ cố định theo số viên. Màu vàng/blue của V49 giữ nguyên.
+- 18 tests đạt. Build V50-071126 và native Qt/PYZ xác minh 1/2/4 bệ, ảnh trước/sau và 16 viên; bàn giao Desktop giữ cấu hình/dữ liệu. Chưa thử EXE mặc định/thiết bị thật.
+
 ## Màu khung dải đạn trên bia — 2026-11-07
 
 - Viên lẻ khung vàng #eab52c, loạt nhiều viên khung blue #1769ff. Chỉ đổi màu khung trên bia; giữ màu hit/miss và kích thước/band cố định.

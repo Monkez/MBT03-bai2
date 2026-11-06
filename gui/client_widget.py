@@ -644,7 +644,7 @@ class ClientWidget(QFrame):
         # Reserve a fixed band before the first receipt; only cells adapt to it.
         columns = max(1, int((width + 8 * scale) // (36 * scale)))
         rows = min(2, math.ceil(self.bullet_limit / columns))
-        strip_height = min(rows * 36 * scale, int(height * .3))
+        strip_height = min(rows * 30 * scale, int(height * .24))
         for cell in range(20 * scale, 2, -1):
             pad, gap = max(1, cell // 5), max(2, cell * 2 // 5)
             cursor, row, segments = 0, 0, []

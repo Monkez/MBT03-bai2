@@ -1,3 +1,7 @@
+# V50-071126 — Nâng nhẹ vị trí bia
+
+- Giảm vùng chừa dải đạn để bia cao lên một chút; vẫn cố định vị trí trước/sau bắn, giữ viên lẻ khung vàng và loạt khung blue.
+
 # V49-071126 — Thử màu khung phân loạt trên bia
 
 - Viên lẻ khung vàng; loạt từ hai viên khung xanh blue. Màu trong ô giữ xanh lá khi trúng, đỏ khi trượt.
