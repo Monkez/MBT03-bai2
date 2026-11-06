@@ -124,7 +124,7 @@ border: 1px solid black;
             </font>
            </property>
            <property name="styleSheet">
-            <string notr="true">background-color: rgb(191, 127, 95);
+            <string notr="true">background-color: rgb(0, 170, 255);
 color: rgb(255, 255, 255);
 </string>
            </property>

@@ -1,3 +1,11 @@
+## Kết quả và điểm chạm quanh bia — 2026-11-06
+
+- Sau stop/kết thúc bài, `_show_final_results` làm ảnh bia chưa trúng mờ đen trắng nhưng giữ viền đỏ; bia đã trúng giữ màu/viền xanh. Reset/mở app trả ảnh màu; kết quả trúng đến trễ cập nhật lại màu đúng bia.
+- Ảnh bia thu nhỏ còn 90% mỗi chiều trong khung, căn giữa. `record_shot` giữ tọa độ hữu hạn ngoài 0–1; `_draw_shot` chiếu theo ảnh đã fit, chỉ hiện tâm trong vùng trống bên trong khung và clip marker vào khung đó. Điểm xa ẩn, không kéo vào mép hay tràn sang bia khác; số đạn/tính trúng không đổi.
+- Nền nhãn CHƯA KẾT NỐI: rgb(0, 170, 255). Chỉ stage thay đổi màu trong client.ui; các chỉnh kích thước/font người dùng đang làm được giữ ở working tree.
+- 326 tests đạt; xem giao diện Windows Qt 1/2/4 bệ có điểm lệch gần/xa và kết quả hỗn hợp; kiểm tra mã PYZ/tài nguyên V32-061126 trong luồng Qt giả lập phần cứng đạt. Chưa kiểm tra súng/bia thật và khởi động EXE mặc định bằng thao tác trực tiếp.
+- Bản Desktop V32-061126 giữ cấu hình/dữ liệu từ V31 trước khi dọn bản cũ vào Recycle Bin.
+
 ## Hiển thị theo lượt bia — 2026-11-06
 
 - Khi bắt đầu chỉ phóng to bia 6 đang gập, rồi theo thứ tự 6 → 10 → 7B → 8C. Bia gập mờ đen trắng; đến lượt hiện có màu rõ. Sau khi gập (hết giờ hoặc trúng khi bật auto-close), giữ 0,8 giây rồi xem trước bia tiếp theo đang gập. Bia cuối giữ gập đến kết thúc.

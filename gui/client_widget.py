@@ -1,3 +1,4 @@
+import math
 import os
 
 import cv2
@@ -18,6 +19,7 @@ TARGET_IMAGE_FILES = [
     "biaso8_phai_X7.png",
 ]
 TARGET_NAMES = ("BIA SỐ 10", "BIA SỐ 6", "BIA SỐ 7B", "BIA SỐ 8C")
+TARGET_IMAGE_SCALE = 0.9
 
 
 TARGET_LAYOUT = {
@@ -63,6 +65,7 @@ class ClientWidget(QFrame):
         self.shots = []
         self.testing = False
         self._target_presentation = None
+        self._show_final_results = False
         self.connected = False
         self.connection_info = ""
         self._pedestal_default_style = self.pedestal_name_label.styleSheet()
@@ -223,6 +226,7 @@ class ClientWidget(QFrame):
         self.shots.clear()
         self.testing = False
         self._target_presentation = None
+        self._show_final_results = False
         self.pedestal_name_label.setText(f"BỆ SỐ {self.id}")
         self.reset_shooter()
         self.show_target_simulation()
@@ -366,6 +370,7 @@ class ClientWidget(QFrame):
 
     def reset_results(self):
         self.clear_error()
+        self._show_final_results = False
         self.bullet_count = 0
         self.hit_targets.clear()
         self.hit_counts = [0] * 4
@@ -375,7 +380,9 @@ class ClientWidget(QFrame):
 
     def stop_test(self):
         self.testing = False
-        self.set_target_presentation(None)
+        self._show_final_results = True
+        self._target_presentation = None
+        self.show_target_simulation()
         self.update_result_label()
 
     def record_shot(self, target_index, x_ratio, y_ratio, hit=True, show_marker=True):
@@ -383,8 +390,11 @@ class ClientWidget(QFrame):
             return
 
         target_index = max(0, min(3, int(target_index)))
-        x_ratio = max(0.0, min(1.0, float(x_ratio)))
-        y_ratio = max(0.0, min(1.0, float(y_ratio)))
+        try:
+            x_ratio, y_ratio = float(x_ratio), float(y_ratio)
+            show_marker = show_marker and math.isfinite(x_ratio) and math.isfinite(y_ratio)
+        except (TypeError, ValueError, OverflowError):
+            show_marker = False
 
         self.bullet_count += 1
         if show_marker:
@@ -475,11 +485,13 @@ class ClientWidget(QFrame):
         canvas_w, canvas_h = self._current_canvas_size()
         canvas = np.full((canvas_h, canvas_w, 3), 255, dtype=np.uint8)
         self._rendered_target_rects = {}
+        self._marker_clip_rects = {}
 
         for target_index in (0, 2, 1, 3):
             x, y, w, h = layout[target_index]
             border_color = TARGET_GREEN if target_index in self.hit_targets else TARGET_RED
-            self._draw_target(canvas, target_index, x, y, w, h, border_color)
+            self._draw_target(canvas, target_index, x, y, w, h, border_color,
+                              folded=self._show_final_results and target_index not in self.hit_targets)
 
         for target_index, px, py, hit in self.shots:
             self._draw_shot(canvas, target_index, px, py, hit)
@@ -493,6 +505,7 @@ class ClientWidget(QFrame):
         height = max(160, self.sign_image.frame.height()) * 2
         canvas = np.full((height, width, 3), 255, dtype=np.uint8)
         self._rendered_target_rects = {}
+        self._marker_clip_rects = {}
         border = TARGET_GREEN if target in self.hit_targets else TARGET_RED
         self._draw_target(canvas, target, 20, 72, width - 40, height - 92,
                           border if visible else "#cbd5e1")
@@ -501,10 +514,14 @@ class ClientWidget(QFrame):
                 if index == target:
                     self._draw_shot(canvas, index, px, py, hit)
         else:
-            gray = cv2.cvtColor(canvas, cv2.COLOR_BGR2GRAY)
-            canvas = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
-            canvas = cv2.addWeighted(canvas, 0.28, np.full_like(canvas, 255), 0.72, 0)
+            canvas = self._folded_image(canvas)
         return canvas
+
+    @staticmethod
+    def _folded_image(image):
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        gray = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
+        return cv2.addWeighted(gray, 0.28, np.full_like(gray, 255), 0.72, 0)
 
     def _current_target_layout(self):
         if self.target_layout_mode == "two_pedestals":
@@ -516,7 +533,7 @@ class ClientWidget(QFrame):
             return 520, 1104
         return 1000, 630
 
-    def _draw_target(self, canvas, target_index, x, y, w, h, border_color_hex):
+    def _draw_target(self, canvas, target_index, x, y, w, h, border_color_hex, folded=False):
         # Paint directly into the BGR canvas for smooth corners at every size.
         scale = 2 if self._target_presentation is not None else 1
         stroke = 3 * scale
@@ -539,36 +556,44 @@ class ClientWidget(QFrame):
 
         padding = 12 * scale
         inner = (x + padding, y + padding, w - 2 * padding, h - 2 * padding)
-        image = self._fit_image(self._target_images[target_index], inner[2], inner[3])
+        image = self._fit_image(self._target_images[target_index],
+                                max(1, round(inner[2] * TARGET_IMAGE_SCALE)),
+                                max(1, round(inner[3] * TARGET_IMAGE_SCALE)))
+        if folded:
+            image = self._folded_image(image)
         ih, iw = image.shape[:2]
         ox = inner[0] + (inner[2] - iw) // 2
         oy = inner[1] + (inner[3] - ih) // 2
         canvas[oy:oy + ih, ox:ox + iw] = image
         self._rendered_target_rects[target_index] = (ox, oy, iw, ih)
+        self._marker_clip_rects[target_index] = inner
 
     def _draw_shot(self, canvas, target_index, px, py, hit):
         if self._target_presentation is not None and target_index != self._target_presentation[0]:
             return
-        layout = self._current_target_layout()
-        if target_index not in layout:
-            return
         rendered_rect = getattr(self, "_rendered_target_rects", {}).get(target_index)
-        if rendered_rect is None:
-            x, y, w, h = layout[target_index]
-            rendered_rect = (x + 8, y + 8, w - 16, h - 16)
+        clip = getattr(self, "_marker_clip_rects", {}).get(target_index)
+        if rendered_rect is None or clip is None:
+            return
         image_x, image_y, image_w, image_h = rendered_rect
-        cx = int(image_x + px * image_w)
-        cy = int(image_y + py * image_h)
+        cx, cy = image_x + px * image_w, image_y + py * image_h
+        clip_x, clip_y, clip_w, clip_h = clip
+        # Keep the true projection, including nearby misses outside the image.
+        # A distant point is hidden, never moved onto an edge or another target.
+        if not (clip_x <= cx < clip_x + clip_w and clip_y <= cy < clip_y + clip_h):
+            return
+        marker_canvas = canvas[clip_y:clip_y + clip_h, clip_x:clip_x + clip_w]
+        center = (int(cx) - clip_x, int(cy) - clip_y)
         color = (255, 0, 0) if hit else (0, 0, 255)
         cv2.drawMarker(
-            canvas,
-            (cx, cy),
+            marker_canvas,
+            center,
             color,
             markerType=cv2.MARKER_CROSS,
             markerSize=24,
             thickness=3,
         )
-        cv2.circle(canvas, (cx, cy), 6, (255, 255, 255), 2)
+        cv2.circle(marker_canvas, center, 6, (255, 255, 255), 2)
 
     def _fit_image(self, image, box_w, box_h):
         h, w = image.shape[:2]

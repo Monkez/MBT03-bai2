@@ -127,3 +127,10 @@
 - Chuyển theo lịch bia 6 → 10 → 7B → 8C, giữ trạng thái vừa gập khoảng 0,8 giây rồi xem trước bia kế tiếp. Tự động gập khi trúng cũng cập nhật trạng thái chung của các bệ.
 - Khi mở app hoặc kết thúc/dừng bài, hiển thị lại bốn bia cùng toàn bộ dấu chạm. Tách trạng thái hiện bia khỏi khoảng cho phép chấm điểm ảnh đến trễ.
 - Tên bia và trạng thái cùng một hàng; thống nhất nhãn BIA SỐ 8C không ghi góc alpha. Viền xanh/đỏ bo góc, khử răng cưa, có lớp nền nhạt cùng màu để dễ phân biệt.
+
+## 2026-11-06 — Kết quả và vùng điểm chạm quanh bia
+
+- Kết thúc/dừng bài: bia chưa trúng mờ đen trắng với viền đỏ; bia đã trúng có màu và viền xanh. Mở app/reset kết quả vẫn hiển thị bia có màu.
+- Thu nhỏ ảnh bia 10% trong khung, giữ đúng vị trí tương đối của dấu chạm. Cho phép điểm lệch ngoài ảnh hiện trong phần trống của khung bia, ẩn điểm xa và cắt dấu tại vùng bên trong khung.
+- Giữ tọa độ ngoài khoảng 0–1; không kéo phát trượt vào mép ảnh. Tọa độ lỗi không làm mất số đạn; tính điểm không thay đổi.
+- Nền nhãn CHƯA KẾT NỐI đổi sang rgb(0, 170, 255).

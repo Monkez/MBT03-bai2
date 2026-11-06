@@ -162,6 +162,17 @@ thời gian hiện bia trên màn hình. Dấu chạm chỉ hiện trên bia đa
 dấu chạm được giữ lại để xem khi kết thúc. Khi mới mở ứng dụng hoặc kết thúc/dừng
 bài bắn, màn hình hiển thị lại cả bốn bia như trước.
 
+Ở màn hình kết quả sau khi kết thúc/dừng bài, bia chưa trúng mờ đen trắng
+và giữ viền đỏ; bia đã trúng giữ ảnh có màu và viền xanh. Khi mới mở app hoặc
+xóa kết quả để bắt đầu lượt mới, cả bốn bia vẫn hiển thị có màu như ban đầu.
+
+Ảnh bia được thu nhỏ 10% theo cả chiều rộng và chiều cao trong khung, giữ đúng
+tỉ lệ và căn giữa. Điểm chạm có thể nằm trên phần trống quanh ảnh, nhưng chỉ
+hiển thị khi tâm điểm còn nằm trong vùng bên trong khung của chính bia đó.
+Điểm quá xa bị ẩn; không dồn về mép ảnh, không vẽ chồng viền hoặc sang bia khác.
+Số đạn, điểm và lịch sử vẫn giữ nguyên kể cả khi dấu chạm không được vẽ.
+Nhãn trạng thái CHƯA KẾT NỐI của bệ có nền xanh dương `rgb(0, 170, 255)`.
+
 Bố cục thường: bia 6 trên trái, bia 10 dưới trái, bia 7B ở cột giữa và bia 8C bên phải.
 Khi chọn 2 bệ, bố cục dọc lần lượt là bia 6, bia 10, rồi hàng cuối gồm bia 7B bên trái
 và bia 8C bên phải. Bia 7B được phóng vừa ô đứng; mọi ảnh giữ đúng tỉ lệ, không kéo méo
