@@ -160,6 +160,19 @@ class TargetPresentationFlowTests(unittest.TestCase):
                                                         (.5, .5), received_at=at))
                 self.assertEqual(self.window._review_receipts[(sid, 1, number)]["displayed_target_index"], target)
 
+    def test_extra_shots_are_rejected_before_scoring_or_burst_receipt(self):
+        self.start()
+        sid = self.window._active_review_session_id
+        with patch.object(self.window._scoring_pool, "submit") as submit:
+            for n in range(1, 17):
+                self.assertTrue(self.window.process_shot(1, np.zeros((8, 8, 3), np.uint8),
+                                                        (.5, .5), received_at=101 + n * .1))
+            self.assertFalse(self.window.process_shot(1, np.zeros((8, 8, 3), np.uint8),
+                                                     (.5, .5), received_at=105))
+            self.assertEqual(submit.call_count, 16)
+            self.assertEqual(self.window._review_shot_counters[(sid, 1)], 16)
+            self.assertNotIn((sid, 1, 17), self.window._review_receipts)
+
     def test_focused_shot_mapping_filters_other_targets_and_overview_keeps_all_shots(self):
         widget = self.window.client_widgets[0]
         self.start()

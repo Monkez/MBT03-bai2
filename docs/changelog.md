@@ -1,3 +1,9 @@
+# V46-071126 — Giới hạn đạn xem lại và icon bắn lẻ
+
+- Chỉ nhận chấm và xem lại tối đa max_bullets viên mỗi bệ/phiên (mặc định 16), chặn phát vượt giới hạn trước khi phân loạt.
+- Lọc lịch sử cũ và dữ liệu về trễ; dải đạn và điều hướng giữ đúng giới hạn.
+- Thay ô vuông vàng bằng icon viên đạn vàng đồng trong vòng đỏ, concept A do người dùng chọn.
+
 # V44-071126 — Chuyển bia ở mốc giữa và ký hiệu bắn lẻ
 
 - Giữ bia gập đến giữa lúc gập thực tế và lịch hiện bia kế tiếp, kể cả gập sớm khi trúng.

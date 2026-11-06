@@ -235,7 +235,7 @@ class ShootingRosterTests(unittest.TestCase):
         })
 
     def test_single_shot_penalty_matches_widget_roster_and_excel(self):
-        from gui.styles import TARGET_GREEN, TARGET_RED, TARGET_YELLOW
+        from gui.styles import TARGET_GREEN, TARGET_RED
         self.load()
         self.roster.next_group()
         self.begin()
@@ -269,8 +269,11 @@ class ShootingRosterTests(unittest.TestCase):
         for state in (None, (1, False), (1, True)):
             widget.set_target_presentation(state)
             image = widget.compose_target_image()
-            yellow = tuple(int(TARGET_YELLOW[i:i + 2], 16) for i in (5, 3, 1))
-            self.assertGreater(np.count_nonzero(np.all(image == yellow, axis=2)), 100)
+            self.assertFalse(widget._single_shot_icon.isNull())
+            widget.single_shot_targets.clear()
+            without = widget.compose_target_image()
+            self.assertGreater(np.count_nonzero(np.any(image != without, axis=2)), 100)
+            widget.single_shot_targets.add(1)
 
     def test_file_picker_load_assign_next_group_and_clear(self):
         with patch("gui.shooting_roster.QFileDialog.getOpenFileName", return_value=(str(self.path), "")):

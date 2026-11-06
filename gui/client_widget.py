@@ -9,7 +9,7 @@ from PyQt5.QtGui import QColor, QFont, QImage, QPainter, QPen
 from PyQt5.QtWidgets import QLabel, QPushButton, QWidget, QFrame, QSizePolicy
 
 import config as cf
-from gui.styles import TARGET_GREEN, TARGET_RED, TARGET_YELLOW
+from gui.styles import TARGET_GREEN, TARGET_RED
 
 
 TARGET_IMAGE_FILES = [
@@ -92,6 +92,9 @@ class ClientWidget(QFrame):
         self.result_label.setTextFormat(Qt.RichText)
 
         self._target_images = self._load_target_images()
+        self._single_shot_icon = QImage(os.path.join(cf.DATA_DIR, "assets", "images", "single_shot.png"))
+        self._single_shot_icons = {scale: self._single_shot_icon.scaled(30 * scale, 30 * scale,
+                                   Qt.KeepAspectRatio, Qt.SmoothTransformation) for scale in (1, 2)}
         self._localize_text()
         self._configure_ui()
         self.reset_all()
@@ -629,12 +632,13 @@ class ClientWidget(QFrame):
         self._rendered_target_rects[target_index] = (ox, oy, iw, ih)
         self._marker_clip_rects[target_index] = inner
         if target_index in self.single_shot_targets:
-            size = 20 * scale
-            margin = 16 * scale
-            right, top = x + w - margin, y + margin
-            cv2.rectangle(canvas, (right - size, top), (right, top + size),
-                          tuple(int(TARGET_YELLOW[i:i + 2], 16) for i in (5, 3, 1)), -1)
-
+            size = 30 * scale
+            margin = 14 * scale
+            painter = QPainter(surface)
+            painter.setRenderHint(QPainter.SmoothPixmapTransform)
+            painter.drawImage(QRectF(x + w - margin - size, y + margin, size, size),
+                              self._single_shot_icons[scale])
+            painter.end()
 
     def _draw_shot(self, canvas, target_index, px, py, hit):
         if (self._target_presentation is not None and target_index != self._target_presentation[0]

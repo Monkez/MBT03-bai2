@@ -127,10 +127,11 @@ class ShotReviewDialog(QDialog):
         super().__init__(parent)
         self.pedestal_id = pedestal_id
         self._shot_source = shots
-        self.shots = sorted(shots, key=lambda shot: shot.get("shot_number", 0))
         self._max_bullets = max_bullets if max_bullets is not None else cf.max_bullets()
-        self._fired_count = fired_count or 0
-        self._receipt_info = dict(receipt_info or {})
+        self.shots = self._limited_shots()
+        self._fired_count = min(fired_count or 0, self._max_bullets)
+        self._receipt_info = {n: record for n, record in (receipt_info or {}).items()
+                              if 1 <= n <= self._max_bullets}
         self._history_signature = tuple(id(shot) for shot in self.shots)
         self.round_buttons = {}
         self.current_index = 0
@@ -307,7 +308,7 @@ class ShotReviewDialog(QDialog):
             number = int(shot.get("shot_number", index + 1))
             records[number] = {**shot, **records.get(number, {})}
         self._total_fired = max([self._fired_count, *self._shot_indices.keys(), *records.keys()], default=0)
-        capacity = max(self._max_bullets, self._total_fired)
+        capacity = self._max_bullets
         groups = burst_groups(records, cf.burst_gap_seconds())
         starts = {group[0]: group for group in groups}
         self.ammo_layout.addStretch()
@@ -385,8 +386,13 @@ class ShotReviewDialog(QDialog):
         super().showEvent(event)
         self._history_timer.start()
 
+    def _limited_shots(self):
+        return sorted((shot for index, shot in enumerate(self._shot_source)
+                       if 1 <= shot.get("shot_number", index + 1) <= self._max_bullets),
+                      key=lambda shot: shot.get("shot_number", 0))[:self._max_bullets]
+
     def _refresh_history(self):
-        latest = sorted(self._shot_source, key=lambda shot: shot.get("shot_number", 0))
+        latest = self._limited_shots()
         signature = tuple(id(shot) for shot in latest)
         if signature == self._history_signature:
             return

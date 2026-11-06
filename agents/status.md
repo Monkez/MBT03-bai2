@@ -1,3 +1,8 @@
+## Giới hạn xem lại — 2026-11-07
+
+- MainWindow chặn receipt vượt bullet_limit trước khi tăng counter/nhóm/submit. ShotReviewDialog lọc cả source ban đầu và refresh, receipt/fired count, chỉ tạo max_bullets ô.
+- 367 tests đạt. Người dùng chọn concept A; icon ImageGen ở assets/images/single_shot.png thay ô vàng, QImage giữ alpha và cache hai kích thước để icon nhỏ rõ. Build V46-071126; native Qt/PYZ kiểm tra icon và lịch sử 25 phát chỉ hiện 16, bàn giao Desktop giữ dữ liệu. Chưa kiểm tra EXE mặc định hoặc thiết bị thật.
+
 ## Mốc chuyển bia và ô vuông bắn lẻ — 2026-11-07
 
 - target_presentation giữ bia đã gập đến midpoint giữa lần gập thực tế (sau hardware delay) và lịch hiện bia kế tiếp; ưu tiên bia còn đang hiện khi chồng lịch.

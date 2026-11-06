@@ -96,6 +96,20 @@ class ReviewStripTests(unittest.TestCase):
         self.assertFalse(any("Chưa bắn" in label.text() for label in dialog.findChildren(QLabel)
                              if label.isVisible()))
 
+    def test_review_caps_existing_and_late_history_receipts_and_navigation(self):
+        shots = [{"shot_number": n, "hit": True} for n in range(1, 26)]
+        dialog = self.dialog(shots, max_bullets=16, fired_count=25,
+                             receipt_info={n: {"burst_id": n} for n in range(1, 26)})
+        self.assertEqual(len(dialog.shots), 16)
+        self.assertEqual(set(dialog.round_buttons), set(range(1, 17)))
+        dialog.show_last()
+        self.assertEqual(dialog.counter_label.text(), "16 / 16")
+        self.assertFalse(dialog.next_btn.isEnabled())
+        shots.append({"shot_number": 26, "hit": False})
+        dialog._refresh_history()
+        self.assertEqual(len(dialog.shots), 16)
+        self.assertEqual(dialog.counter_label.text(), "16 / 16")
+
     def test_simulated_target_has_white_space_and_no_hit_or_miss_border(self):
         dialog = self.dialog([])
         dialog._reference_images = {1: np.full((200,200,3),(20,75,25),np.uint8)}

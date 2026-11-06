@@ -454,6 +454,8 @@ class MainWindow(QMainWindow):
         if session_id is None or self._shooting_session is None:
             logging.getLogger("mbt03_server").info("[ShotReceipt] Bệ %s: không đếm ảnh vì chưa có bài bắn", port_id)
             return False
+        if self._review_shot_counters.get((session_id, port_id), 0) >= self.client_widgets[port_id - 1].bullet_limit:
+            return False
         received_at = time.monotonic() if received_at is None else received_at
         if not self._shooting_session.accepts_receipt(received_at):
             logging.getLogger("mbt03_server").info(
