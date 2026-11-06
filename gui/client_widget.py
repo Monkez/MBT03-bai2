@@ -446,8 +446,6 @@ class ClientWidget(QFrame):
         self.show_target_simulation()
 
     def _target_border_color(self, target):
-        if target in self.single_shot_targets:
-            return TARGET_YELLOW
         return TARGET_GREEN if target in self.hit_targets else TARGET_RED
 
     def set_score_speak_ui_state(self, state):
@@ -572,15 +570,12 @@ class ClientWidget(QFrame):
         self._rendered_target_rects = {}
         self._marker_clip_rects = {}
         border = self._target_border_color(target)
-        violation = target in self.single_shot_targets
         self._draw_target(canvas, target, 20, 72, width - 40, height - 92,
-                          border if visible or violation else "#cbd5e1", folded=violation and not visible)
+                          border, folded=not visible)
         if visible:
             for index, px, py, hit in self.shots:
                 if index == target:
                     self._draw_shot(canvas, index, px, py, hit)
-        elif not violation:
-            canvas = self._folded_image(canvas)
         return canvas
 
     @staticmethod
@@ -633,6 +628,13 @@ class ClientWidget(QFrame):
         canvas[oy:oy + ih, ox:ox + iw] = image
         self._rendered_target_rects[target_index] = (ox, oy, iw, ih)
         self._marker_clip_rects[target_index] = inner
+        if target_index in self.single_shot_targets:
+            size = 20 * scale
+            margin = 16 * scale
+            right, top = x + w - margin, y + margin
+            cv2.rectangle(canvas, (right - size, top), (right, top + size),
+                          tuple(int(TARGET_YELLOW[i:i + 2], 16) for i in (5, 3, 1)), -1)
+
 
     def _draw_shot(self, canvas, target_index, px, py, hit):
         if (self._target_presentation is not None and target_index != self._target_presentation[0]

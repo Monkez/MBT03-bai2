@@ -1,3 +1,9 @@
+## Mốc chuyển bia và ô vuông bắn lẻ — 2026-11-07
+
+- target_presentation giữ bia đã gập đến midpoint giữa lần gập thực tế (sau hardware delay) và lịch hiện bia kế tiếp; ưu tiên bia còn đang hiện khi chồng lịch.
+- process_shot lưu displayed_target_index tại received_at. Bắn lẻ ưu tiên bia hiển thị, kể cả gập; khi nhiều bia cùng hiện dùng nhận diện. Cảnh báo ô vuông vàng góc trên phải, viền xanh/đỏ giữ cả khi gập.
+- 364 tests đạt và 8 tests luồng trình bày đạt sau bổ sung kiểm tra attribution tại mốc chuyển. Build V44-071126 đạt; native Qt từ PYZ đóng gói xác nhận mốc chuyển và ô vuông vàng. Bàn giao Desktop, giữ cấu hình/dữ liệu. Chưa kiểm tra khởi động EXE mặc định hoặc thiết bị thật.
+
 ## Bắn lẻ và bia xem lại cố định — 2026-11-06
 
 - Bia xem lại dùng padding cố định 12.5% cạnh dài, căn giữa; điểm ngoài khung bị ẩn, không mở rộng theo điểm.

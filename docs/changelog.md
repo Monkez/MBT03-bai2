@@ -1,3 +1,8 @@
+# V44-071126 — Chuyển bia ở mốc giữa và ký hiệu bắn lẻ
+
+- Giữ bia gập đến giữa lúc gập thực tế và lịch hiện bia kế tiếp, kể cả gập sớm khi trúng.
+- Gắn viên bắn lẻ với bia hiển thị khi nhận phát, kể cả đang gập; cảnh báo bằng ô vuông vàng góc trên phải, giữ viền xanh/đỏ.
+
 # V43-061126 — Bắn loạt và bia xem lại cố định
 
 - Bia xem lại căn giữa, kích thước không đổi theo điểm chạm; ẩn điểm ngoài khung.

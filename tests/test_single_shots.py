@@ -40,6 +40,11 @@ class SingleShotTests(unittest.TestCase):
         shots = [{"shot_number": 1, "target_index": 3, "hit": False}]
         self.assertEqual(self.assess(shots, receipts), ((1, 2), frozenset({3})))
 
+    def test_displayed_folded_target_wins_over_detected_target(self):
+        shots = [{"shot_number": 1, "target_index": 3, "hit": False}]
+        receipts = {1: {"received_at": 10, "displayed_target_index": 1}}
+        self.assertEqual(self.assess(shots, receipts), ((1,), frozenset({1})))
+
     def test_legacy_data_without_cadence_is_not_penalized(self):
         self.assertEqual(self.assess([{"target_index": 1, "hit": True}]), ((), frozenset()))
 

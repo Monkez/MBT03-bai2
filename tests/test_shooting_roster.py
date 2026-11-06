@@ -251,7 +251,7 @@ class ShootingRosterTests(unittest.TestCase):
         self.window.stop_test()
         self.assertEqual(widget._rank_text(), "Khá")
         self.assertEqual(widget.single_shot_targets, {0, 1})
-        self.assertEqual(widget._target_border_color(1), TARGET_YELLOW)
+        self.assertEqual(widget._target_border_color(1), TARGET_GREEN)
         self.assertEqual(widget._target_border_color(3), TARGET_GREEN)
         self.assertEqual(self.roster.results[1].rank, widget._rank_text())
         output = save_roster_results(self.path, tuple(self.roster.people.values()), self.roster.results)
@@ -264,8 +264,13 @@ class ShootingRosterTests(unittest.TestCase):
         self.assertEqual(widget.single_shot_targets, set())
         self.assertEqual(widget._target_border_color(1), TARGET_RED)
         widget.set_burst_assessment((1,), {1})
-        self.assertEqual(widget._target_border_color(1), TARGET_YELLOW)
+        self.assertEqual(widget._target_border_color(1), TARGET_RED)
         self.assertEqual(widget._rank_text(), "Không đạt")
+        for state in (None, (1, False), (1, True)):
+            widget.set_target_presentation(state)
+            image = widget.compose_target_image()
+            yellow = tuple(int(TARGET_YELLOW[i:i + 2], 16) for i in (5, 3, 1))
+            self.assertGreater(np.count_nonzero(np.all(image == yellow, axis=2)), 100)
 
     def test_file_picker_load_assign_next_group_and_clear(self):
         with patch("gui.shooting_roster.QFileDialog.getOpenFileName", return_value=(str(self.path), "")):

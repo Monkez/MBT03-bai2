@@ -6,7 +6,6 @@ TARGET_VISIBLE_SECONDS_BY_CLASS = {1: 7, 0: 7, 2: 7, 3: 18}
 TARGET_CLASS_SEQUENCE = (1, 0, 2, 3)  # Bia 6, 10, 7B, 8.
 TARGET_EARLY_SECONDS = 2
 TARGET_LATE_SECONDS = 4
-FOLDED_PREVIEW_SECONDS = 0.8
 
 
 @dataclass
@@ -39,6 +38,8 @@ class ShootingSession:
         self._lowered_times = {}
         self._confirmed_hides = set()
         self._confirmed_raises = set()
+        self._planned_shows = {target: started_at + delay + self.hardware_delay_time
+                               for target, delay in zip(TARGET_CLASS_SEQUENCE, target_delays)}
         self._planned_hides = {
             target: started_at + delay + self.visible_seconds[target]
             for target, delay in zip(TARGET_CLASS_SEQUENCE, target_delays)
@@ -84,26 +85,27 @@ class ShootingSession:
         visible = self.visible_target_classes(now)
         if visible:
             return visible[-1], True
-        if not self.next_target:
+        raised = [target for target in TARGET_CLASS_SEQUENCE
+                  if target in self._raised_times
+                  and (not self._hardware_mode or target in self._confirmed_raises)
+                  and self._raised_times[target] + self.hardware_delay_time <= now]
+        if not raised:
             return TARGET_CLASS_SEQUENCE[0], False
-        class_id = TARGET_CLASS_SEQUENCE[self.next_target - 1]
-        if self._hardware_mode and class_id not in self._confirmed_raises:
-            return class_id, False
-        raised_at = self._raised_times[class_id] + self.hardware_delay_time
+        class_id = raised[-1]
+        closed_at = self._lowered_times.get(
+            class_id, self._raised_times[class_id] + self.visible_seconds[class_id])
         if self._hardware_mode:
-            closed_at = min(self._lowered_times.get(
-                class_id, self._raised_times[class_id] + self.visible_seconds[class_id])
-                + self.hardware_delay_time, self.deadline)
-        else:
-            closed_at = min(raised_at + self.visible_seconds[class_id],
-                            self._lowered_times.get(class_id, self.deadline), self.deadline)
-        if now < raised_at:
-            return class_id, False
-        if now < closed_at:
-            return class_id, True
-        # Briefly show the fold before previewing the next target.
-        if now >= closed_at + FOLDED_PREVIEW_SECONDS and self.next_target < len(TARGET_CLASS_SEQUENCE):
-            class_id = TARGET_CLASS_SEQUENCE[self.next_target]
+            closed_at += self.hardware_delay_time
+        closed_at = min(closed_at, self.deadline)
+        index = TARGET_CLASS_SEQUENCE.index(class_id)
+        if index + 1 < len(TARGET_CLASS_SEQUENCE):
+            upcoming = TARGET_CLASS_SEQUENCE[index + 1]
+            next_show = self._planned_shows.get(upcoming)
+            if upcoming in self._raised_times and (
+                    not self._hardware_mode or upcoming in self._confirmed_raises):
+                next_show = self._raised_times[upcoming] + self.hardware_delay_time
+            if next_show is not None and now >= (closed_at + next_show) / 2:
+                class_id = upcoming
         return class_id, False
 
     def stop(self, now):

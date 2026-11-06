@@ -56,7 +56,9 @@ def single_shot_violations(shots, receipts, threshold, *, limit, final=True, now
             if not valid_time or now is None or now < at or same_burst(at, now, threshold):
                 continue
         singles.append(number)
-        target = by_number.get(number, {}).get("target_index")
+        target = record.get("displayed_target_index")
+        if target not in (0, 1, 2, 3):
+            target = by_number.get(number, {}).get("target_index")
         if target not in (0, 1, 2, 3):
             target = record.get("expected_target_index")
         if target in (0, 1, 2, 3):

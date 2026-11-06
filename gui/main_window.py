@@ -468,9 +468,10 @@ class MainWindow(QMainWindow):
         exposure = self._shooting_session.active_target(received_at)
         self._shot_sound.play()
         shot_number = self._next_review_shot_number(session_id, port_id, received_at)
-        self._review_receipts[(session_id, port_id, shot_number)]["expected_target_index"] = (
-            exposure.class_id if exposure is not None and len(
-                self._shooting_session.visible_target_classes(received_at)) <= 1 else None)
+        presentation = self._shooting_session.target_presentation(received_at)
+        visible = self._shooting_session.visible_target_classes(received_at)
+        self._review_receipts[(session_id, port_id, shot_number)]["displayed_target_index"] = (
+            presentation[0] if presentation is not None and len(visible) <= 1 else None)
         logging.getLogger("mbt03_server").info(
             "[ShotReceipt] session=%s | Bệ %s | Phát %s | đã nhận để chấm lúc %.3fs | received_at=%.6f | ui_delay_ms=%.0f",
             session_id, port_id, shot_number, received_at - self._shooting_session.started_at,

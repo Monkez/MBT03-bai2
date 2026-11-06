@@ -28,7 +28,11 @@ class TargetPresentationTests(unittest.TestCase):
             # The scoring window remains open after the picture folds.
             self.assertEqual(session.active_target(closed, target).class_id, target)
             upcoming = {1: 0, 0: 2, 2: 3, 3: 3}[target]
-            self.assertEqual(session.target_presentation(closed + .801), (upcoming, False))
+            next_show = {1: 132, 0: 142, 2: 164, 3: 182}[target]
+            midpoint = (closed + next_show) / 2
+            if target != 3:
+                self.assertEqual(session.target_presentation(midpoint - .001), (target, False))
+            self.assertEqual(session.target_presentation(midpoint), (upcoming, False))
         self.assertIsNone(session.target_presentation(185))
 
     def test_early_fold_and_delayed_serial_confirmation(self):
@@ -39,7 +43,7 @@ class TargetPresentationTests(unittest.TestCase):
         self.assertEqual(session.target_presentation(118), (1, True))
         self.assertTrue(session.close_target(1, 119))
         self.assertEqual(session.target_presentation(119), (1, False))
-        self.assertEqual(session.target_presentation(119.801), (0, False))
+        self.assertEqual(session.target_presentation(125.5), (0, False))
         session.confirm_command_sent(1, 120, raised=False)
         self.assertEqual(session.target_presentation(120.5), (1, False))
         session.stop(121)
@@ -75,6 +79,8 @@ class TargetPresentationFlowTests(unittest.TestCase):
             self.assertEqual(set(widget._rendered_target_rects),
                              set(range(4)) if state is None else {state[0]})
             if state is not None and not state[1]:
+                x, y, w, h = widget._rendered_target_rects[state[0]]
+                image = image[y:y+h, x:x+w]
                 np.testing.assert_array_equal(image[:, :, 0], image[:, :, 1])
                 np.testing.assert_array_equal(image[:, :, 1], image[:, :, 2])
                 self.assertGreaterEqual(image.min(), 214)
@@ -104,7 +110,8 @@ class TargetPresentationFlowTests(unittest.TestCase):
             self.clock.return_value += 1.5
             self.window._refresh_target_presentation()
             self.assert_state((target, False))
-            self.clock.return_value += .801
+            next_show = {1: 132, 0: 142, 2: 164, 3: 182}[target]
+            self.clock.return_value = (self.clock.return_value + next_show) / 2
             self.window._refresh_target_presentation()
             self.assert_state(({1: 0, 0: 2, 2: 3, 3: 3}[target], False))
         self.clock.return_value = 186.5
@@ -126,7 +133,7 @@ class TargetPresentationFlowTests(unittest.TestCase):
         self.clock.return_value = 117.5
         self.window._refresh_target_presentation()
         self.assert_state((1, False))
-        self.clock.return_value = 118.5
+        self.clock.return_value = 124.75
         self.window._refresh_target_presentation()
         self.assert_state((0, False))
         self.raise_target(1, 132)
@@ -137,6 +144,21 @@ class TargetPresentationFlowTests(unittest.TestCase):
         self.assert_state(None)
         self.start()
         self.assert_state((1, False))
+
+    def test_single_shot_attribution_follows_display_at_receipt_even_when_folded(self):
+        self.start()
+        sid = self.window._active_review_session_id
+        with patch.object(self.window._scoring_pool, "submit"):
+            self.assertTrue(self.window.process_shot(1, np.zeros((8, 8, 3), np.uint8),
+                                                    (.5, .5), received_at=101))
+            self.assertEqual(self.window._review_receipts[(sid, 1, 1)]["displayed_target_index"], 1)
+            self.raise_target(0, 115)
+            self.clock.return_value = 116
+            self.window._maybe_close_hit_target(1, True)
+            for number, at, target in ((2, 124.749, 1), (3, 124.75, 0)):
+                self.assertTrue(self.window.process_shot(1, np.zeros((8, 8, 3), np.uint8),
+                                                        (.5, .5), received_at=at))
+                self.assertEqual(self.window._review_receipts[(sid, 1, number)]["displayed_target_index"], target)
 
     def test_focused_shot_mapping_filters_other_targets_and_overview_keeps_all_shots(self):
         widget = self.window.client_widgets[0]
@@ -158,7 +180,7 @@ class TargetPresentationFlowTests(unittest.TestCase):
         self.clock.return_value = 117.5
         QTest.qWait(150)
         self.assert_state((1, False))
-        self.clock.return_value = 118.5
+        self.clock.return_value = 124.75
         QTest.qWait(150)
         self.assert_state((0, False))
         self.window.stop_test()
