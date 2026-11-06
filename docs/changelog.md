@@ -113,3 +113,10 @@
 - Bỏ hai nút `Đầu` và `Cuối` khỏi cửa sổ xem lại; giữ điều hướng `Phát trước`, `Phát sau` và phím Home/End.
 - Dọn toàn bộ khóa cấu hình cũ không còn được sử dụng trong `assets/configurations/config.json`.
 - Gom lệnh bài bắn, ánh xạ gập bia, lịch LoRa, ngưỡng scoring, thông số review/quy không/LoRa và giới hạn runtime vào cấu hình tập trung; có schema mặc định và bỏ qua khóa lạ.
+
+## 2026-11-06 — Đọc điểm chạm bằng bộ âm thanh mới
+
+- Phát “Bắt đầu tập” khi bắt đầu bài.
+- Đọc bệ, số điểm chạm từng bia 6 → 10 → 7b → 8c an pha 45, rồi xếp loại; 0 đọc “Không trúng”, 1–16 dùng bản ghi tương ứng.
+- Đếm riêng điểm chạm hợp lệ, không phụ thuộc hiển thị dấu chạm; giữ quy tắc xếp loại.
+- Đóng gói đủ bộ WAV mới trong bản V28.

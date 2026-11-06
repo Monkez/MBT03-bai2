@@ -1,3 +1,11 @@
+## Hoàn tất âm thanh — 2026-11-06
+
+- Dùng `assets/new_sounds`: bắt đầu tập; đọc bệ + các bia class 1/0/2/3 theo thứ tự 6/10/7b/8c alpha 45 (góc do người dùng xác nhận), số điểm chạm 0–16 và xếp loại. Không thêm bia 5/8c alpha 90 vào bài hiện tại.
+- `ClientWidget.hit_counts` đếm điểm chạm hợp lệ độc lập marker, reset cùng kết quả; snapshot khi bấm loa. Giữ xếp loại và giao thức phần cứng.
+- 312 tests đạt; 17 tests âm thanh đạt sau review cuối; phát thực qua QMediaPlayer Windows hoàn tất không lỗi. Build V28-061126 thành công, đủ 32 WAV được kiểm tra hash ở Desktop.
+- EXE khởi chạy nhưng công cụ UI không liệt kê cửa sổ để thao tác. Chưa xác nhận trực tiếp nút bấm trên EXE và chưa thử thiết bị bắn thật.
+- Môi trường `.venv` cũ trỏ tài khoản Admin không tồn tại; đã tái liên kết Python 3.11 tại `work/python` bằng uv --allow-existing, giữ dependencies.
+
 # Trạng thái dự án
 
 ## Sửa dấu điểm chạm bị ẩn khi xem lại (2026-10-29)

@@ -26,6 +26,7 @@ DATA_FILES = (
     ("assets/qt", "assets/qt"),
     ("assets/signs", "assets/signs"),
     ("assets/sounds", "assets/sounds"),
+    ("assets/new_sounds", "assets/new_sounds"),
     # Hidden-imported promoted widgets live at the bundle root when frozen.
     ("MonkezCustomWidgets/monkez_assets", "monkez_assets"),
 )

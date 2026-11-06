@@ -58,6 +58,7 @@ class ClientWidget(QFrame):
         self.bullet_limit = 16
         self.bullet_count = 0
         self.hit_targets = set()
+        self.hit_counts = [0] * 4
         self.shots = []
         self.testing = False
         self.connected = False
@@ -208,6 +209,7 @@ class ClientWidget(QFrame):
         self.clear_error()
         self.bullet_count = 0
         self.hit_targets.clear()
+        self.hit_counts = [0] * 4
         self.shots.clear()
         self.testing = False
         self.pedestal_name_label.setText(f"BỆ SỐ {self.id}")
@@ -354,6 +356,7 @@ class ClientWidget(QFrame):
         self.clear_error()
         self.bullet_count = 0
         self.hit_targets.clear()
+        self.hit_counts = [0] * 4
         self.shots.clear()
         self.update_result_label()
         self.show_target_simulation()
@@ -375,6 +378,7 @@ class ClientWidget(QFrame):
             self.shots.append((target_index, x_ratio, y_ratio, bool(hit)))
         if hit:
             self.hit_targets.add(target_index)
+            self.hit_counts[target_index] += 1
 
         self.update_result_label()
         self.show_target_simulation()

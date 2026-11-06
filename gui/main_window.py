@@ -134,6 +134,8 @@ class MainWindow(QMainWindow):
         self._shot_sound = ShotSound(self)
         self._hit_sound = HitSound(self)
         self._result_sound = ResultSound(self)
+        self._start_sound = ResultSound(self)
+        self._start_sound.failed.connect(lambda message: print(f"[Audio] {message}"))
         self._result_sound.changed.connect(self._update_score_speak_buttons)
         self._result_sound.failed.connect(
             lambda message: QMessageBox.warning(self, "Đọc kết quả", message)
@@ -916,6 +918,7 @@ class MainWindow(QMainWindow):
     def stop_test(self):
         if not self.testing:
             return
+        self._start_sound.stop()
         session_id = self._active_review_session_id
         for widget in self.client_widgets:
             received = self._review_shot_counters.get((session_id, widget.id), 0)
@@ -986,7 +989,9 @@ class MainWindow(QMainWindow):
         # Match the wireless project's preparation command for the selected gun.
         if port_id <= len(self.servers):
             self.servers[port_id - 1].send_uart_command("0P000\n")
-        self._result_sound.start(port_id, self.client_widgets[port_id - 1]._rank_text())
+        self._start_sound.stop()
+        widget = self.client_widgets[port_id - 1]
+        self._result_sound.start(port_id, widget._rank_text(), widget.hit_counts)
 
     def _update_score_speak_buttons(self):
         active = self._result_sound.port_id
@@ -997,8 +1002,8 @@ class MainWindow(QMainWindow):
             widget.set_score_speak_ui_state(state)
 
     def _play_start_announcement(self):
-        """Reserved for the future 'Bat dau tap ban AK bai 2' audio file."""
-        return
+        self._start_sound.stop()
+        self._start_sound.start_exercise()
 
     def _schedule_lora_script(self):
         self._cancel_lora_script()
@@ -1072,6 +1077,7 @@ class MainWindow(QMainWindow):
         self._shot_sound.stop()
         self._hit_sound.stop()
         self._result_sound.stop()
+        self._start_sound.stop()
         self._start_followup_timer.stop()
         for widget, server in zip(self.client_widgets, self.servers):
             if widget.locating:

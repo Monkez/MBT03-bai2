@@ -1,0 +1,15 @@
+BỘ 32 KHẨU LỆNH — VIENEU-TTS V3 NANO
+
+Cấu hình: speed 1.15; seed 42; steps 32; mẫu Giỏi/Khá/Đạt như bản C đã chọn.
+Định dạng: WAV PCM 16-bit, mono, 24 kHz.
+Tốc độ điều khiển khi tổng hợp, không tăng tốc file sau khi tạo; không ghép từ.
+Phần lớn câu tạo theo nhóm rồi tách ở khoảng nghỉ. Các mức 1, 8, 16 lấy từ bản thử đã duyệt.
+
+Cách phát: be_so_1.wav → bia_so_6.wav → 03_diem_cham.wav.
+Không có điểm chạm: khong_trung.wav. Khi bắt đầu: bat_dau_tap.wav.
+Bia 7b đọc bảy bê; 8c đọc tám xê; alpha đọc an pha bằng...
+Danh sách đầy đủ trong danh_sach.csv.
+Đã kiểm tra định dạng, dữ liệu âm thanh và đối chiếu bằng nhận dạng tự động. Cần nghe duyệt chất giọng/ngữ điệu trước khi vận hành chính thức.
+
+Bổ sung: gioi.wav, kha.wav, dat.wav, khong_dat.wav.
+28 file cũ được giữ nguyên, bao gồm các cụm an pha.

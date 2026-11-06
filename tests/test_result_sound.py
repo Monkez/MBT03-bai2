@@ -63,7 +63,7 @@ class ResultSoundTests(unittest.TestCase):
             self.player.reset_mock()
             self.sound.start(port, rank)
             wait_for_playback(self.sound)
-            self.assertEqual(self.sources, [f"Beso{port}.mp3", ResultSound.RANK_FILES[rank]])
+            self.assertEqual(self.sources, [f"be_so_{port}.wav", *[name for _, target in ResultSound.TARGET_FILES for name in (target, "khong_trung.wav")], ResultSound.RANK_FILES[rank]])
             self.assertEqual(len(self.played), 1)
             self.player.setMedia.assert_called_once()
             self.player.stop.assert_not_called()
@@ -86,11 +86,40 @@ class ResultSoundTests(unittest.TestCase):
         self.sources.clear()
         self.sound.start(2, "Giỏi")
         wait_for_playback(self.sound)
-        self.assertEqual(self.sources, ["Beso2.mp3", "GIOI.mp3"])
+        self.assertEqual(self.sources, ["be_so_2.wav", *[name for _, target in ResultSound.TARGET_FILES for name in (target, "khong_trung.wav")], "gioi.wav"])
         self.assertEqual(len(self.played), 1)
         path = self.played[0][0]
         self.sound.stop()
         self.assertFalse(os.path.exists(path))
+
+    def test_all_impact_counts_and_pedestals_use_new_audio_in_target_order(self):
+        for port, count in itertools.product(range(1, 5), range(17)):
+            self.sources.clear()
+            counts = [count, (count + 1) % 17, (count + 2) % 17, (count + 3) % 17]
+            self.sound.start(port, "Đạt", counts)
+            counts[0] = 99  # Playback must use the snapshot at click time.
+            wait_for_playback(self.sound)
+            original = [count, (count + 1) % 17, (count + 2) % 17, (count + 3) % 17]
+            expected = [f"be_so_{port}.wav"]
+            for target, name in ResultSound.TARGET_FILES:
+                n = original[target]
+                expected.extend((name, f"{n:02d}_diem_cham.wav" if n else "khong_trung.wav"))
+            self.assertEqual(self.sources, expected + ["dat.wav"])
+            self.sound.stop()
+
+    def test_start_exercise_uses_new_clip_and_is_cancellable(self):
+        self.sound.start_exercise()
+        wait_for_playback(self.sound)
+        self.assertEqual(self.sources, ["bat_dau_tap.wav"])
+        self.sound.stop()
+        self.assertIsNone(self.sound.port_id)
+
+    def test_invalid_counts_fail_without_playing_partial_results(self):
+        failures = QSignalSpy(self.sound.failed)
+        for counts in ([0], [-1, 0, 0, 0], [17, 0, 0, 0], [True, 0, 0, 0]):
+            self.sound.start(1, "Khá", counts)
+        self.assertEqual(len(failures), 4)
+        self.assertEqual(self.played, [])
 
     def test_stop_cancels_queued_preparation_without_decoding_either_phrase(self):
         self.sound.start(1, "Khá")
@@ -108,7 +137,7 @@ class ResultSoundTests(unittest.TestCase):
         self.sound.start(1, "Khá")
         self.sound.start(2, "Giỏi")
         wait_for_playback(self.sound)
-        self.assertEqual(self.sources, ["Beso1.mp3", "KHA.mp3"])
+        self.assertEqual(self.sources, ["be_so_1.wav", *[name for _, target in ResultSound.TARGET_FILES for name in (target, "khong_trung.wav")], "kha.wav"])
         self.assertEqual(len(self.played), 1)
 
     def test_decode_failure_aborts_whole_sentence_and_restores_idle(self):
@@ -143,7 +172,7 @@ class ResultSoundTests(unittest.TestCase):
         failures = QSignalSpy(self.sound.failed)
         original = sf.read
         def read(path, **kwargs):
-            if path.endswith("KHA.mp3"):
+            if path.endswith("kha.wav"):
                 raise FileNotFoundError(path)
             return original(path, **kwargs)
         with patch("gui.result_sound.sf.read", side_effect=read):
@@ -239,7 +268,13 @@ class ResultFlowTests(unittest.TestCase):
         self.window.request_score_speak(2)
         self.assertEqual(self.window._result_sound.port_id, 1)
         wait_for_playback(self.window._result_sound)
-        self.assertTrue(self.read_pcm.call_args.args[0].endswith("KHA.mp3"))
+        self.assertTrue(self.read_pcm.call_args.args[0].endswith("kha.wav"))
+        self.assertEqual(
+            [os.path.basename(call.args[0]) for call in self.read_pcm.call_args_list],
+            ["be_so_1.wav", "bia_so_6.wav", "01_diem_cham.wav",
+             "bia_so_10.wav", "01_diem_cham.wav", "bia_so_7b.wav", "khong_trung.wav",
+             "bia_so_8c_alpha_45.wav", "01_diem_cham.wav", "kha.wav"],
+        )
         path = self.window._result_sound._player.setMedia.call_args.args[0].canonicalUrl().toLocalFile()
         self.assertEqual(os.path.basename(path), "result.wav")
         self.window._result_sound._on_status(QMediaPlayer.EndOfMedia)
@@ -252,6 +287,7 @@ class ResultFlowTests(unittest.TestCase):
         first.score_speak_icon.click()
         first.score_speak_icon.click()
         self.assertIsNone(self.window._result_sound.port_id)
+
         self.assertTrue(second.score_speak_icon.isEnabled())
         first.score_speak_icon.click()
         self.window.start_test()
@@ -264,6 +300,24 @@ class ResultFlowTests(unittest.TestCase):
         second.score_speak_icon.click()
         self.window.close()
         self.assertIsNone(self.window._result_sound.port_id)
+
+    def test_impact_counts_ignore_misses_and_marker_visibility_and_reset(self):
+        widget = self.window.client_widgets[0]
+        widget.record_shot(1, .5, .5, show_marker=False)
+        widget.record_shot(1, .5, .5)
+        widget.record_shot(0, .5, .5, hit=False)
+        widget.record_miss()
+        self.assertEqual(widget.hit_counts, [0, 2, 0, 0])
+        for _ in range(20):
+            widget.record_shot(3, .5, .5)
+        self.assertEqual(widget.hit_counts, [0, 2, 0, 12])
+        self.assertEqual(widget.bullet_count, 16)
+        widget.reset_results()
+        self.assertEqual(widget.hit_counts, [0, 0, 0, 0])
+        widget.record_shot(2, .5, .5)
+        widget.reset_all()
+        self.assertEqual(widget.hit_counts, [0, 0, 0, 0])
+
 
 
 if __name__ == "__main__":

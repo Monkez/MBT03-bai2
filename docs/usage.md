@@ -126,18 +126,24 @@ Xếp loại cập nhật theo số mục tiêu khác nhau đã bắn trúng: **
 **Không đạt: 0–1**. Trúng nhiều viên vào cùng một bia vẫn chỉ tính một
 mục tiêu; không cần bắn hết 16 viên mới hiển thị xếp loại.
 
-Sau khi kết thúc bài, bấm nút loa của bệ để đọc kết quả đang hiển thị, ví dụ
-**“Bệ số 1, Khá”**. Bấm lại nút đang đọc để dừng; trong lúc đó nút loa của các
-bệ khác bị khóa. Bắt đầu bài mới hoặc đóng ứng dụng sẽ dừng đọc. Nút loa bị khóa
-trong khi bắn. Ứng dụng gửi `0P000\n` đến súng của bệ được chọn như dự án wireless,
-rồi phát `assets/sounds/Beso1.mp3`–`Beso4.mp3` và `GIOI.mp3`/`KHA.mp3`/`DAT.mp3`/
-`KDAT.mp3` ở tốc độ gốc. Hai cụm được giải mã về cùng PCM 44.1 kHz stereo,
-ghép thành một file WAV tạm và phát một lần để không đổi nguồn âm thanh giữa câu.
-Giữa hai cụm có khoảng nghỉ thêm 120 ms; đầu/cuối mỗi cụm được làm mềm trong 5 ms.
-File tạm được dọn khi đọc xong hoặc dừng; không sửa các MP3 gốc.
-Thiếu hoặc lỗi một trong hai file sẽ báo lỗi và mở lại nút loa, không đọc câu thiếu cụm.
-Khi bắt đầu đọc kết quả, các thông báo trúng bia còn chờ được dừng đến bài mới
-để tránh chồng giọng. Có thể bấm đọc lại để lấy xếp loại mới nếu còn ảnh đang chấm.
+Khi nhấn Bắt đầu, ứng dụng phát **“Bắt đầu tập”** bằng giọng mới.
+Sau khi kết thúc bài, bấm nút loa của bệ để đọc: **“Bệ số 1, Bia số sáu,
+Ba điểm chạm, Bia số mười, Không trúng, Bia số bảy bê, Một điểm chạm,
+Bia số tám xê an pha bằng bốn mươi lăm, Hai điểm chạm, Khá”**.
+Thứ tự bia là 6 → 10 → 7b → 8c an pha 45, sau cùng là xếp loại.
+Không trúng đọc “Không trúng”; có trúng đọc số điểm chạm từ 1 đến 16.
+Số điểm chạm tính riêng từng viên trúng hợp lệ trên từng bia, độc lập với việc
+hiện dấu chạm; xếp loại vẫn theo số mục tiêu trúng như trước.
+Bia 5 và 8c an pha 90 có sẵn âm thanh nhưng không thuộc bài bắn hiện tại.
+
+Bấm lại nút loa đang đọc để dừng; các bệ khác bị khóa khi đang đọc.
+Bắt đầu bài mới hoặc đóng ứng dụng sẽ dừng đọc. Nút loa bị khóa trong khi bắn.
+Ứng dụng gửi `0P000\n` đến súng của bệ được chọn, dừng các thông báo trúng còn chờ,
+rồi phát các WAV từ `assets/new_sounds` ở tốc độ gốc. Toàn bộ câu được giải mã
+về PCM 44.1 kHz stereo và ghép vào một WAV tạm; nghỉ 120 ms giữa các cụm,
+làm mềm đầu/cuối mỗi cụm 5 ms. File tạm được dọn khi đọc xong hoặc dừng.
+Thiếu hoặc lỗi bất kỳ cụm nào sẽ báo lỗi và mở lại nút loa, không đọc câu thiếu.
+Có thể bấm đọc lại để lấy kết quả mới nếu còn ảnh đang chấm.
 
 Bố cục thường: bia 6 trên trái, bia 10 dưới trái, bia 7B ở cột giữa và bia 8 bên phải.
 Khi chọn 2 bệ, bố cục dọc lần lượt là bia 6, bia 10, rồi hàng cuối gồm bia 7B bên trái
