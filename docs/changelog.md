@@ -1,3 +1,7 @@
+# V49-071126 — Thử màu khung phân loạt trên bia
+
+- Viên lẻ khung vàng; loạt từ hai viên khung xanh blue. Màu trong ô giữ xanh lá khi trúng, đỏ khi trượt.
+
 # V48-071126 — Cố định bia trước khi bắn
 
 - Chừa sẵn vùng dải đạn theo giới hạn đạn ngay từ đầu; thêm viên hoặc xuống hàng không dịch/thu nhỏ bia.

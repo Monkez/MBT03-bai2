@@ -1,3 +1,8 @@
+## Màu khung dải đạn trên bia — 2026-11-07
+
+- Viên lẻ khung vàng #eab52c, loạt nhiều viên khung blue #1769ff. Chỉ đổi màu khung trên bia; giữ màu hit/miss và kích thước/band cố định.
+- 18 tests liên quan đạt; kiểm tra native Qt 1/2/4 bệ và vị trí ảnh trước/sau. Build V49-071126 đạt, native Qt/PYZ kiểm tra màu và vị trí 1/2/4 bệ; bàn giao Desktop giữ cấu hình/dữ liệu. Chưa thử EXE mặc định/thiết bị thật.
+
 ## Vùng đạn cố định từ đầu — 2026-11-07
 
 - _draw_target_rounds chừa band cố định theo kích thước khung/giới hạn đạn, kể cả chưa bắn; chỉ ô đạn thích ứng trong band. Ảnh và tọa độ marker không dịch/thu nhỏ khi phát đầu, thêm phát hoặc xuống dòng.

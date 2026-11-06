@@ -670,7 +670,7 @@ class ClientWidget(QFrame):
         painter.setFont(font)
         for kind, rounds, outer in segments:
             painter.setBrush(Qt.NoBrush)
-            painter.setPen(QPen(QColor("#df3949" if kind == "single" else "#eab52c"), max(1, cell / 10)))
+            painter.setPen(QPen(QColor("#eab52c" if kind == "single" else "#1769ff"), max(1, cell / 10)))
             if kind in ("single", "burst"):
                 painter.drawRoundedRect(outer, pad, pad)
             for index, (number, status) in enumerate(rounds):
