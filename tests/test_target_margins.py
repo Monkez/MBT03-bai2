@@ -88,7 +88,7 @@ class TargetMarginTests(unittest.TestCase):
         self.assertFalse(np.array_equal(area[:, :, 0], area[:, :, 1]))
         self.assertEqual(widget.hit_counts, [0, 0, 1, 0])
 
-    def test_artwork_is_ten_percent_smaller_and_centered_in_the_same_frame(self):
+    def test_artwork_keeps_scale_and_center_except_slightly_raised_target_ten(self):
         for mode in ("default", "two_pedestals"):
             self.widget.target_layout_mode = mode
             for state in (None, (1, True)):
@@ -99,7 +99,8 @@ class TargetMarginTests(unittest.TestCase):
                     self.assertLessEqual(abs(w - round(min(width, height) * .9)), 1)
                     self.assertLessEqual(abs(h - round(min(width, height) * .9)), 1)
                     self.assertLessEqual(abs((x + w / 2) - (left + width / 2)), 1)
-                    self.assertLessEqual(abs((y + h / 2) - (top + height / 2)), 1)
+                    raise_by = min(8 * (2 if state is not None else 1), (height - h) // 2) if target == 0 else 0
+                    self.assertLessEqual(abs((y + h / 2) - (top + height / 2 - raise_by)), 1)
 
     def test_nearby_misses_draw_outside_image_at_the_true_position_in_all_views(self):
         widget = self.widget

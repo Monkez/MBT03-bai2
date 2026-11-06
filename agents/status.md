@@ -1,3 +1,8 @@
+## Nâng riêng bia 10 — 2026-11-07
+
+- _draw_target nâng class 0 (bia 10) thêm 8*scale pixel, chặn tại top vùng ảnh để không chồng dải đạn. Bia khác, kích thước và phép ánh xạ marker giữ nguyên.
+- 18 tests đạt. Build V51-071126, native Qt/PYZ kiểm tra ảnh/marker và vị trí cố định 1/2/4 bệ; bàn giao Desktop giữ cấu hình/dữ liệu. Chưa thử EXE mặc định/thiết bị thật.
+
 ## Nâng nhẹ bia — 2026-11-07
 
 - Band dải đạn giảm từ min(rows*36*scale, 30% chiều cao) xuống min(rows*30*scale, 24% chiều cao). Ảnh dịch lên nhẹ nhưng giữ cố định theo số viên. Màu vàng/blue của V49 giữ nguyên.

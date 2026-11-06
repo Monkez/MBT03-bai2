@@ -1,3 +1,7 @@
+# V51-071126 — Nâng riêng bia 10
+
+- Nâng riêng ảnh bia số 10 thêm một chút, giới hạn trong vùng ảnh để không đè lên dải đạn; giữ cố định vị trí khi bắn.
+
 # V50-071126 — Nâng nhẹ vị trí bia
 
 - Giảm vùng chừa dải đạn để bia cao lên một chút; vẫn cố định vị trí trước/sau bắn, giữ viên lẻ khung vàng và loạt khung blue.

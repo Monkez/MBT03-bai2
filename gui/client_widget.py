@@ -635,6 +635,8 @@ class ClientWidget(QFrame):
         ih, iw = image.shape[:2]
         ox = inner[0] + (inner[2] - iw) // 2
         oy = inner[1] + (inner[3] - ih) // 2
+        if target_index == 0:  # Bia 10: raise the artwork, keeping the ammunition band clear.
+            oy = max(inner[1], oy - 8 * scale)
         canvas[oy:oy + ih, ox:ox + iw] = image
         self._rendered_target_rects[target_index] = (ox, oy, iw, ih)
         self._marker_clip_rects[target_index] = inner

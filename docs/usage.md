@@ -175,7 +175,7 @@ và giữ viền đỏ; bia đã trúng giữ ảnh có màu và viền xanh. D�
 xóa kết quả để bắt đầu lượt mới, cả bốn bia vẫn hiển thị có màu như ban đầu.
 
 Ảnh bia được thu nhỏ 10% theo cả chiều rộng và chiều cao trong khung, giữ đúng
-tỉ lệ và căn giữa. Điểm chạm có thể nằm trên phần trống quanh ảnh, nhưng chỉ
+tỉ lệ và căn giữa; riêng bia số 10 được nâng nhẹ trong vùng ảnh. Điểm chạm có thể nằm trên phần trống quanh ảnh, nhưng chỉ
 hiển thị khi tâm điểm còn nằm trong vùng bên trong khung của chính bia đó.
 Điểm quá xa bị ẩn; không dồn về mép ảnh, không vẽ chồng viền hoặc sang bia khác.
 Số đạn, điểm và lịch sử vẫn giữ nguyên kể cả khi dấu chạm không được vẽ.
