@@ -1,3 +1,10 @@
+## Bắn lẻ và bia xem lại cố định — 2026-11-06
+
+- Bia xem lại dùng padding cố định 12.5% cạnh dài, căn giữa; điểm ngoài khung bị ẩn, không mở rộng theo điểm.
+- single_shot_violations dùng receipt/burst_id trước inference; chỉ chốt viên cuối sau burst_gap_seconds hoặc stop. Có ít nhất một loạt 1 viên: Giỏi→Khá, Khá→Đạt, giữ Đạt/Không đạt; chỉ hạ một bậc. Viền vàng ưu tiên xanh/đỏ của bia liên quan, cả khi gập. Không đoán bia khi chồng bia và thiếu nhận diện.
+- Màn hình/âm thanh/Excel cùng xếp loại; Excel J chấp nhận bậc đã hạ, không cho hạ Đạt hoặc hạ hai bậc. Legacy không có cadence không bị suy đoán bắn lẻ.
+- 363 tests đạt; 10 test đọc/kiểm tra Excel đạt sau bổ sung chặn hạ hai bậc. Native Qt đã xem viền vàng và bia cố định với điểm xa; ảnh ở outputs/single-rule-v43. Đã build V43-061126, kiểm tra native Qt từ PYZ đóng gói và bàn giao Desktop, giữ 31 file cấu hình/dữ liệu. Chưa kiểm tra khởi động EXE mặc định hoặc thiết bị thật.
+
 ## Sửa chế độ không LoRa — 2026-11-06
 
 - Lỗi bia không hiện do đợi command_sent dù không chọn COM. MainWindow chốt _simulate_targets theo port_name ở đầu bài; không LoRa dùng mốc mô phỏng để chạy cả lịch/nhận điểm/tự kết thúc, không gọi gửi serial. Có COM vẫn theo tín hiệu ghi thực tế, không giả lập khi COM lỗi.

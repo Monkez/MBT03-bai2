@@ -469,7 +469,7 @@ class ShotReviewDialog(QDialog):
             offset_note = "Chấm điểm tại dấu thập đỏ (sau offset)."
         if any(point is not None and any(value < 0 or value > 1 for value in point)
                for point in (before, after)):
-            offset_note += " Điểm ngoài ảnh bia được hiển thị trên vùng nền mở rộng."
+            offset_note += " Bia giữ cố định; điểm nằm ngoài khung không hiển thị."
         if SHOW_CAMERA_IMPACT_POINT and shot.get("camera_impact_point") is None:
             offset_note += " Chưa đủ dữ liệu suy ngược điểm chạm lên ảnh thật."
         if shot.get("scoring_eligible") is False:
@@ -614,17 +614,9 @@ class ShotReviewDialog(QDialog):
                 (float(normalized[0]) * width, float(normalized[1]) * height)
                 if normalized is not None and np.all(np.isfinite(normalized)) else None
             )
-        present = [point for point in points if point is not None]
-        # Keep the reference at about 80% of the normal canvas, with white
-        # space for nearby misses. Apply the same transform to both markers.
+        # Fixed centered canvas: distant impacts never move or shrink the target.
         padding = max(height, width) * .125
-        marker_margin = max(height, width) * .07 * SIMULATION_MARKER_SCALE
         left, top, right, bottom = -padding, -padding, width + padding, height + padding
-        if present:
-            left = min(left, min(point[0] for point in present) - marker_margin)
-            top = min(top, min(point[1] for point in present) - marker_margin)
-            right = max(right, max(point[0] for point in present) + marker_margin)
-            bottom = max(bottom, max(point[1] for point in present) + marker_margin)
         scale = min(1.0, 1600 / max(right - left, bottom - top))
         transform = np.asarray([[scale, 0, -left * scale], [0, scale, -top * scale]])
         preview = cv2.warpAffine(
@@ -634,6 +626,8 @@ class ShotReviewDialog(QDialog):
         )
         points = [((point[0] - left) * scale, (point[1] - top) * scale)
                   if point is not None else None for point in points]
+        points = [point if point is not None and 0 <= point[0] < preview.shape[1]
+                  and 0 <= point[1] < preview.shape[0] else None for point in points]
         before, after = points
         if before is not None and after is not None:
             start = tuple(int(round(value)) for value in before)

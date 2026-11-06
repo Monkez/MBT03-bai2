@@ -326,9 +326,26 @@ class ReviewWindowTests(unittest.TestCase):
                 preview = dialog._simulation_preview(shot)
                 np.testing.assert_array_equal(preview, expected)
                 self.assertFalse(np.any(np.all(preview == [255, 0, 0], axis=2)))
-                self.assertEqual(np.any(np.all(preview == [0, 0, 255], axis=2)), after is not None)
+                self.assertEqual(np.any(np.all(preview == [0, 0, 255], axis=2)),
+                                 after is not None and after[0] >= -0.125)
                 self.assertEqual(shot["target_point_before_offset"], before)
         np.testing.assert_array_equal(reference, 255)
+
+    @patch("gui.review_window.SHOW_SIMULATION_AIM_POINT", True)
+    def test_simulation_stays_centered_and_fixed_for_far_impacts(self):
+        reference = np.full((300, 400, 3), (220, 225, 230), dtype=np.uint8)
+        dialog = ShotReviewDialog.__new__(ShotReviewDialog)
+        dialog._reference_images = {1: reference}
+        expected = dialog._simulation_preview({"target_index": 1})
+        self.assertEqual(expected.shape, (400, 500, 3))
+        np.testing.assert_array_equal(expected[50:350, 50:450], reference)
+        for point in ((-2, 3), (20, -10), (1e20, 1e20), None):
+            with self.subTest(point=point):
+                preview = dialog._simulation_preview({
+                    "target_index": 1, "target_point": point,
+                    "target_point_before_offset": point,
+                })
+                np.testing.assert_array_equal(preview, expected)
 
     def test_offset_legend_and_notes_follow_visibility_setting(self):
         for visible in (False, True):
@@ -340,7 +357,7 @@ class ReviewWindowTests(unittest.TestCase):
                     labels = " ".join(label.text() for label in dialog.findChildren(QLabel))
                     self.assertEqual("Trước offset" in labels, visible)
                     self.assertIn("Sau offset", labels)
-                    self.assertEqual("vùng nền mở rộng" in dialog.details_label.text(), visible)
+                    self.assertEqual("điểm nằm ngoài khung" in dialog.details_label.text(), visible)
                 finally:
                     dialog.close()
 

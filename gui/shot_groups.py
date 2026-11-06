@@ -30,3 +30,35 @@ def burst_groups(records, threshold):
             groups.append([number])
         previous = number, record
     return groups
+
+
+def single_shot_violations(shots, receipts, threshold, *, limit, final=True, now=None):
+    """Assess complete receipt groups; inference completion must not create singles."""
+    records = {number: dict(record) for number, record in receipts.items() if 1 <= number <= limit}
+    by_number = {}
+    for index, shot in enumerate(shots):
+        number = int(shot.get("shot_number", index + 1))
+        if 1 <= number <= limit:
+            by_number[number] = shot
+            records[number] = {**shot, **records.get(number, {})}
+    groups = burst_groups(records, threshold)
+    singles, targets = [], set()
+    for index, group in enumerate(groups):
+        if len(group) != 1:
+            continue
+        number = group[0]
+        record = records[number]
+        at = record.get("received_at")
+        valid_time = isinstance(at, (int, float)) and not isinstance(at, bool) and math.isfinite(at)
+        if not valid_time and record.get("burst_id") is None:
+            continue  # Older/imported data has no evidence of firing cadence.
+        if not final and index == len(groups) - 1:
+            if not valid_time or now is None or now < at or same_burst(at, now, threshold):
+                continue
+        singles.append(number)
+        target = by_number.get(number, {}).get("target_index")
+        if target not in (0, 1, 2, 3):
+            target = record.get("expected_target_index")
+        if target in (0, 1, 2, 3):
+            targets.add(target)
+    return tuple(singles), frozenset(targets)

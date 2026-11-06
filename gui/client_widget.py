@@ -9,7 +9,7 @@ from PyQt5.QtGui import QColor, QFont, QImage, QPainter, QPen
 from PyQt5.QtWidgets import QLabel, QPushButton, QWidget, QFrame, QSizePolicy
 
 import config as cf
-from gui.styles import TARGET_GREEN, TARGET_RED
+from gui.styles import TARGET_GREEN, TARGET_RED, TARGET_YELLOW
 
 
 TARGET_IMAGE_FILES = [
@@ -37,12 +37,12 @@ TWO_PEDESTAL_TARGET_LAYOUT = {
 }
 
 
-def classify_hits(hit_targets):
+def classify_hits(hit_targets, has_single_shots=False):
     count = len(hit_targets)
     if count == 4:
-        return "Giỏi"
+        return "Khá" if has_single_shots else "Giỏi"
     if count == 3 and 3 in hit_targets:
-        return "Khá"
+        return "Đạt" if has_single_shots else "Khá"
     return "Đạt" if count >= 2 else "Không đạt"
 
 
@@ -61,6 +61,8 @@ class ClientWidget(QFrame):
         self.bullet_limit = cf.max_bullets()
         self.bullet_count = 0
         self.hit_targets = set()
+        self.has_single_shots = False
+        self.single_shot_targets = set()
         self.hit_counts = [0] * 4
         self.shots = []
         self.testing = False
@@ -223,6 +225,8 @@ class ClientWidget(QFrame):
         self.clear_error()
         self.bullet_count = 0
         self.hit_targets.clear()
+        self.has_single_shots = False
+        self.single_shot_targets.clear()
         self.hit_counts = [0] * 4
         self.shots.clear()
         self.testing = False
@@ -375,6 +379,8 @@ class ClientWidget(QFrame):
         self._show_final_results = False
         self.bullet_count = 0
         self.hit_targets.clear()
+        self.has_single_shots = False
+        self.single_shot_targets.clear()
         self.hit_counts = [0] * 4
         self.shots.clear()
         self.update_result_label()
@@ -429,7 +435,20 @@ class ClientWidget(QFrame):
         )
 
     def _rank_text(self):
-        return classify_hits(self.hit_targets)
+        return classify_hits(self.hit_targets, self.has_single_shots)
+
+    def set_burst_assessment(self, singles, targets):
+        state = (bool(singles), set(targets))
+        if state == (self.has_single_shots, self.single_shot_targets):
+            return
+        self.has_single_shots, self.single_shot_targets = state
+        self.update_result_label()
+        self.show_target_simulation()
+
+    def _target_border_color(self, target):
+        if target in self.single_shot_targets:
+            return TARGET_YELLOW
+        return TARGET_GREEN if target in self.hit_targets else TARGET_RED
 
     def set_score_speak_ui_state(self, state):
         speaking = state == "speaking"
@@ -502,7 +521,7 @@ class ClientWidget(QFrame):
 
         for target_index in (0, 2, 1, 3):
             x, y, w, h = layout[target_index]
-            border_color = TARGET_GREEN if target_index in self.hit_targets else TARGET_RED
+            border_color = self._target_border_color(target_index)
             self._draw_target(canvas, target_index, x, y, w, h, border_color,
                               folded=self._show_final_results and target_index not in self.hit_targets)
 
@@ -526,7 +545,7 @@ class ClientWidget(QFrame):
             x = 20 + (index % columns) * (cell_w + 20)
             y = 16 + (index // columns) * (cell_h + 20)
             self._draw_target(canvas, target, x, y + 34, cell_w, cell_h - 34,
-                              TARGET_GREEN if target in self.hit_targets else TARGET_RED)
+                              self._target_border_color(target))
             captions.append((QRectF(x, y, cell_w, 30), f"{TARGET_NAMES[target]} · ĐANG HIỆN"))
         for target, px, py, hit in self.shots:
             if target in targets:
@@ -552,14 +571,15 @@ class ClientWidget(QFrame):
         canvas = np.full((height, width, 3), 255, dtype=np.uint8)
         self._rendered_target_rects = {}
         self._marker_clip_rects = {}
-        border = TARGET_GREEN if target in self.hit_targets else TARGET_RED
+        border = self._target_border_color(target)
+        violation = target in self.single_shot_targets
         self._draw_target(canvas, target, 20, 72, width - 40, height - 92,
-                          border if visible else "#cbd5e1")
+                          border if visible or violation else "#cbd5e1", folded=violation and not visible)
         if visible:
             for index, px, py, hit in self.shots:
                 if index == target:
                     self._draw_shot(canvas, index, px, py, hit)
-        else:
+        elif not violation:
             canvas = self._folded_image(canvas)
         return canvas
 

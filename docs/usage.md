@@ -21,7 +21,7 @@ Tham khảo [cơ chế DPI của Qt 5.15](https://doc.qt.io/archives/qt-5.15/hig
    0 = không trúng); cột **J** là **Xếp loại**. Để trống cả F–J cho người chưa bắn.
    Kết quả có sẵn được nạp lại lên thẻ; Loạt bắn mới bỏ qua người đã có kết quả.
    Nếu đã có đủ bốn giá trị 0/1 nhưng J trống, ứng dụng tự tính xếp loại. Nếu có
-   xếp loại thì phải khớp kết quả bốn bia; dữ liệu thiếu/sai được báo rõ dòng lỗi.
+   xếp loại thì phải khớp kết quả bốn bia hoặc thấp hơn đúng một bậc do bắn lẻ (không hạ Đạt); dữ liệu thiếu/sai được báo rõ dòng lỗi.
    Vẫn nhận danh sách A–D chưa có cột kết quả; khi lưu sẽ bổ sung tiêu đề F–J.
 2. Mỗi người hiển thị bằng `assets/qt/score_card.ui`, có nút **Vào bắn** riêng.
    Bấm nút này để đưa người vào bệ; nút chuyển xanh như bản wireless.
@@ -126,6 +126,15 @@ Xếp loại cập nhật theo số mục tiêu khác nhau đã bắn trúng: **
 **Không đạt: 0–1**. Trúng nhiều viên vào cùng một bia vẫn chỉ tính một
 mục tiêu; không cần bắn hết 16 viên mới hiển thị xếp loại.
 
+Mỗi loạt yêu cầu ít nhất **2 viên**. Có ít nhất một loạt chỉ một viên thì
+hạ **một bậc cho cả bài**: Giỏi → Khá, Khá → Đạt; Đạt và Không đạt giữ nguyên.
+Nhiều viên bắn lẻ không hạ cộng dồn. Bia có bắn lẻ dùng **viền vàng** thay xanh/đỏ,
+kể cả viên trượt; nếu chưa xác định được bia thì chỉ áp dụng quy tắc xếp loại,
+không tô nhầm bia. Mốc phân loạt dùng `shooting.burst_gap_seconds`. Khi đang bắn,
+chờ đủ khoảng này trước khi kết luận viên cuối là bắn lẻ; khi dừng bài thì chốt ngay.
+Ảnh chấm về chậm không tách một loạt đã nhận thành nhiều viên lẻ. Xếp loại trên
+màn hình, đọc kết quả và lưu/nạp Excel dùng chung kết quả sau khi hạ bậc.
+
 Khi nhấn Bắt đầu, ứng dụng phát **“Bắt đầu tập”** bằng giọng mới.
 Sau khi kết thúc bài, bấm nút loa của bệ để đọc: **“Bệ số 1, Bia số sáu,
 Ba điểm chạm, Bia số mười, Không trúng, Bia số bảy bê, Một điểm chạm,
@@ -133,7 +142,7 @@ Bia số tám xê an pha bằng bốn mươi lăm, Hai điểm chạm, Khá”**
 Thứ tự bia là 6 → 10 → 7b → 8c an pha 45, sau cùng là xếp loại.
 Không trúng đọc “Không trúng”; có trúng đọc số điểm chạm từ 1 đến 16.
 Số điểm chạm tính riêng từng viên trúng hợp lệ trên từng bia, độc lập với việc
-hiện dấu chạm; xếp loại vẫn theo số mục tiêu trúng như trước.
+hiện dấu chạm; xếp loại tính số mục tiêu trúng và quy tắc bắn lẻ nêu trên.
 Bia 5 và 8c an pha 90 có sẵn âm thanh nhưng không thuộc bài bắn hiện tại.
 
 Bấm lại nút loa đang đọc để dừng; các bệ khác bị khóa khi đang đọc.
@@ -154,7 +163,7 @@ Sau khoảng 0,8 giây, chuyển sang bia tiếp theo đang gập nếu chưa c�
 Khi nhiều bia cùng hiện, màn hình chia khung để hiển thị tất cả các bia đang hiện.
 Sau lượt bia cuối, giữ bia cuối ở trạng thái gập đến khi kết thúc bài.
 Viền bo góc đỏ biểu thị chưa trúng, xanh biểu thị đã trúng; lớp viền ngoài nhạt cùng màu
-giúp dễ phân biệt từng bia. Khi bia gập, viền chuyển xám nhẹ.
+giúp dễ phân biệt từng bia. Bia có bắn lẻ dùng viền vàng, giữ cả khi gập; các bia khác chuyển viền xám nhẹ khi gập.
 Các bệ cùng theo trạng thái bia chung; trúng ở một bệ có thể gập bia chung khi bật chế độ này.
 
 Màn hình mô phỏng theo lịch điều khiển và thời điểm gửi lệnh, không phải cảm biến
@@ -164,7 +173,7 @@ dấu chạm được giữ lại để xem khi kết thúc. Khi mới mở ứn
 bài bắn, màn hình hiển thị lại cả bốn bia như trước.
 
 Ở màn hình kết quả sau khi kết thúc/dừng bài, bia chưa trúng mờ đen trắng
-và giữ viền đỏ; bia đã trúng giữ ảnh có màu và viền xanh. Khi mới mở app hoặc
+và giữ viền đỏ; bia đã trúng giữ ảnh có màu và viền xanh. Bia có bắn lẻ dùng viền vàng thay cho đỏ/xanh. Khi mới mở app hoặc
 xóa kết quả để bắt đầu lượt mới, cả bốn bia vẫn hiển thị có màu như ban đầu.
 
 Ảnh bia được thu nhỏ 10% theo cả chiều rộng và chiều cao trong khung, giữ đúng
@@ -319,8 +328,9 @@ không tính điểm, tọa độ, thời điểm nhận, loạt và thông tin 
 màn hình so sánh. Văn bản log có thể chọn và sao chép.
 
 Bia mô phỏng bên phải có nền trắng chừa trống xung quanh và không có viền kết quả.
-Các dấu điểm được chiếu cùng ảnh sau khi thu nhỏ, giữ đúng vị trí; điểm ngoài ảnh
-bia vẫn hiển thị trên nền mở rộng khi có dữ liệu hợp lệ. Các thông số kỹ thuật và
+Bia luôn ở giữa, giữ cùng kích thước khi chuyển các phát của cùng bia trong cùng
+kích thước cửa sổ. Điểm chạm không làm dịch hoặc thu nhỏ bia. Điểm còn nằm trong
+khung trắng được hiển thị đúng vị trí; điểm quá xa ngoài khung bị ẩn. Các thông số kỹ thuật và
 chú giải điểm được xem trong log, không hiển thị dưới hai ảnh.
 
 Trong `assets/configurations/config.json`, bốn khóa trong nhóm `review` điều khiển độc lập các dấu điểm:
@@ -336,7 +346,7 @@ Trong `assets/configurations/config.json`, bốn khóa trong nhóm `review` đi�
 
 Điểm chạm trên ảnh thật được suy ngược từ điểm sau offset bằng chính phép biến đổi affine đã dùng để chấm phát đó, rồi lưu cùng dữ liệu xem lại. Đây là vị trí suy tính, không phải phát hiện lỗ đạn thực tế trên ảnh. Không tính lại theo offset hiện tại. Nếu thiếu phép biến đổi hợp lệ thì không tạo điểm giả. Điểm nằm ngoài ảnh hoặc ngoài vùng zoom không bị kéo vào mép ảnh; có thể giảm `review.camera_zoom` về `1.0` để xem toàn bộ ảnh gốc.
 
-Khi bật cả hai điểm, dấu xanh dài hơn một chút nếu trùng tâm với dấu đỏ. Bia mô phỏng có đường nối vàng và vùng nền mở rộng chỉ theo các điểm đang hiển thị. Trên ảnh camera, khung vàng là bia hệ thống đã chọn để tính điểm, các khung xanh là những bia khác được nhận diện. Mã lớp, tên bia và độ tin cậy được xem trong log.
+Khi bật cả hai điểm, dấu xanh dài hơn một chút nếu trùng tâm với dấu đỏ. Bia mô phỏng có đường nối vàng khi cả hai điểm nằm trong khung cố định; không mở rộng khung theo điểm chạm. Trên ảnh camera, khung vàng là bia hệ thống đã chọn để tính điểm, các khung xanh là những bia khác được nhận diện. Mã lớp, tên bia và độ tin cậy được xem trong log.
 
 `shooting.show_rejected_shots_on_target` mặc định `false`: phát bị từ chối vì ngoài thời gian cho phép, thiếu thời điểm nhận hoặc nhận diện khác bia được phép tính điểm sẽ **không vẽ dấu trên bia màn hình chính**. Đặt `true` để hiện lại trên màn hình chính. Cửa sổ **Xem lại luôn hiển thị theo bốn công tắc `review`**, kể cả phát bị từ chối, để đối chiếu điểm chạm và nguyên nhân không tính điểm. Phát trượt hình học trong thời gian hợp lệ vẫn hiển thị bình thường. Bộ đếm Đạn, lịch sử, ảnh camera và kết quả chấm không thay đổi; phần log xem lại ghi rõ **KHÔNG TÍNH ĐIỂM** cùng lý do. Khi bắt đầu bài bắn mới, dữ liệu xem lại của phiên cũ được xóa.
 

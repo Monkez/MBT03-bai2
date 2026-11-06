@@ -15,7 +15,7 @@ Nhóm `shooting`:
 | Khóa | Ý nghĩa |
 | --- | --- |
 | `max_bullets` | Số viên tối đa mỗi bệ, mặc định 16 (1–999); dùng cho bộ đếm, dải xem lại và tạo lệnh `0Fxxx\n`. |
-| `burst_gap_seconds` | Khoảng cách giữa hai viên liên tiếp để cùng loạt, mặc định 0.3 giây (so sánh nhỏ hơn, dùng thời điểm PC nhận ảnh). |
+| `burst_gap_seconds` | Khoảng cách giữa hai viên liên tiếp để cùng loạt, mặc định 0.3 giây (so sánh nhỏ hơn, dùng thời điểm PC nhận ảnh). Loạt một viên làm hạ một bậc xếp loại, không hạ Đạt. |
 | `start_uart_command` | Khóa cũ để chuyển số đạn từ dạng `0Fxxx\n` nếu chưa có `max_bullets`. Khi đã khai báo `max_bullets`, số đạn này quyết định lệnh cấp; vẫn gửi tiếp `0A000\n` sau 300 ms. |
 | `automatic_close_target.default_single_pedestal` | Mặc định bật/tắt gập bia tự động khi chọn 1 bệ. |
 | `automatic_close_target.default_multiple_pedestals` | Mặc định bật/tắt gập bia tự động khi chọn từ 2 bệ. |

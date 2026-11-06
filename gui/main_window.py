@@ -23,7 +23,7 @@ from gui.client_widget import ClientWidget
 from gui.lora_controller import LoraController
 from gui.option_window import OptionWindow
 from gui.review_window import ShotReviewDialog
-from gui.shot_groups import same_burst
+from gui.shot_groups import same_burst, single_shot_violations
 from gui.setting_window import SettingWindow
 from gui.shot_sound import ShotSound
 from gui.hit_sound import HitSound
@@ -468,6 +468,9 @@ class MainWindow(QMainWindow):
         exposure = self._shooting_session.active_target(received_at)
         self._shot_sound.play()
         shot_number = self._next_review_shot_number(session_id, port_id, received_at)
+        self._review_receipts[(session_id, port_id, shot_number)]["expected_target_index"] = (
+            exposure.class_id if exposure is not None and len(
+                self._shooting_session.visible_target_classes(received_at)) <= 1 else None)
         logging.getLogger("mbt03_server").info(
             "[ShotReceipt] session=%s | Bệ %s | Phát %s | đã nhận để chấm lúc %.3fs | received_at=%.6f | ui_delay_ms=%.0f",
             session_id, port_id, shot_number, received_at - self._shooting_session.started_at,
@@ -755,6 +758,9 @@ class MainWindow(QMainWindow):
         }
         session[port_id].append(shot)
         session[port_id].sort(key=lambda item: item["shot_number"])
+        refresh = getattr(self, "_refresh_burst_assessment", None)
+        if refresh is not None:
+            refresh(session_id, port_id)
         roster = getattr(self, "_roster", None)
         if roster is not None:
             roster.update_results(session_id)
@@ -780,6 +786,20 @@ class MainWindow(QMainWindow):
         self._previous_review_session_id = None
         for widget in self.client_widgets:
             widget.set_review_available(False)
+
+    def _refresh_burst_assessment(self, session_id, port_id):
+        if not self._roster.matches_session(session_id, port_id):
+            return
+        shots = self._review_sessions.get(session_id, {}).get(port_id, [])
+        receipts = {number: info for (sid, port, number), info in self._review_receipts.items()
+                    if sid == session_id and port == port_id}
+        widget = self.client_widgets[port_id - 1]
+        singles, targets = single_shot_violations(
+            shots, receipts, cf.burst_gap_seconds(), limit=widget.bullet_limit,
+            final=not self.testing, now=time.monotonic())
+        widget.set_burst_assessment(singles, targets)
+        for index, shot in enumerate(shots):
+            shot["single_shot"] = shot.get("shot_number", index + 1) in singles
 
     def _finish_review_session(self):
         if self._active_review_session_id is None:
@@ -957,6 +977,7 @@ class MainWindow(QMainWindow):
         self.start_btn.setToolTip("Bắt đầu bài bắn")
         for widget in self.client_widgets:
             widget.stop_test()
+            self._refresh_burst_assessment(self._previous_review_session_id, widget.id)
         self._roster.update_results(self._previous_review_session_id)
         self._update_score_speak_buttons()
 
@@ -972,6 +993,7 @@ class MainWindow(QMainWindow):
             self._test_timeout_timer.start(max(1, round((self._armed_deadline - now) * 1000)))
         state = self._shooting_session.target_presentation(now)
         for widget in self.client_widgets:
+            self._refresh_burst_assessment(self._active_review_session_id, widget.id)
             widget.set_target_presentation(state, visible_targets=self._shooting_session.visible_target_classes(now))
 
     def update_app(self):

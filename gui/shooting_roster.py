@@ -1,5 +1,6 @@
 """Excel roster and pedestal assignments, independent of the scoring workers."""
 import os
+import time
 import tempfile
 import unicodedata
 from concurrent.futures import ThreadPoolExecutor
@@ -14,6 +15,7 @@ from PyQt5.QtWidgets import QFileDialog, QMessageBox, QSizePolicy, QWidget
 
 import config as cf
 from gui.client_widget import classify_hits
+from gui.shot_groups import single_shot_violations
 
 
 RESULT_COLUMNS = ((1, "Bia số 6"), (0, "Bia số 10"), (2, "Bia số 7b"), (3, "Bia số 8c"))
@@ -22,10 +24,11 @@ RESULT_COLUMNS = ((1, "Bia số 6"), (0, "Bia số 10"), (2, "Bia số 7b"), (3,
 @dataclass(frozen=True)
 class RosterResult:
     hit_targets: frozenset[int]
+    rank_penalty_applied: bool = False
 
     @property
     def rank(self):
-        return classify_hits(self.hit_targets)
+        return classify_hits(self.hit_targets, self.rank_penalty_applied)
 
 
 @dataclass(frozen=True)
@@ -67,7 +70,13 @@ def _read_result(values, row_number):
             hits.add(target)
     result = RosterResult(frozenset(hits))
     if not _blank(values[4]) and _normalized(values[4]) != _normalized(result.rank):
-        raise ValueError(f"Dòng {row_number}: xếp loại phải là '{result.rank}' theo kết quả bốn bia.")
+        penalized = RosterResult(frozenset(hits), True)
+        if _normalized(values[4]) == _normalized(penalized.rank):
+            return penalized
+        allowed = f"'{result.rank}'"
+        if penalized.rank != result.rank:
+            allowed += f" hoặc '{penalized.rank}' khi có bắn lẻ"
+        raise ValueError(f"Dòng {row_number}: xếp loại phải là {allowed} theo kết quả bốn bia.")
     return result
 
 
@@ -396,7 +405,13 @@ class ShootingRoster(QObject):
         limit = self.window.client_widgets[port - 1].bullet_limit
         shots = self.window._review_sessions.get(self.session_id, {}).get(port, [])[:limit]
         hits = {shot["target_index"] for shot in shots if shot.get("hit") is True}
-        return RosterResult(frozenset(hits))
+        receipts = {number: info for (sid, pid, number), info in self.window._review_receipts.items()
+                    if sid == self.session_id and pid == port}
+        singles, _ = single_shot_violations(
+            shots, receipts, cf.burst_gap_seconds(), limit=limit,
+            final=not self.window.testing, now=time.monotonic())
+        penalty = bool(singles) and classify_hits(hits, True) != classify_hits(hits)
+        return RosterResult(frozenset(hits), penalty)
 
     def save_results(self):
         if self.locked() or self.closed or not self.file_path:

@@ -282,6 +282,16 @@ class ResultFlowTests(unittest.TestCase):
         self.assertTrue(second.score_speak_icon.isEnabled())
         self.assertIsNone(self.window._result_sound.port_id)
 
+    def test_speaker_reads_rank_after_single_shot_penalty(self):
+        widget = self.window.client_widgets[0]
+        for target in (0, 1, 2, 3):
+            widget.record_shot(target, .5, .5)
+        widget.set_burst_assessment((1, 2), {0, 1})
+        widget.score_speak_icon.click()
+        wait_for_playback(self.window._result_sound)
+        self.assertEqual(widget._rank_text(), "Khá")
+        self.assertTrue(self.read_pcm.call_args.args[0].endswith("kha.wav"))
+
     def test_toggle_restart_exercise_and_close_cancel_result_audio(self):
         first, second = self.window.client_widgets
         first.score_speak_icon.click()

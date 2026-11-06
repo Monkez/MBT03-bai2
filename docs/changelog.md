@@ -1,3 +1,9 @@
+# V43-061126 — Bắn loạt và bia xem lại cố định
+
+- Bia xem lại căn giữa, kích thước không đổi theo điểm chạm; ẩn điểm ngoài khung.
+- Có loạt một viên: hạ một bậc cả bài (Giỏi → Khá → Đạt, giữ mức Đạt); bia liên quan viền vàng.
+- Đồng bộ xếp loại trên màn hình, đọc kết quả và Excel. Nhóm theo thời điểm nhận, không theo thứ tự chấm xong; chờ hết khoảng loạt trước khi kết luận viên cuối.
+
 # Lịch sử thay đổi
 
 ## 2026-10-12
