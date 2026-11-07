@@ -244,12 +244,12 @@ phần mềm không gửi tiếp `0Q000`.
 
 Riêng **bia số 8C**, phần mềm gửi **@444# một lần** cho xe chạy, rồi hỏi **@448# mỗi giây**. Phản hồi `@4481` kèm xuống dòng là đang hiện, `@4480` là đã ẩn. Màn hình cập nhật theo phản hồi, không cộng thêm độ trễ hiển thị. Không gửi @442# do trúng, theo lịch, khi hết giờ hoặc thoát bài; xe tự chạy hết hành trình và gập.
 
-Ô **Ẩn của 8C** là **thời gian chạy**, khác với mốc ẩn tuyệt đối của ba bia đầu. Giới hạn chờ bằng giá trị này **+ 4 giây**, tính từ lần ghi @444# thực tế: nhập 16 thì tối đa 20 giây. Nếu đã thấy bia hiện rồi nhận phản hồi gập, kết thúc bài sau **2 giây**, nhưng không vượt giới hạn trên. Phản hồi 0 lúc xe vừa khởi hành chưa làm kết thúc bài; mất phản hồi vẫn kết thúc khi hết giới hạn chờ. Có thể kết thúc thủ công bằng nút trên màn hình. Các khoảng +2/+4 giây riêng của 8C là số giây cố định, không nhân hardware_delay_time.
+Ô **Ẩn của 8C** là **mốc thời gian từ đầu bài**, giống ba bia còn lại. Thời gian chạy bằng **Ẩn − Hiện**; giới hạn chờ từ lần ghi @444# thực tế bằng **Ẩn − Hiện + 4 giây**. Ví dụ **Hiện 64, Ẩn 80 → chạy 16 giây, giới hạn chờ 20 giây**. Nếu đã thấy bia hiện rồi nhận phản hồi gập, kết thúc bài sau **2 giây**, nhưng không vượt giới hạn trên. Phản hồi 0 lúc xe vừa khởi hành chưa làm kết thúc bài; mất phản hồi vẫn kết thúc khi hết giới hạn chờ. Có thể kết thúc thủ công bằng nút trên màn hình. Các khoảng +2/+4 giây riêng của 8C là số giây cố định, không nhân hardware_delay_time.
 Khi kết thúc bài (thủ công, hết giờ hoặc thoát ứng dụng trong bài), phần mềm gửi
 `0S000` kèm xuống dòng đến tất cả súng. Đóng cửa sổ cài đặt bằng Chấp nhận, Hủy,
 Esc hoặc nút X cũng gửi lệnh này đến tất cả súng.
 Bia hiện theo thứ tự **6 → 10 → 7B → 8C**. Trong Cài đặt thiết bị, phần THỜI GIAN
-HIỆN / ẨN BIA cho phép nhập hai mốc giây cho ba bia đầu; ô Ẩn của 8C nhập thời gian chạy. Nhấn CHẤP NHẬN để lưu và
+HIỆN / ẨN BIA cho phép nhập hai mốc giây tính từ đầu bài cho cả bốn bia. Nhấn CHẤP NHẬN để lưu và
 áp dụng từ bài tiếp theo; HỦY không lưu. Mặc định Hiện là **15 / 32 / 42 / 64**,
 Ẩn là **22 / 39 / 49 / 82**. Tên kênh có ba mục, hiện chỉ lưu lựa chọn để phát triển sau.
 

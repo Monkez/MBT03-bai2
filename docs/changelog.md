@@ -1,3 +1,8 @@
+# V53-071126 — Nhập mốc ẩn tuyệt đối cho 8C
+
+- Ô Ẩn 8C nhập thời điểm từ đầu bài như ba bia còn lại: Hiện 64, Ẩn 80 => thời gian chạy 16, giới hạn chờ 20 giây từ @444#. Lưu/nạp trực tiếp mốc tuyệt đối.
+- Giữ cập nhật trạng thái @448 và kết thúc sau gập 2 giây.
+
 # V52-071126 — Điều khiển xe bia 8C bằng trạng thái thực
 
 - Gửi @444# một lần, hỏi @448# mỗi giây; nhận @4480/@4481 kèm xuống dòng để cập nhật gập/hiện. Không gập sớm 8C khi trúng, theo lịch hoặc khi kết thúc bài.

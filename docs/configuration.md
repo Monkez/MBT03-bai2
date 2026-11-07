@@ -26,7 +26,7 @@ Nhóm `shooting`:
 | `lora_timeline` | Cấu hình cũ: khi chưa có `target_times`, lấy các mốc hiện cũ và thời lượng 7/7/7/18 giây làm giá trị ban đầu; chuyển sang dùng lệnh thủ công bên dưới. |
 
 Bài bắn kết thúc theo bia xe 8C: xác nhận gập +2 giây hoặc hết thời gian chạy +4 giây từ @444#, lấy mốc sớm hơn. Với ba bia đầu cần
-`hardware_delay_time ≤ Hiện < Ẩn ≤ 3600`; ô Ẩn của 8C là thời gian chạy dương. Thứ tự mốc hiện là 6 → 10 → 7B → 8C, có thể bằng nhau.
+`hardware_delay_time ≤ Hiện < Ẩn ≤ 3600`; 8C cũng nhập Hiện < Ẩn là mốc từ đầu bài. Thứ tự mốc hiện là 6 → 10 → 7B → 8C, có thể bằng nhau.
 Cho phép các khoảng hiện chồng nhau, mốc ẩn không cần cùng thứ tự.
 Khi chỉnh xong, nhấn CHẤP NHẬN để lưu vào JSON và dùng cho bài kế tiếp; khởi động
 lại vẫn giữ các mốc và kênh. Hủy/Esc/X không lưu thay đổi. Lỗi ghi file giữ nguyên
@@ -53,9 +53,9 @@ ba bia đầu không trả vị trí cơ khí thực tế. 8C dùng phản hồi
 | `2` | BIA SỐ 7B | `@334#` | `@332#` |
 | `3` | BIA SỐ 8C | `@444#` (chạy một lần) | Tự gập, hỏi `@448#` mỗi giây |
 
-Riêng ô Ẩn của 8C trong Cài đặt là thời gian chạy (ví dụ 16 giây). Giới hạn bài từ lần ghi @444# thực tế là thời gian chạy +4 giây; nhận gập sau khi đã hiện thì kết thúc sau 2 giây, lấy mốc sớm hơn. Không gập 8C khi trúng và không gửi @442# khi kết thúc. Khóa `shooting.automatic_close_target.commands_by_class.3` cũ không áp dụng cho xe 8C.
+Ô Ẩn của 8C là mốc tuyệt đối từ đầu bài, giống các bia khác. Thời gian chạy = hide_seconds − show_seconds. Giới hạn chờ từ lần ghi @444# thực tế là thời gian chạy +4 giây; nhận gập sau khi đã hiện thì kết thúc sau 2 giây, lấy mốc sớm hơn. Không gập 8C khi trúng và không gửi @442# khi kết thúc. Khóa `shooting.automatic_close_target.commands_by_class.3` cũ không áp dụng cho xe 8C.
 
-Để tương thích cấu hình cũ, `target_times[3].hide_seconds` trong JSON vẫn lưu mốc tuyệt đối (show_seconds + thời gian chạy); Cài đặt hiển thị/nạp/lưu ô Ẩn theo thời gian chạy. Ví dụ show_seconds=64 và chạy 16 thì hide_seconds=80, giới hạn chờ 20 giây từ @444#. Mất phản hồi không kéo dài giới hạn này. Trạng thái 0 trước lần hiện đầu tiên được coi là xe chưa hiện, không phải đã hoàn thành.
+Cài đặt và JSON `target_times[3]` đều lưu/nạp trực tiếp mốc tuyệt đối. Ví dụ show_seconds=64, hide_seconds=80 thì xe chạy dự kiến 16 giây, giới hạn chờ 20 giây từ @444#. Mất phản hồi không kéo dài giới hạn này. Trạng thái 0 trước lần hiện đầu tiên được coi là xe chưa hiện, không phải đã hoàn thành.
 
 ## Nhận diện và tính điểm
 

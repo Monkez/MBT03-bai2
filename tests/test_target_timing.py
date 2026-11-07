@@ -149,9 +149,9 @@ class TimingUiTests(TimingFixture, unittest.TestCase):
         dialog = self.dialog()
         self.assertEqual([dialog.channel_combo.itemText(i) for i in range(3)],
                          ["Kênh 1", "Kênh 2", "Kênh 3"])
-        for index, (pair, values) in enumerate(zip(dialog.target_time_inputs, TIMES)):
+        for pair, values in zip(dialog.target_time_inputs, TIMES):
             for key, value in values.items():
-                pair[key].setValue(value - values["show_seconds"] if index == 3 and key == "hide_seconds" else value)
+                pair[key].setValue(value)
         dialog.channel_combo.setCurrentIndex(2)
         dialog.confirm_btn.click()
         self.assertEqual(dialog.result(), dialog.Accepted, dialog.timing_error_label.text())
@@ -160,18 +160,20 @@ class TimingUiTests(TimingFixture, unittest.TestCase):
         self.assertEqual(reopened.channel_combo.currentData(), 3)
         self.assertFalse(dialog._frame_timer.isActive())
 
-    def test_target8_hidden_field_is_run_duration_and_persists_sixteen_seconds(self):
+    def test_target8_absolute_times_persist_and_difference_sets_twenty_second_limit(self):
         from gui.target_timing import target8_timeout_seconds
         dialog = self.dialog()
         pair = dialog.target_time_inputs[3]
-        pair["hide_seconds"].setValue(16)
-        shown = pair["show_seconds"].value()
+        pair["show_seconds"].setValue(64)
+        pair["hide_seconds"].setValue(80)
         dialog.confirm_btn.click()
         self.assertEqual(dialog.result(), dialog.Accepted, dialog.timing_error_label.text())
         reopened = self.dialog()
-        self.assertEqual(reopened.target_time_inputs[3]["hide_seconds"].value(), 16)
-        self.assertEqual(get_target_times()[3]["hide_seconds"], shown + 16)
+        self.assertEqual(reopened.target_time_inputs[3]["hide_seconds"].value(), 80)
+        self.assertEqual(get_target_times()[3]["hide_seconds"], 80)
         self.assertEqual(target8_timeout_seconds(get_target_times()), 20)
+        reopened.target_time_inputs[3]["hide_seconds"].setValue(16)
+        self.assertFalse(reopened._validate_target_times())
 
     def test_cancel_validation_and_write_failure_do_not_change_settings(self):
         before = self.path.read_bytes()

@@ -1,3 +1,8 @@
+## Ô Ẩn 8C dùng mốc tuyệt đối — 2026-11-07
+
+- Theo sửa đổi của người dùng, SettingWindow bỏ chuyển đổi duration: hiển thị/lưu/nạp hide_seconds trực tiếp như các bia khác. Hiện64/Ẩn80 => run16, timeout20 từ actual @444. Tooltip giải thích công thức; không đổi polling/deadline.
+- 22 tests timing/feedback đạt: lưu/nạp64/80 và timeout20, từ chối Ẩn16 khi Hiện64. Build V53-071126 đạt; native Qt/PYZ + cổng serial giả lập xác nhận GUI64/80, timeout20 và gập+2; bàn giao Desktop giữ cấu hình/dữ liệu. Chưa thử xe thật/EXE mặc định.
+
 ## Xe bia 8C — 2026-11-07
 
 - Thay raise8C @441# bằng @444#, gửi một lần không chờ echo/retry để tránh chạy lại xe. Poll @448# mỗi 1000ms, coalesce tối đa một query đang chờ, timeout ≤1s; parse dòng @448[01]\n/CRLF, chịu phân mảnh, không nhận echo làm trạng thái. target_state_received kèm requested_at/observed_at, bỏ phản hồi cũ.

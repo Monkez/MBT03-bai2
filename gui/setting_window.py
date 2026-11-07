@@ -142,16 +142,13 @@ class SettingWindow(QDialog):
                 field.setRange(0, MAX_SETTING_SECONDS)
                 field.setDecimals(1)
                 field.setSingleStep(1)
-                value = item[key]
                 if target == 3 and key == "hide_seconds":
-                    value -= item["show_seconds"]
-                    field.setToolTip("Riêng bia 8C: thời gian chạy từ lúc gửi @444#. Hết thời gian này + 4 giây sẽ kết thúc bài; nếu bia gập trước thì kết thúc sau 2 giây.")
-                field.setValue(value)
+                    field.setToolTip("Mốc ẩn tính từ đầu bài, cùng cách nhập với các bia khác. Thời gian chạy 8C = Ẩn − Hiện; giới hạn chờ từ @444# = Ẩn − Hiện + 4 giây. Ví dụ Hiện 64, Ẩn 80 thì tối đa 20 giây; nếu bia gập trước thì kết thúc sau 2 giây.")
+                field.setValue(item[key])
                 field.setAlignment(Qt.AlignCenter)
                 field.setButtonSymbols(QAbstractSpinBox.NoButtons)
                 field.setMinimumSize(80, 30)
-                field.setAccessibleName("Thời gian chạy BIA SỐ 8C, giây" if target == 3 and key == "hide_seconds"
-                                        else f"{action} {label} ở giây")
+                field.setAccessibleName(f"{action} {label} ở giây")
                 field.setStyleSheet("QDoubleSpinBox {background: white; border: 1px solid #cbd5e1; border-radius: 6px; padding: 3px; font-size: 13px;} QDoubleSpinBox:focus {border: 1px solid #008ed6;}")
                 field.valueChanged.connect(self._validate_target_times)
                 grid.addWidget(field, row, column)
@@ -166,10 +163,7 @@ class SettingWindow(QDialog):
         self.setMinimumWidth(max(self.minimumWidth(), 540))
 
     def _target_time_values(self):
-        values = [{key: field.value() for key, field in pair.items()} for pair in self.target_time_inputs]
-        # Persist the existing absolute-time schema while showing 8C as a duration.
-        values[3]["hide_seconds"] += values[3]["show_seconds"]
-        return values
+        return [{key: field.value() for key, field in pair.items()} for pair in self.target_time_inputs]
 
     def _validate_target_times(self):
         try:
