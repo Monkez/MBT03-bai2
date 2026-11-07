@@ -56,9 +56,13 @@ class ShootingScriptTests(unittest.TestCase):
     def test_settings_raises_target_and_lowers_on_every_close_path(self):
         for close_action in ("confirm_btn", "cancel_btn", "close", "escape"):
             with self.subTest(close_action=close_action):
-                dialog = SettingWindow()
+                lora = MagicMock()
+                lora.port_name = "COM7"
+                lora.available_ports.return_value = [{"device": "COM7", "description": "USB Serial"}]
+                dialog = SettingWindow(lora_controller=lora)
+                dialog.channel_combo.setCurrentIndex(2)
                 servers = [MagicMock(), MagicMock()]
-                window = SimpleNamespace(testing=False, p_num=1, servers=servers, lora=MagicMock())
+                window = SimpleNamespace(testing=False, p_num=1, servers=servers, lora=lora)
                 calls_while_open = []
 
                 def close_dialog():
@@ -77,6 +81,11 @@ class ShootingScriptTests(unittest.TestCase):
                     self.assertEqual(calls_while_open, [call("@114#")])
                     self.assertEqual(window.lora.send_command.call_args_list,
                                      [call("@114#"), call("@112#")])
+                    if close_action == "confirm_btn":
+                        self.assertEqual(lora.method_calls, [call.available_ports(), call.send_command("@114#"),
+                                                           call.send_command("@112#"), call.request_connection("COM7", 3)])
+                    else:
+                        lora.request_connection.assert_not_called()
                     self.assertIsNone(window._setting_window)
                     for server in servers:
                         server.send_uart_command.assert_called_once_with("0S000\n")

@@ -110,7 +110,7 @@ class SettingWindow(QDialog):
             self.channel_combo.addItem(f"Kênh {channel}", userData=channel)
         self._initial_channel = cf.config_int("shooting.control_channel", 1, minimum=1, maximum=3)
         self.channel_combo.setCurrentIndex(self._initial_channel - 1)
-        self.channel_combo.setToolTip("Lưu lựa chọn kênh; chức năng điều khiển theo kênh sẽ bổ sung sau.")
+        self.channel_combo.setToolTip("Kênh sẽ được áp dụng cho E32 ở cổng COM LoRa đã chọn khi bấm Chấp nhận.")
         self._initial_times = get_target_times()
         grid = QGridLayout(self.time_setting_frame)
         grid.setContentsMargins(12, 10, 12, 10)
@@ -284,7 +284,6 @@ class SettingWindow(QDialog):
         except (OSError, ValueError) as error:
             self._set_timing_error(f"Chưa lưu được cài đặt: {error}")
             return
-        self._apply_lora_selection()
         if not self.Q0:
             self.accept()
             return
@@ -305,14 +304,10 @@ class SettingWindow(QDialog):
         self.Q0 = False
         self.accept()
 
-    def _apply_lora_selection(self):
-        if self.lora_controller is None or not hasattr(self, "comport_combo"):
-            return
-        selected_port = self.comport_combo.currentData() or ""
-        if selected_port:
-            self.lora_controller.connect_port(selected_port)
-        else:
-            self.lora_controller.disconnect_port()
+    def apply_lora_selection(self):
+        if self.lora_controller is not None:
+            selected_port = self.comport_combo.currentData() or ""
+            self.lora_controller.request_connection(selected_port, self.channel_combo.currentData())
 
     def _initial_q0(self):
         port_id = self._current_server_index + 1

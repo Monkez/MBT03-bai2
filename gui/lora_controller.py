@@ -19,6 +19,7 @@ class LoraController(QObject):
     """Own the LoRa serial port and send acknowledged commands off the UI thread."""
 
     connection_changed = pyqtSignal(bool, str)
+    configuration_busy = pyqtSignal(bool)
     command_finished = pyqtSignal(str, bool, int)
     command_sent = pyqtSignal(str, float, float)  # command, queued_at, sent_at
     sequence_finished = pyqtSignal()
@@ -27,9 +28,10 @@ class LoraController(QObject):
     DEFAULT_PORT_DESCRIPTION = cf.config_str(
         "lora.port_description", "USB Serial Port"
     )
-    DEFAULT_BAUD_RATE = cf.config_int(
-        "lora.baud_rate", 9600, minimum=300, maximum=4000000
-    )
+    DEFAULT_BAUD_RATE = 9600
+    E32_CHANNEL_CODES = {1: 0x01, 2: 0x03, 3: 0x05}
+    E32_SWITCH_SECONDS = 0.2
+    E32_CONFIG_ATTEMPTS = 3
     ACK_TIMEOUT_SECONDS = cf.config_float(
         "lora.ack_timeout_seconds", 1.0, minimum=0.01, maximum=60.0
     )
@@ -41,6 +43,7 @@ class LoraController(QObject):
         super().__init__(parent)
         self._serial = None
         self._port_name = None
+        self._channel = cf.config_int("shooting.control_channel", 1, minimum=1, maximum=3)
         self._lock = threading.Lock()
         self._executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="LoRa")
         self._closing = False
@@ -77,40 +80,88 @@ class LoraController(QObject):
     def auto_connect(self):
         port_name = self.default_port_name()
         if port_name:
-            return self.connect_port(port_name)
-        self.connection_changed.emit(False, "Khong tim thay USB Serial Port")
+            return self.request_connection(port_name, self._channel)
+        self.connection_changed.emit(False, "Không tìm thấy cổng USB Serial Port")
         return False
 
-    def connect_port(self, port_name):
-        port_name = (port_name or "").strip()
-        if not port_name:
-            self.disconnect_port()
-            self.connection_changed.emit(False, "Chua chon cong COM LoRa")
+    def request_connection(self, port_name, channel):
+        """Queue the port/channel change behind any pending device commands."""
+        if self._closing:
             return False
-        if serial is None:
-            self.connection_changed.emit(False, "Chua cai dat thu vien pyserial")
-            return False
-
-        with self._lock:
-            if self._serial is not None and self._serial.is_open and self._port_name == port_name:
-                return True
-            self._close_locked()
-            try:
-                self._serial = serial.Serial(
-                    port=port_name,
-                    baudrate=self.DEFAULT_BAUD_RATE,
-                    timeout=0.1,
-                    write_timeout=self.ACK_TIMEOUT_SECONDS,
-                )
-                self._port_name = port_name
-            except (OSError, serial.SerialException) as exc:
-                self._serial = None
-                self._port_name = port_name
-                self.connection_changed.emit(False, f"Khong mo duoc {port_name}: {exc}")
-                return False
-
-        self.connection_changed.emit(True, port_name)
+        self.configuration_busy.emit(True)
+        self._executor.submit(self._configure_connection, port_name, channel)
         return True
+
+    def _configure_connection(self, port_name, channel):
+        try:
+            self.connect_port(port_name, channel)
+        finally:
+            self.configuration_busy.emit(False)
+
+    def connect_port(self, port_name, channel=None):
+        port_name = (port_name or "").strip()
+        channel = self._channel if channel is None else channel
+        if type(channel) is not int or channel not in self.E32_CHANNEL_CODES:
+            self.connection_changed.emit(False, "Chọn Kênh 1, 2 hoặc 3")
+            return False
+        with self._lock:
+            if self._closing:
+                return False
+            already_ready = (self._serial is not None and self._serial.is_open
+                             and self._port_name == port_name and self._channel == channel)
+            if already_ready:
+                success, message = True, f"{port_name} · Kênh {channel}"
+            else:
+                self._close_locked()
+                self._port_name = port_name or None
+                self._channel = channel
+                if port_name:
+                    success, message = self._open_configured_locked()
+                else:
+                    success, message = False, "Không sử dụng LoRa"
+        self.connection_changed.emit(success, message)
+        return success
+
+    def _open_configured_locked(self):
+        port_name, channel = self._port_name, self._channel
+        if serial is None:
+            return False, "Chưa cài thư viện pyserial"
+        if self._closing:
+            return False, "Đang đóng LoRa"
+        try:
+            self._serial = serial.Serial(
+                port=port_name, baudrate=self.DEFAULT_BAUD_RATE,
+                timeout=0.2, write_timeout=self.ACK_TIMEOUT_SECONDS,
+            )
+            if self._program_e32_channel(self._serial, channel) and not self._closing:
+                return True, f"{port_name} · Kênh {channel}"
+            message = f"{port_name} · E32 chưa xác nhận Kênh {channel}"
+        except (OSError, serial.SerialException) as error:
+            message = f"{port_name} · Không áp dụng được Kênh {channel}: {error}"
+        self._close_locked()
+        return False, message
+
+    def _program_e32_channel(self, device, channel):
+        frame = bytes((0xC0, 0x00, 0x00, 0x1A, self.E32_CHANNEL_CODES[channel], 0x44))
+        try:
+            for _ in range(self.E32_CONFIG_ATTEMPTS):
+                if self._closing:
+                    return False
+                device.setRTS(False)
+                if self._stop_event.wait(self.E32_SWITCH_SECONDS):
+                    return False
+                device.reset_input_buffer()
+                if device.write(frame) != len(frame):
+                    continue
+                device.flush()
+                if self._stop_event.wait(self.E32_SWITCH_SECONDS):
+                    return False
+                if device.read(len(frame)) == frame:
+                    return True
+            return False
+        finally:
+            device.setRTS(True)
+            self._stop_event.wait(self.E32_SWITCH_SECONDS)
 
     def disconnect_port(self):
         with self._lock:
@@ -165,29 +216,18 @@ class LoraController(QObject):
         attempts = 0
         success = False
 
+        connection_result = None
         with self._lock:
             device = self._serial
-            if device is None or not device.is_open:
-                port_name = self._port_name
-                if not port_name or serial is None:
-                    self.command_finished.emit(command, False, attempts)
-                    return False
-                try:
-                    device = serial.Serial(
-                        port=port_name,
-                        baudrate=self.DEFAULT_BAUD_RATE,
-                        timeout=0.1,
-                        write_timeout=self.ACK_TIMEOUT_SECONDS,
-                    )
-                    self._serial = device
-                    self.connection_changed.emit(True, port_name)
-                except (OSError, serial.SerialException):
-                    self.command_finished.emit(command, False, attempts)
-                    return False
+            if not self._closing and self._port_name and (device is None or not device.is_open):
+                self._close_locked()
+                connection_result = self._open_configured_locked()
+                device = self._serial
 
             max_attempts = self.MAX_ATTEMPTS if requires_ack and not status_query else 1
             for attempts in range(1, max_attempts + 1):
-                if self._closing:
+                if self._closing or device is None or not device.is_open:
+                    attempts = 0
                     break
                 try:
                     device.reset_input_buffer()
@@ -203,8 +243,11 @@ class LoraController(QObject):
                         break
                 except (OSError, serial.SerialException):
                     self._close_locked()
+                    connection_result = (False, f"{self._port_name} · Mất kết nối LoRa")
                     break
 
+        if connection_result is not None:
+            self.connection_changed.emit(*connection_result)
         self.command_finished.emit(command, success, attempts)
         return success
 

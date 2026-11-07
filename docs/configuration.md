@@ -22,7 +22,7 @@ Nhóm `shooting`:
 | `automatic_close_target.commands_by_class` | Lệnh gập/ẩn bia theo class mô hình. Để `command` thành chuỗi rỗng nếu muốn vô hiệu hóa một bia. |
 | `target_times` | Bốn cặp `show_seconds` / `hide_seconds` theo thứ tự 6 → 10 → 7B → 8C; nhập và lưu trong Cài đặt thiết bị. Mốc tính từ lúc bắt đầu bài. |
 | `hardware_delay_time` | Thời gian bù trễ phần cứng, mặc định `1.5` giây. Cả lệnh hiện và ẩn gửi sớm hơn mốc đã đặt một khoảng này. |
-| `control_channel` | Lưu Kênh 1/2/3, chưa ảnh hưởng lệnh điều khiển. |
+| `control_channel` | Kênh E32 đã chọn. Mặc định là 1. Kênh 1, 2, 3 tương ứng mã `01`, `03`, `05`. |
 | `lora_timeline` | Cấu hình cũ: khi chưa có `target_times`, lấy các mốc hiện cũ và thời lượng 7/7/7/18 giây làm giá trị ban đầu; chuyển sang dùng lệnh thủ công bên dưới. |
 
 Bài bắn kết thúc theo bia xe 8C: xác nhận gập +2 giây hoặc hết thời gian chạy +4 giây từ @444#, lấy mốc sớm hơn. Với ba bia đầu cần
@@ -122,9 +122,13 @@ Nhóm `lora`:
 | Khóa | Ý nghĩa |
 | --- | --- |
 | `port_description` | Chuỗi dùng tìm cổng COM LoRa tự động. |
-| `baud_rate` | Tốc độ serial. |
+| `baud_rate` | Tốc độ dùng cho E32 là 9600 bps, 8N1. |
 | `ack_timeout_seconds` | Thời gian chờ phản hồi lặp lại lệnh. |
 | `max_attempts` | Số lần gửi tối đa nếu chưa nhận được phản hồi. |
+
+Khi mở cổng, phần mềm cấu hình E32 ở 9600 bps theo trình tự RTS của bộ chuyển đổi đang dùng. Mỗi lần thử đặt `RTS=False`, chờ 200 ms, xóa bộ đệm nhận rồi gửi `C0 00 00 1A CH 44`. Sau 200 ms, phần mềm đọc và đối chiếu phản hồi đủ sáu byte. Thử tối đa ba lần rồi đặt `RTS=True` và chờ 200 ms trước khi truyền nhận. Nếu E32 chưa xác nhận, phần mềm báo lỗi ở thanh trạng thái và chỉ gửi lệnh điều khiển sau khi cấu hình lại thành công.
+
+Khung `C0` lưu tham số khi mất nguồn. Tham khảo [hướng dẫn E32 của Ebyte](https://www.ebyte.com/Uploadfiles/Files/2024-4-12/2024412175886598.pdf).
 
 ## Tốc độ đọc số bệ
 

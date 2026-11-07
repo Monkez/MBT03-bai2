@@ -96,6 +96,7 @@ class MainWindow(QMainWindow):
         self.testing = False
         self.START_UART_COMMAND = cf.ammunition_command()
         self._manual_targets_busy = False
+        self._lora_configuring = False
         self.client_widgets = []
         self._start_button_text = self.start_btn.text()
         self._test_start_time = 0.0
@@ -172,6 +173,7 @@ class MainWindow(QMainWindow):
 
         self.lora = LoraController(self)
         self.lora.connection_changed.connect(self._on_lora_connection_changed)
+        self.lora.configuration_busy.connect(self._on_lora_configuration_busy)
         self.lora.command_finished.connect(self._on_lora_command_finished)
         self.lora.command_sent.connect(self._on_lora_command_sent)
         self.lora.target_state_received.connect(self._on_target_state_received)
@@ -856,7 +858,8 @@ class MainWindow(QMainWindow):
             self.start_test()
 
     def start_test(self):
-        if self.testing or getattr(self, "_manual_targets_busy", False):
+        if (self.testing or getattr(self, "_manual_targets_busy", False)
+                or getattr(self, "_lora_configuring", False)):
             return
         if self._uart_debug_dialog is not None and self._uart_debug_dialog.has_pending_operations():
             QMessageBox.information(
@@ -906,12 +909,12 @@ class MainWindow(QMainWindow):
         self._update_score_speak_buttons()
 
     def _update_manual_target_buttons(self):
-        enabled = not self.testing and not self._manual_targets_busy and not self._closing
+        enabled = not (self.testing or self._manual_targets_busy or self._lora_configuring or self._closing)
         self.close_target_btn.setEnabled(enabled)
         self.open_target_btn.setEnabled(enabled)
 
     def _send_manual_target_sequence(self, commands):
-        if self.testing or self._manual_targets_busy or self._closing:
+        if self.testing or self._manual_targets_busy or self._lora_configuring or self._closing:
             return
         self._manual_targets_busy = True
         self._update_manual_target_buttons()
@@ -931,7 +934,7 @@ class MainWindow(QMainWindow):
             return
         self._manual_targets_busy = False
         self._update_manual_target_buttons()
-        self.setting_btn.setEnabled(not self.testing)
+        self.setting_btn.setEnabled(not self.testing and not self._lora_configuring)
         self._roster.refresh_controls()
 
     def _send_start_uart_command(self):
@@ -1034,9 +1037,9 @@ class MainWindow(QMainWindow):
             self.start_btn.setChecked(active)
 
     def open_setting_window(self):
-        if self.testing:
+        if self.testing or getattr(self, "_lora_configuring", False):
             return
-        self._setting_window = SettingWindow(
+        dialog = self._setting_window = SettingWindow(
             p_num=self.p_num,
             servers=self.servers,
             lora_controller=self.lora,
@@ -1044,12 +1047,15 @@ class MainWindow(QMainWindow):
         )
         try:
             self.lora.send_command(cf.config_str("calibration.target_raise_command", "@114#"))
-            self._setting_window.exec_()
+            result = dialog.exec_()
         finally:
             self._setting_window = None
             for server in self.servers:
                 server.send_uart_command("0S000\n")
             self.lora.send_command(cf.config_str("calibration.target_lower_command", "@112#"))
+        if result == dialog.Accepted:
+            # Queue the channel change after lowering the calibration target on its current link.
+            dialog.apply_lora_selection()
 
     def request_score_speak(self, port_id):
         if self.testing or self._closing or not (1 <= port_id <= len(self.client_widgets)):
@@ -1162,9 +1168,21 @@ class MainWindow(QMainWindow):
         if finished:
             self._stop_target8_poll()
 
+    def _on_lora_configuration_busy(self, busy):
+        if self._closing:
+            return
+        self._lora_configuring = busy
+        self._update_manual_target_buttons()
+        self.setting_btn.setEnabled(not (self.testing or self._manual_targets_busy or busy))
+        self._roster.refresh_controls()
+        if busy:
+            self.statusBar().showMessage("LoRa · Đang áp dụng kênh")
+
     def _on_lora_connection_changed(self, connected, message):
         state = "da ket noi" if connected else "chua ket noi"
-        print(f"[LoRa] {state}: {message}")
+        print(f"[LoRa] {state}: {message!a}")
+        if not self._closing:
+            self.statusBar().showMessage(f"LoRa · {message}")
 
     def _on_lora_command_finished(self, command, success, attempts):
         if command in ("@661#", "@444#"):

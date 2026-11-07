@@ -1,6 +1,7 @@
 import unittest
 from unittest.mock import patch
 
+import config as cf
 from gui.lora_controller import LoraController
 
 
@@ -34,6 +35,31 @@ class FakeSerialPort:
 
     def close(self):
         self.is_open = False
+
+
+class FakeE32(FakeSerialPort):
+    def __init__(self, replies=()):
+        super().__init__()
+        self.replies = iter(replies)
+        self.writes = []
+        self.rts_changes = []
+        self.rts = True
+
+    def setRTS(self, enabled):
+        self.rts = enabled
+        self.rts_changes.append(enabled)
+
+    def write(self, payload):
+        self.writes.append(payload)
+        if payload.startswith(b"\xc0"):
+            if self.rts:
+                raise AssertionError("E32 settings require RTS=False")
+            self._response = next(self.replies, payload)
+        else:
+            if not self.rts:
+                raise AssertionError("LoRa traffic requires RTS=True")
+            self._response = payload
+        return len(payload)
 
 
 class LoraControllerTests(unittest.TestCase):
@@ -100,6 +126,69 @@ class LoraControllerTests(unittest.TestCase):
         controller.send_command("@611#")
         controller._executor.submit(lambda: None).result(timeout=3)
         self.assertEqual(writes, [cmd.encode() for cmd in (*commands, "@611#")])
+
+    def test_startup_programs_default_channel_or_saved_channel_at_9600(self):
+        for saved, channel_byte in (({}, 1), ({"control_channel": 2}, 3), ({"control_channel": 3}, 5)):
+            with self.subTest(saved=saved), patch.dict(cf.APP_CONFIG, shooting=saved):
+                controller = LoraController()
+                self.addCleanup(controller.close)
+                device = FakeE32()
+                with patch.object(controller, "default_port_name", return_value="COM7"), patch(
+                        "gui.lora_controller.serial.Serial", return_value=device) as factory, patch.object(
+                        controller._stop_event, "wait", return_value=False):
+                    self.assertTrue(controller.auto_connect())
+                    controller._executor.submit(lambda: None).result(timeout=3)
+                self.assertTrue(controller.is_connected)
+                self.assertEqual(factory.call_args.kwargs["baudrate"], 9600)
+                self.assertEqual(factory.call_args.kwargs["timeout"], .2)
+                self.assertEqual(device.writes, [bytes((0xC0, 0, 0, 0x1A, channel_byte, 0x44))])
+                self.assertEqual(device.rts_changes, [False, True])
+
+    def test_channel_change_retries_partial_or_mismatched_echo_and_skips_resaving_same_channel(self):
+        controller = LoraController()
+        self.addCleanup(controller.close)
+        old_device = FakeE32()
+        frame = bytes.fromhex("C0 00 00 1A 05 44")
+        new_device = FakeE32((frame[:5], bytes.fromhex("C0 00 00 1A 03 44"), frame))
+        with patch("gui.lora_controller.serial.Serial", side_effect=(old_device, new_device)) as factory, patch.object(
+                controller._stop_event, "wait", return_value=False):
+            self.assertTrue(controller.connect_port("COM7", 1))
+            self.assertTrue(controller.connect_port("COM7", 3))
+            self.assertTrue(controller.connect_port("COM7", 3))
+        self.assertFalse(old_device.is_open)
+        self.assertEqual(factory.call_count, 2)
+        self.assertEqual(new_device.writes, [frame] * 3)
+        self.assertEqual(new_device.rts_changes, [False, False, False, True])
+
+    def test_unconfirmed_channel_never_transmits_target_command_even_on_reconnect(self):
+        controller = LoraController()
+        self.addCleanup(controller.close)
+        first, retry = FakeE32((b"",) * 3), FakeE32((b"",) * 3)
+        messages = []
+        controller.connection_changed.connect(lambda *args: messages.append(args))
+        with patch("gui.lora_controller.serial.Serial", side_effect=(first, retry)), patch.object(
+                controller._stop_event, "wait", return_value=False):
+            self.assertFalse(controller.connect_port("COM7", 2))
+            self.assertFalse(controller._send_with_retry("@114#"))
+        self.assertEqual(controller.port_name, "COM7")
+        self.assertFalse(controller.is_connected)
+        self.assertEqual(len(messages), 2)
+        self.assertTrue(all(not connected and "Kênh 2" in message for connected, message in messages))
+        for device in (first, retry):
+            self.assertEqual(device.writes, [bytes.fromhex("C0 00 00 1A 03 44")] * 3)
+            self.assertTrue(device.rts)
+            self.assertFalse(device.is_open)
+
+    def test_e32_write_failure_restores_rts_before_closing(self):
+        controller = LoraController()
+        self.addCleanup(controller.close)
+        device = FakeE32()
+        with patch("gui.lora_controller.serial.Serial", return_value=device), patch.object(
+                controller._stop_event, "wait", return_value=False), patch.object(
+                device, "write", side_effect=OSError("USB disconnected")):
+            self.assertFalse(controller.connect_port("COM7", 1))
+        self.assertEqual(device.rts_changes, [False, True])
+        self.assertFalse(device.is_open)
 
     def test_finds_usb_serial_port_by_description(self):
         ports = [

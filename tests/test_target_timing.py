@@ -142,8 +142,9 @@ class TimingUiTests(TimingFixture, unittest.TestCase):
         dialog = SettingWindow(lora_controller=lora)
         self.addCleanup(dialog.reject)
         self.assertEqual(dialog.comport_combo.currentData(), "COM7")
-        dialog._apply_lora_selection()
-        lora.connect_port.assert_called_once_with("COM7")
+        dialog.channel_combo.setCurrentIndex(2)
+        dialog.apply_lora_selection()
+        lora.request_connection.assert_called_once_with("COM7", 3)
 
     def test_dialog_reuses_channel_combo_and_saves_on_accept_then_reloads(self):
         dialog = self.dialog()

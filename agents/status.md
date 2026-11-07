@@ -1,3 +1,9 @@
+## Cài đặt kênh LoRa E32 — 2026-11-07
+
+- LoraController lập trình E32 9600 8N1 qua RTS và khung C0 00 00 1A CH 44, CH=01/03/05 theo kênh 1/2/3. Ba lần thử, xác nhận đủ khung, phục hồi RTS=True. Chỉ truyền khi áp dụng được kênh. Cổng mở lại áp dụng lại kênh, cổng đang mở cùng kênh bỏ ghi lại.
+- MainWindow lưu lựa chọn qua SettingWindow, xếp hạ bia hiệu chỉnh trước yêu cầu đổi kênh trên worker nối tiếp. Thanh trạng thái báo kết quả, khóa điều khiển lúc áp dụng. Startup dùng kênh đã lưu, mặc định 1.
+- 387 kiểm tra đạt. Native Qt/PYZ + serial giả lập xác nhận startup Kênh 1, đổi sang 3, lỗi khi Kênh 2 thiếu phản hồi và hạ bia trên link cũ trước đổi kênh. V55-071126, bàn giao Desktop giữ cấu hình/dữ liệu. Chưa thử E32 thật.
+
 ## Dựng thủ công 8C — 2026-11-07
 
 - Tách MANUAL_OPEN_TARGET_COMMANDS dùng @441# cho nút HIỆN BIA. RAISE_COMMANDS của bài vẫn dùng @444# và phản hồi @448#.

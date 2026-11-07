@@ -1,3 +1,8 @@
+# V55-071126 — Áp dụng kênh LoRa E32
+
+- Kênh 1/2/3 cấu hình E32 bằng mã 01/03/05 ở 9600 bps. Áp dụng kênh đã lưu khi mở cổng, kể cả lúc tự kết nối lại.
+- Xác nhận phản hồi đủ sáu byte và phục hồi RTS trước khi truyền nhận. Cài đặt được lưu trước khi áp dụng, thanh trạng thái báo kết quả của thiết bị.
+
 # V54-071126 — Khôi phục lệnh dựng thủ công 8C
 
 - Nút HIỆN BIA dựng 8C bằng @441#. Lịch bài dùng @444# để chạy xe và @448# để đọc trạng thái.

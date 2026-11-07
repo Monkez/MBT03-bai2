@@ -316,6 +316,7 @@ class ShootingRoster(QObject):
         enabled = not self.locked()
         window = self.window
         reason = ("Đang đọc danh sách Excel" if self.loading else "Đang lưu kết quả" if self.saving
+                  else "Đang áp dụng kênh LoRa" if getattr(window, "_lora_configuring", False)
                   else "Đang gửi lệnh điều khiển bia" if getattr(window, "_manual_targets_busy", False)
                   else "Đang thực hiện bài bắn" if window.testing
                   else "Đang chấm nốt ảnh của bài vừa kết thúc" if self.pending() else "")
@@ -332,7 +333,8 @@ class ShootingRoster(QObject):
             widget.go_out_btn.setEnabled(enabled)
         # The start button remains usable to stop an active exercise.
         ready = (not self.loading and not self.saving and not self.pending()
-                 and not getattr(window, "_manual_targets_busy", False))
+                 and not getattr(window, "_manual_targets_busy", False)
+                 and not getattr(window, "_lora_configuring", False))
         window.start_btn.setEnabled(window.testing or ready)
         window.start_btn.setToolTip(reason if not window.testing and reason else "")
 
