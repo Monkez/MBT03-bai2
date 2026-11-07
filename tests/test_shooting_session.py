@@ -325,7 +325,7 @@ class ShootingFlowTests(unittest.TestCase):
         self.assertTrue(self.window.start_btn.isEnabled())
         self.assertTrue(self.window.open_target_btn.isEnabled())
         self.window.open_target_btn.click()
-        self.window.lora.send_sequence.assert_called_with(("@114#", "@224#", "@334#", "@444#"))
+        self.window.lora.send_sequence.assert_called_with(("@114#", "@224#", "@334#", "@441#"))
         self.window._on_manual_targets_finished()
         self.assertTrue(self.window.close_target_btn.isEnabled())
 
@@ -381,7 +381,7 @@ class ShootingFlowTests(unittest.TestCase):
         with patch.object(self.window, "LORA_SCRIPT", ((1, "@114#", "test"),)):
             self.window.open_target_btn.click()
         self.window.lora.send_sequence.assert_called_once_with(
-            ("@114#", "@224#", "@334#", "@444#"))
+            ("@114#", "@224#", "@334#", "@441#"))
         self.window._on_manual_targets_finished()
 
     def test_close_cancels_followup(self):

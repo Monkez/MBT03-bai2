@@ -46,12 +46,14 @@ Khi chọn COM, vẫn cần lần ghi thực tế, kể cả khi kết nối đa
 Mô phỏng dự kiến bia đổi trạng thái sau lệnh một khoảng `hardware_delay_time`;
 ba bia đầu không trả vị trí cơ khí thực tế. 8C dùng phản hồi @4480/@4481 kèm xuống dòng để cập nhật ngay trạng thái.
 
-| Class | Bia | Hiện thủ công | Ẩn thủ công |
+| Class | Bia | Lệnh hiện trong bài | Ẩn trong bài |
 | --- | --- | --- | --- |
 | `1` | BIA SỐ 6 | `@114#` | `@112#` |
 | `0` | BIA SỐ 10 | `@224#` | `@222#` |
 | `2` | BIA SỐ 7B | `@334#` | `@332#` |
 | `3` | BIA SỐ 8C | `@444#` (chạy một lần) | Tự gập, hỏi `@448#` mỗi giây |
+
+Nút **HIỆN BIA** dựng 8C bằng `@441#` sau ba lệnh dựng `@114#`, `@224#`, `@334#`.
 
 Ô Ẩn của 8C là mốc tuyệt đối từ đầu bài, giống các bia khác. Thời gian chạy = hide_seconds − show_seconds. Giới hạn chờ từ lần ghi @444# thực tế là thời gian chạy +4 giây; nhận gập sau khi đã hiện thì kết thúc sau 2 giây, lấy mốc sớm hơn. Không gập 8C khi trúng và không gửi @442# khi kết thúc. Khóa `shooting.automatic_close_target.commands_by_class.3` cũ không áp dụng cho xe 8C.
 

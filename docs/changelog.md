@@ -1,3 +1,7 @@
+# V54-071126 — Khôi phục lệnh dựng thủ công 8C
+
+- Nút HIỆN BIA dựng 8C bằng @441#. Lịch bài dùng @444# để chạy xe và @448# để đọc trạng thái.
+
 # V53-071126 — Nhập mốc ẩn tuyệt đối cho 8C
 
 - Ô Ẩn 8C nhập thời điểm từ đầu bài như ba bia còn lại: Hiện 64, Ẩn 80 => thời gian chạy 16, giới hạn chờ 20 giây từ @444#. Lưu/nạp trực tiếp mốc tuyệt đối.

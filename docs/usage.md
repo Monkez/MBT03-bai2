@@ -222,8 +222,8 @@ lệnh trở về đèn xanh tới các súng đang tìm và còn kết nối.
 Nhấn nút **ẨN BIA** (`close_target_btn`) để gửi `@661#` qua LoRa **một lần**,
 không chờ ACK và không gửi lại. Nút
 **HIỆN BIA** (`open_target_btn`) gửi lần lượt bia **6 → 10 → 7 → 8**, dùng các
-lệnh riêng `@114#`, `@224#`, `@334#`, `@444#`, độc lập với `shooting.lora_timeline`.
-Ba bia đầu chờ ACK (echo đúng lệnh); riêng @444# gửi một lần và theo dõi bằng @448#. Nhận ACK thì chờ **100 ms** trước bia kế tiếp;
+lệnh dựng riêng `@114#`, `@224#`, `@334#`, `@441#`, độc lập với `shooting.lora_timeline`.
+Các lệnh dựng thủ công chờ ACK (echo đúng lệnh). Nhận ACK thì chờ **100 ms** trước bia kế tiếp;
 hết số lần thử tối đa mà không có ACK thì chuyển ngay sang bia kế tiếp. Thời gian
 chờ và số lần thử dùng `lora.ack_timeout_seconds` / `lora.max_attempts` (mặc định
 1 giây / 3 lần gửi tổng cộng). Trong lúc gửi, hai nút điều khiển bia, Cài đặt và

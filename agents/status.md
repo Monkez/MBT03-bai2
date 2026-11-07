@@ -1,3 +1,8 @@
+## Dựng thủ công 8C — 2026-11-07
+
+- Tách MANUAL_OPEN_TARGET_COMMANDS dùng @441# cho nút HIỆN BIA. RAISE_COMMANDS của bài vẫn dùng @444# và phản hồi @448#.
+- 25 kiểm tra đạt. Native Qt/PYZ với cổng LoRa giả lập xác nhận bấm nút gửi @441# và luồng bài dùng @444#/@448#. Build V54-071126.
+
 ## Ô Ẩn 8C dùng mốc tuyệt đối — 2026-11-07
 
 - Theo sửa đổi của người dùng, SettingWindow bỏ chuyển đổi duration: hiển thị/lưu/nạp hide_seconds trực tiếp như các bia khác. Hiện64/Ẩn80 => run16, timeout20 từ actual @444. Tooltip giải thích công thức; không đổi polling/deadline.

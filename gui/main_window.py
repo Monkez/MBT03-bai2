@@ -73,7 +73,7 @@ class MainWindow(QMainWindow):
     scoring_done_signal = pyqtSignal(object)
     q0_done_signal = pyqtSignal(object)
     START_UART_COMMAND = cf.ammunition_command()
-    MANUAL_OPEN_TARGET_COMMANDS = RAISE_COMMANDS
+    MANUAL_OPEN_TARGET_COMMANDS = ("@114#", "@224#", "@334#", "@441#")
     AUTO_CLOSE_TARGET_COMMANDS = _configured_auto_close_commands()
     LORA_SCRIPT = _configured_lora_script()
 
