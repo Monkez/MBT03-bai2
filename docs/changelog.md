@@ -1,3 +1,8 @@
+# V60-071126 — Nút Quy 0 và tiêu đề chính
+
+- ĐÓNG CỬA SỔ và BẮN LẠI dùng nền trắng.
+- Dòng lỗi LoRa hiển thị trong Cài đặt. Cửa sổ chính dùng tiêu đề Học viện Kỹ thuật quân sự - Thiết bị bắn tập MBT03-Bài 2.
+
 # V59-071126 — Quy 0 nhiều súng trong cùng cửa sổ
 
 - Chờ đủ mẫu Quy 0 mới hiện HỦY và CHẤP NHẬN. Hủy cấp lại 3 phát. Chấp nhận gửi kết quả và giữ Cài đặt mở để chọn súng tiếp theo.

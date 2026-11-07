@@ -1,3 +1,8 @@
+## Giao diện Quy 0 và cửa sổ chính — 2026-11-07
+
+- setting.ui dùng DeactiveColor trắng, chữ tối cho close_window_btn/cancel_btn. cancel_btn hiển thị BẮN LẠI. Bỏ showMessage LoRa trên MainWindow, giữ dòng lỗi lora_log_label trong Cài đặt và log console. Cập nhật tiêu đề chính.
+- 58 kiểm tra liên quan đạt. Native Qt/PYZ xác nhận cả hai màu nút, tiêu đề và lỗi chỉ hiển thị trong Cài đặt. Bản V60-071126 trên Desktop.
+
 ## Quy 0 nhiều súng liên tiếp — 2026-11-07
 
 - Đóng cửa sổ mặc định hiện và tự lưu thời gian bia. Khi đủ mẫu Q0 hiện Hủy/Chấp nhận. Hủy rearm 0F003 → 300ms → 0Q000. Chấp nhận gửi SET_Q0, dừng súng vừa hiệu chỉnh và reset UI, giữ stream/cửa sổ.

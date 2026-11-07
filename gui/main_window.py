@@ -89,7 +89,7 @@ class MainWindow(QMainWindow):
             raise StartupCancelled()
 
         uic.loadUi(cf.DATA_DIR + "assets/qt/main.ui", self)
-        self.setWindowTitle("HỌC VIỆN KỸ THUẬT QUÂN SỰ - THIẾT BỊ BẮN TẬP MBT-03 BÀI 2")
+        self.setWindowTitle("Học viện Kỹ thuật quân sự - Thiết bị bắn tập MBT03-Bài 2")
         self.setWindowIcon(QtGui.QIcon(cf.DATA_DIR + "assets/images/icon.png"))
 
         self.options = option_dialog
@@ -1180,14 +1180,10 @@ class MainWindow(QMainWindow):
         self._update_manual_target_buttons()
         self.setting_btn.setEnabled(not (self.testing or self._manual_targets_busy or busy))
         self._roster.refresh_controls()
-        if busy:
-            self.statusBar().showMessage("LoRa · Đang áp dụng kênh")
 
     def _on_lora_connection_changed(self, connected, message):
         state = "da ket noi" if connected else "chua ket noi"
         print(f"[LoRa] {state}: {message!a}")
-        if not self._closing:
-            self.statusBar().showMessage(f"LoRa · {message}")
 
     def _on_lora_command_finished(self, command, success, attempts):
         if command in ("@661#", "@444#"):

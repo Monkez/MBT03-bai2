@@ -209,7 +209,7 @@ Khi mở cửa sổ này, phần mềm gửi LoRa `@114#` để dựng bia số 
 
 Trong lúc bắn Q0, camera tiếp tục hiển thị stream trực tiếp sau mỗi phát. Các dấu Q0 của những phát đã xử lý được vẽ chồng lên các frame mới để vừa theo dõi hình ảnh hiện tại vừa đối chiếu các phát trước.
 
-Trải nghiệm Quy không được đồng bộ với `MBT03-wireless`: các chấm xanh ở góc trên ảnh camera biểu thị số phát hợp lệ còn thiếu; mỗi phát hợp lệ được đánh dấu bằng chữ thập vàng. Khi đủ 3 phát hợp lệ theo mặc định, nút **ĐÓNG CỬA SỔ** nhường chỗ cho **HỦY** và **CHẤP NHẬN**. **HỦY** xóa mẫu và cấp lại 3 phát cho súng đang chọn. **CHẤP NHẬN** gửi giá trị trung bình đến súng, kết thúc lượt Quy 0 và hiện lại nút **ĐÓNG CỬA SỔ**. Cửa sổ vẫn mở để chọn súng khác và Quy 0 tiếp. Khi không bắn Quy không, chữ thập xanh hiển thị vị trí Q0 đã lưu của bệ đang chọn.
+Trải nghiệm Quy không được đồng bộ với `MBT03-wireless`: các chấm xanh ở góc trên ảnh camera biểu thị số phát hợp lệ còn thiếu; mỗi phát hợp lệ được đánh dấu bằng chữ thập vàng. Khi đủ 3 phát hợp lệ theo mặc định, nút **ĐÓNG CỬA SỔ** nhường chỗ cho **BẮN LẠI** và **CHẤP NHẬN**. **BẮN LẠI** xóa mẫu và cấp lại 3 phát cho súng đang chọn. **CHẤP NHẬN** gửi giá trị trung bình đến súng, kết thúc lượt Quy 0 và hiện lại nút **ĐÓNG CỬA SỔ**. Cửa sổ vẫn mở để chọn súng khác và Quy 0 tiếp. Khi không bắn Quy không, chữ thập xanh hiển thị vị trí Q0 đã lưu của bệ đang chọn.
 
 Bấm chuột trái vào nhãn **BỆ SỐ …** để súng của bệ đó nhấp nháy đèn đỏ tìm súng
 (`0LR01\n`); bấm lại để trở về đèn xanh (`0LG00\n`). Có thể dùng Tab chọn nhãn rồi

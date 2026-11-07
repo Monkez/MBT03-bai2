@@ -689,23 +689,23 @@ ComboBox:disabled {
         </property>
         <property name="DeactiveColor" stdset="0">
          <color>
-          <red>170</red>
-          <green>0</green>
-          <blue>0</blue>
-         </color>
-        </property>
-        <property name="textColor" stdset="0">
-         <color>
           <red>255</red>
           <green>255</green>
           <blue>255</blue>
          </color>
         </property>
+        <property name="textColor" stdset="0">
+         <color>
+          <red>0</red>
+          <green>0</green>
+          <blue>0</blue>
+         </color>
+        </property>
         <property name="hoverTextColor" stdset="0">
          <color>
-          <red>183</red>
-          <green>183</green>
-          <blue>183</blue>
+          <red>68</red>
+          <green>68</green>
+          <blue>68</blue>
          </color>
         </property>
        </widget>
@@ -737,7 +737,7 @@ ComboBox:disabled {
 }</string>
         </property>
         <property name="text">
-         <string>HỦY</string>
+         <string>BẮN LẠI</string>
         </property>
         <property name="filledButton" stdset="0">
          <bool>true</bool>
@@ -747,23 +747,23 @@ ComboBox:disabled {
         </property>
         <property name="DeactiveColor" stdset="0">
          <color>
-          <red>170</red>
-          <green>0</green>
-          <blue>0</blue>
-         </color>
-        </property>
-        <property name="textColor" stdset="0">
-         <color>
           <red>255</red>
           <green>255</green>
           <blue>255</blue>
          </color>
         </property>
+        <property name="textColor" stdset="0">
+         <color>
+          <red>0</red>
+          <green>0</green>
+          <blue>0</blue>
+         </color>
+        </property>
         <property name="hoverTextColor" stdset="0">
          <color>
-          <red>183</red>
-          <green>183</green>
-          <blue>183</blue>
+          <red>68</red>
+          <green>68</green>
+          <blue>68</blue>
          </color>
         </property>
        </widget>
