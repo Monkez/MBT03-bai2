@@ -1,3 +1,7 @@
+# V63-071126 — Hiện trọn ảnh bia trong Cài đặt
+
+- Tăng chiều cao mở cửa sổ theo bố cục và chừa đủ chỗ cho ảnh bia.
+
 # V62-071126 — Tách Cài đặt và Quy không
 
 - Cài đặt dùng setting.ui để chỉnh lịch bia và LoRa. Nút Quy không trên màn hình chính mở quy_khong.ui để chọn súng, xem camera và hiệu chỉnh.

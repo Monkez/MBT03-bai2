@@ -26,6 +26,7 @@ class SettingWindow(QDialog):
         self._configure_ui()
         self._configure_target_times()
         self._configure_lora_ports()
+        self.resize(self.width(), max(self.height(), self.sizeHint().height()))
 
     def _configure_ui(self):
         self.close_window_btn.clicked.connect(self._close_settings)
@@ -84,8 +85,9 @@ class SettingWindow(QDialog):
             thumbnail = QLabel(self.time_setting_frame)
             thumbnail.setStyleSheet("background-color: #ffffff;")
             thumbnail.setAlignment(Qt.AlignCenter)
+            thumbnail.setFixedHeight(58)
             image = QtGui.QPixmap(os.path.join(cf.DATA_DIR, "assets", "signs", TARGET_IMAGE_FILES[target]))
-            thumbnail.setPixmap(image.scaled(80, 42, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+            thumbnail.setPixmap(image.scaled(100, 52, Qt.KeepAspectRatio, Qt.SmoothTransformation))
             grid.addWidget(thumbnail, 1, column)
             name = QLabel(label, self.time_setting_frame)
             name.setAlignment(Qt.AlignCenter)

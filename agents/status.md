@@ -1,3 +1,8 @@
+## Chiều cao Cài đặt — 2026-11-07
+
+- Hàng ảnh cao 58 px logic, ảnh vừa khung 100 × 52 giữ tỉ lệ. Cửa sổ lấy chiều cao theo sizeHint sau khi tạo nội dung.
+- 23 kiểm tra đạt. Native Qt/PYZ xác nhận kích thước 540 × 336 logic ở DPI 200%, ảnh và các hàng thời gian hiện trọn. V63-071126 trên Desktop.
+
 ## Tách Cài đặt và Quy không — 2026-11-07
 
 - SettingWindow chỉ có timing/LoRa. Thêm lại lora_log_label trong khung trống của form mới. QuyKhongWindow dùng quy_khong.ui và chứa camera/Quy 0 cùng offline UI từ bản trước.
