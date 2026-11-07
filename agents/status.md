@@ -1,3 +1,9 @@
+## Lịch bia và lời đọc 8C — 2026-11-07
+
+- MainWindow dùng mốc Hiện và Ẩn+1 để hẹn lệnh. Thời lượng theo lịch của ShootingSession khớp hai mốc gửi. 8C thật chỉ gửi @444 và theo dõi @448.
+- Preset 8C 64/92, timeout 32 giây từ @444. Giữ preset legacy của ShootingSession trực tiếp. Đọc kết quả bằng bia_so_8c_alpha_90.wav.
+- 388 kiểm tra đạt. Native Qt/PYZ xác nhận lịch gửi, timeout mặc định và WAV 90 đã chuẩn bị phát. Bản Desktop V56 cập nhật lịch đã lưu khi khớp đủ mẫu mặc định cũ.
+
 ## Cài đặt kênh LoRa E32 — 2026-11-07
 
 - LoraController lập trình E32 9600 8N1 qua RTS và khung C0 00 00 1A CH 44, CH=01/03/05 theo kênh 1/2/3. Ba lần thử, xác nhận đủ khung, phục hồi RTS=True. Chỉ truyền khi áp dụng được kênh. Cổng mở lại áp dụng lại kênh, cổng đang mở cùng kênh bỏ ghi lại.

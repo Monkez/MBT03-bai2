@@ -20,7 +20,7 @@ class ResultSound(QObject):
                   "Đạt": "dat.wav", "Không đạt": "khong_dat.wav"}
     # Detector classes: 10, 6, 7b, 8c. Read in exercise order.
     TARGET_FILES = ((1, "bia_so_6.wav"), (0, "bia_so_10.wav"),
-                    (2, "bia_so_7b.wav"), (3, "bia_so_8c_alpha_45.wav"))
+                    (2, "bia_so_7b.wav"), (3, "bia_so_8c_alpha_90.wav"))
     SAMPLE_RATE = 44100
     CHANNELS = 2
     GAP_MS = 120

@@ -296,7 +296,7 @@ class ShootingScriptTests(unittest.TestCase):
     def test_lora_commands_match_the_required_timeline(self):
         self.assertEqual(
             [(seconds, command) for seconds, command, _ in MainWindow.LORA_SCRIPT],
-            [(13.5, "@114#"), (30.5, "@224#"), (40.5, "@334#"), (62.5, "@444#")],
+            [(15, "@114#"), (32, "@224#"), (42, "@334#"), (64, "@444#")],
         )
 
     def test_single_pedestal_defaults_auto_close_on_and_allows_toggle(self):

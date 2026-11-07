@@ -273,7 +273,7 @@ class ResultFlowTests(unittest.TestCase):
             [os.path.basename(call.args[0]) for call in self.read_pcm.call_args_list],
             ["be_so_1.wav", "bia_so_6.wav", "01_diem_cham.wav",
              "bia_so_10.wav", "01_diem_cham.wav", "bia_so_7b.wav", "khong_trung.wav",
-             "bia_so_8c_alpha_45.wav", "01_diem_cham.wav", "kha.wav"],
+             "bia_so_8c_alpha_90.wav", "01_diem_cham.wav", "kha.wav"],
         )
         path = self.window._result_sound._player.setMedia.call_args.args[0].canonicalUrl().toLocalFile()
         self.assertEqual(os.path.basename(path), "result.wav")

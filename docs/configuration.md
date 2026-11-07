@@ -21,9 +21,9 @@ Nhóm `shooting`:
 | `automatic_close_target.default_multiple_pedestals` | Mặc định bật/tắt gập bia tự động khi chọn từ 2 bệ. |
 | `automatic_close_target.commands_by_class` | Lệnh gập/ẩn bia theo class mô hình. Để `command` thành chuỗi rỗng nếu muốn vô hiệu hóa một bia. |
 | `target_times` | Bốn cặp `show_seconds` / `hide_seconds` theo thứ tự 6 → 10 → 7B → 8C; nhập và lưu trong Cài đặt thiết bị. Mốc tính từ lúc bắt đầu bài. |
-| `hardware_delay_time` | Thời gian bù trễ phần cứng, mặc định `1.5` giây. Cả lệnh hiện và ẩn gửi sớm hơn mốc đã đặt một khoảng này. |
+| `hardware_delay_time` | Thời gian bù trễ phần cứng, mặc định `1.5` giây. Dùng để mô phỏng độ trễ và tính khoảng nhận điểm sau lệnh ẩn. |
 | `control_channel` | Kênh E32 đã chọn. Mặc định là 1. Kênh 1, 2, 3 tương ứng mã `01`, `03`, `05`. |
-| `lora_timeline` | Cấu hình cũ: khi chưa có `target_times`, lấy các mốc hiện cũ và thời lượng 7/7/7/18 giây làm giá trị ban đầu; chuyển sang dùng lệnh thủ công bên dưới. |
+| `lora_timeline` | Cấu hình cũ: khi chưa có `target_times`, lấy các mốc hiện cũ và thời lượng 7/7/7/28 giây làm giá trị ban đầu; chuyển sang dùng lệnh thủ công bên dưới. |
 
 Bài bắn kết thúc theo bia xe 8C: xác nhận gập +2 giây hoặc hết thời gian chạy +4 giây từ @444#, lấy mốc sớm hơn. Với ba bia đầu cần
 `hardware_delay_time ≤ Hiện < Ẩn ≤ 3600`; 8C cũng nhập Hiện < Ẩn là mốc từ đầu bài. Thứ tự mốc hiện là 6 → 10 → 7B → 8C, có thể bằng nhau.
@@ -32,7 +32,7 @@ Khi chỉnh xong, nhấn CHẤP NHẬN để lưu vào JSON và dùng cho bài k
 lại vẫn giữ các mốc và kênh. Hủy/Esc/X không lưu thay đổi. Lỗi ghi file giữ nguyên
 cấu hình cũ và không đóng hộp thoại.
 
-Ba bia đầu hẹn lệnh tại `Hiện - hardware_delay_time` và `Ẩn - hardware_delay_time`. 8C chỉ gửi @444# tại `Hiện - hardware_delay_time`.
+Ba bia đầu hẹn lệnh hiện tại `Hiện` và lệnh ẩn tại `Ẩn + 1 giây`. 8C gửi `@444#` tại `Hiện`. Mặc định 8C đặt Hiện 64, Ẩn 92, tương ứng giới hạn chờ 32 giây từ lần gửi lệnh chạy thực tế.
 Với ba bia đầu, khoảng nhận trúng bắt đầu tại lúc lệnh hiện thực sự ghi ra cổng LoRa, kết thúc
 **trước** lúc ghi lệnh ẩn cộng `2 × hardware_delay_time`.
 Công thức áp dụng cả khi gập sớm do trúng. Không dùng padding 2 giây sớm/4 giây

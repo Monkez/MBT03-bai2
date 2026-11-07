@@ -15,6 +15,8 @@ TARGET_LABELS = ("BIA SỐ 6", "BIA SỐ 10", "BIA SỐ 7B", "BIA SỐ 8C")
 RAISE_COMMANDS = ("@114#", "@224#", "@334#", "@444#")
 HIDE_COMMANDS = {1: "@112#", 0: "@222#", 2: "@332#", 3: "@442#"}
 MAX_SETTING_SECONDS = 3600
+SCHEDULED_HIDE_OFFSET_SECONDS = 1
+DEFAULT_TARGET_DURATION_SECONDS = {**TARGET_VISIBLE_SECONDS_BY_CLASS, 3: 28}
 
 
 def hardware_delay_time():
@@ -64,7 +66,7 @@ def _timing_candidates():
         try:
             if len(legacy) == 4:
                 yield [{"show_seconds": item["delay_seconds"],
-                        "hide_seconds": float(item["delay_seconds"]) + TARGET_VISIBLE_SECONDS_BY_CLASS[target]}
+                        "hide_seconds": float(item["delay_seconds"]) + DEFAULT_TARGET_DURATION_SECONDS[target]}
                        for target, item in zip(TARGET_CLASS_SEQUENCE, legacy)]
         except (KeyError, TypeError, ValueError, OverflowError):
             continue

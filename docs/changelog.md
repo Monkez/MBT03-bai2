@@ -1,3 +1,8 @@
+# V56-071126 — Lịch gửi lệnh bia và lời đọc 8C
+
+- Gửi lệnh hiện đúng mốc Hiện và lệnh ẩn theo lịch sau mốc Ẩn 1 giây.
+- Mặc định 8C Hiện 64 giây, Ẩn 92 giây. Kết quả bia 8C đọc an pha bằng 90.
+
 # V55-071126 — Áp dụng kênh LoRa E32
 
 - Kênh 1/2/3 cấu hình E32 bằng mã 01/03/05 ở 9600 bps. Áp dụng kênh đã lưu khi mở cổng, kể cả lúc tự kết nối lại.

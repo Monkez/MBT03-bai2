@@ -38,21 +38,21 @@ class OfflineScheduleTests(unittest.TestCase):
                 "gui.main_window.time.monotonic", return_value=100) as clock:
             window.start_test()
             timers = list(window._lora_schedule_timers)
-            for index, at in enumerate((108.5,110.5,111.5,113.5)):
+            for index, at in enumerate((110, 112, 113, 115)):
                 clock.return_value = at
                 timers[index].timeout.emit()
-            clock.return_value = 115
+            clock.return_value = 116.5
             window._refresh_target_presentation()
             self.assertEqual(window.client_widgets[0]._visible_target_classes, (1,0,2,3))
-            self.assertEqual(window._shooting_session.active_target(115, 1).class_id, 1)
-            for index, at in enumerate((117.5,118.5,119.5,120.5), 4):
+            self.assertEqual(window._shooting_session.active_target(116.5, 1).class_id, 1)
+            for index, at in enumerate((120, 121, 122, 123), 4):
                 clock.return_value = at
                 timers[index].timeout.emit()
-            self.assertEqual(window._shooting_session.deadline, 124)
-            clock.return_value = 123.999
+            self.assertEqual(window._shooting_session.deadline, 126)
+            clock.return_value = 125.999
             window.update_app()
             self.assertTrue(window.testing)
-            clock.return_value = 124
+            clock.return_value = 126
             window.update_app()
             self.assertFalse(window.testing)
             self.assertIsNone(window.client_widgets[0]._target_presentation)
@@ -74,7 +74,7 @@ class OfflineScheduleTests(unittest.TestCase):
         window = self.window("COM7")
         with patch("gui.main_window.time.monotonic", return_value=100) as clock:
             window.start_test()
-            clock.return_value = 113.5
+            clock.return_value = 115
             window._lora_schedule_timers[0].timeout.emit()
             clock.return_value = 116
             window._refresh_target_presentation()

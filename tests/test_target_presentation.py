@@ -102,31 +102,31 @@ class TargetPresentationFlowTests(unittest.TestCase):
         self.assert_state(None)
         self.start()
         self.assert_state((1, False))
-        for index, target, at in ((0, 1, 115), (1, 0, 132), (2, 2, 142), (3, 3, 164)):
+        for index, target, at in ((0, 1, 116.5), (1, 0, 133.5), (2, 2, 143.5), (3, 3, 165.5)):
             self.raise_target(index, at)
             if target == 3:
                 self.window._on_target_state_received(3, True, at - .1, at)
             self.assert_state((target, True))
-            self.clock.return_value = at + (18 if target == 3 else 7) - 1.5
+            self.clock.return_value = at + (28 if target == 3 else 8) - 1.5
             self.window._send_scheduled_target_hide(target)
             self.clock.return_value += 1.5
             if target == 3:
                 self.window._on_target_state_received(3, False, self.clock.return_value - .1, self.clock.return_value)
             self.window._refresh_target_presentation()
             self.assert_state((target, False))
-            next_show = {1: 132, 0: 142, 2: 164, 3: 182}[target]
+            next_show = {1: 133.5, 0: 143.5, 2: 165.5, 3: 193.5}[target]
             self.clock.return_value = (self.clock.return_value + next_show) / 2
             self.window._refresh_target_presentation()
             self.assert_state(({1: 0, 0: 2, 2: 3, 3: 3}[target], False))
-        self.clock.return_value = 186.5
+        self.clock.return_value = 195.5
         self.window.update_app()
         self.assertFalse(self.window._target_presentation_timer.isActive())
         self.assert_state(None)
 
     def test_auto_fold_only_on_hit_when_enabled_and_late_result_keeps_next_target(self):
         self.start()
-        self.raise_target(0, 115)
-        self.clock.return_value = 116
+        self.raise_target(0, 116.5)
+        self.clock.return_value = 117.5
         self.assertFalse(self.window._maybe_close_hit_target(1, False))
         self.window.automatic_close_target_enabled = False
         self.assertFalse(self.window._maybe_close_hit_target(1, True))
@@ -134,13 +134,13 @@ class TargetPresentationFlowTests(unittest.TestCase):
         self.assert_state((1, True))
         self.window.automatic_close_target_enabled = True
         self.assertTrue(self.window._maybe_close_hit_target(1, True))
-        self.clock.return_value = 117.5
+        self.clock.return_value = 119
         self.window._refresh_target_presentation()
         self.assert_state((1, False))
-        self.clock.return_value = 124.75
+        self.clock.return_value = 126.25
         self.window._refresh_target_presentation()
         self.assert_state((0, False))
-        self.raise_target(1, 132)
+        self.raise_target(1, 133.5)
         self.assertFalse(self.window._maybe_close_hit_target(1, True))
         self.window._refresh_target_presentation()
         self.assert_state((0, True))
@@ -156,10 +156,10 @@ class TargetPresentationFlowTests(unittest.TestCase):
             self.assertTrue(self.window.process_shot(1, np.zeros((8, 8, 3), np.uint8),
                                                     (.5, .5), received_at=101))
             self.assertEqual(self.window._review_receipts[(sid, 1, 1)]["displayed_target_index"], 1)
-            self.raise_target(0, 115)
-            self.clock.return_value = 116
+            self.raise_target(0, 116.5)
+            self.clock.return_value = 117.5
             self.window._maybe_close_hit_target(1, True)
-            for number, at, target in ((2, 124.749, 1), (3, 124.75, 0)):
+            for number, at, target in ((2, 126.249, 1), (3, 126.25, 0)):
                 self.assertTrue(self.window.process_shot(1, np.zeros((8, 8, 3), np.uint8),
                                                         (.5, .5), received_at=at))
                 self.assertEqual(self.window._review_receipts[(sid, 1, number)]["displayed_target_index"], target)
@@ -183,7 +183,7 @@ class TargetPresentationFlowTests(unittest.TestCase):
         widget.record_shot(1, .5, .5)
         widget.record_shot(0, .25, .25)
         with patch.object(widget, "_draw_shot", wraps=widget._draw_shot) as draw:
-            self.raise_target(0, 115)
+            self.raise_target(0, 116.5)
             self.assertEqual([call.args[1] for call in draw.call_args_list], [1])
         self.window.stop_test()
         self.assertEqual(len(widget.shots), 2)
@@ -191,17 +191,17 @@ class TargetPresentationFlowTests(unittest.TestCase):
 
     def test_live_timer_folds_after_hit_and_stop_cancels_further_transitions(self):
         self.start()
-        self.raise_target(0, 115)
-        self.clock.return_value = 116
-        self.window._maybe_close_hit_target(1, True)
+        self.raise_target(0, 116.5)
         self.clock.return_value = 117.5
+        self.window._maybe_close_hit_target(1, True)
+        self.clock.return_value = 119
         QTest.qWait(150)
         self.assert_state((1, False))
-        self.clock.return_value = 124.75
+        self.clock.return_value = 126.25
         QTest.qWait(150)
         self.assert_state((0, False))
         self.window.stop_test()
-        self.clock.return_value = 132
+        self.clock.return_value = 133.5
         QTest.qWait(150)
         self.assert_state(None)
 

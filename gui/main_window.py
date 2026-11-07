@@ -30,7 +30,10 @@ from gui.hit_sound import HitSound
 from gui.result_sound import ResultSound
 from gui.uart_debug_dialog import UartDebugDialog
 from gui.shooting_roster import ShootingRoster
-from gui.target_timing import get_target_times, hardware_delay_time, RAISE_COMMANDS, HIDE_COMMANDS, TARGET_LABELS, target8_timeout_seconds
+from gui.target_timing import (
+    HIDE_COMMANDS, RAISE_COMMANDS, SCHEDULED_HIDE_OFFSET_SECONDS, TARGET_LABELS,
+    get_target_times, hardware_delay_time, target8_timeout_seconds,
+)
 from gui.shooting_session import (
     TARGET_CLASS_SEQUENCE,
     ShootingSession,
@@ -65,7 +68,7 @@ def _configured_auto_close_commands():
 
 
 def _configured_lora_script():
-    return tuple((item["show_seconds"] - hardware_delay_time(), command, f"hiện {label}")
+    return tuple((item["show_seconds"], command, f"hiện {label}")
                  for item, command, label in zip(get_target_times(), RAISE_COMMANDS, TARGET_LABELS))
 
 
@@ -884,7 +887,7 @@ class MainWindow(QMainWindow):
         self.LORA_SCRIPT = _configured_lora_script()
         self._shooting_session = ShootingSession(
             self._test_start_time, tuple(item[0] for item in self.LORA_SCRIPT),
-            {target: item["hide_seconds"] - item["show_seconds"]
+            {target: item["hide_seconds"] + SCHEDULED_HIDE_OFFSET_SECONDS - item["show_seconds"]
              for target, item in zip(TARGET_CLASS_SEQUENCE, self._target_timings)},
             hardware_delay_time=hardware_delay_time(),
             feedback_targets=() if self._simulate_targets else (3,),
@@ -1090,7 +1093,7 @@ class MainWindow(QMainWindow):
         self._cancel_lora_script()
         events = [(seconds, 1, target, command, description)
                   for target, (seconds, command, description) in zip(TARGET_CLASS_SEQUENCE, self.LORA_SCRIPT)]
-        events.extend((item["hide_seconds"] - hardware_delay_time(), 0, target, "", "")
+        events.extend((item["hide_seconds"] + SCHEDULED_HIDE_OFFSET_SECONDS, 0, target, "", "")
                       for target, item in zip(TARGET_CLASS_SEQUENCE, self._target_timings)
                       if target != 3 or self._simulate_targets)
         for seconds, raised, target, command, description in sorted(events, key=lambda event: (event[0], event[1])):

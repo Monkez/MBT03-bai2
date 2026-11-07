@@ -136,12 +136,12 @@ màn hình, đọc kết quả và lưu/nạp Excel dùng chung kết quả sau 
 Khi nhấn Bắt đầu, ứng dụng phát **“Bắt đầu tập”** bằng giọng mới.
 Sau khi kết thúc bài, bấm nút loa của bệ để đọc: **“Bệ số 1, Bia số sáu,
 Ba điểm chạm, Bia số mười, Không trúng, Bia số bảy bê, Một điểm chạm,
-Bia số tám xê an pha bằng bốn mươi lăm, Hai điểm chạm, Khá”**.
-Thứ tự bia là 6 → 10 → 7b → 8c an pha 45, sau cùng là xếp loại.
+Bia số tám xê an pha bằng chín mươi, Hai điểm chạm, Khá”**.
+Thứ tự bia là 6 → 10 → 7b → 8c an pha 90, sau cùng là xếp loại.
 Không trúng đọc “Không trúng”; có trúng đọc số điểm chạm từ 1 đến 16.
 Số điểm chạm tính riêng từng viên trúng hợp lệ trên từng bia, độc lập với việc
 hiện dấu chạm; xếp loại tính số mục tiêu trúng và quy tắc bắn lẻ nêu trên.
-Bia 5 và 8c an pha 90 có sẵn âm thanh nhưng không thuộc bài bắn hiện tại.
+
 
 Bấm lại nút loa đang đọc để dừng; các bệ khác bị khóa khi đang đọc.
 Bắt đầu bài mới hoặc đóng ứng dụng sẽ dừng đọc. Nút loa bị khóa trong khi bắn.
@@ -252,25 +252,21 @@ Khi kết thúc bài (thủ công, hết giờ hoặc thoát ứng dụng trong 
 Esc hoặc nút X cũng gửi lệnh này đến tất cả súng.
 Bia hiện theo thứ tự **6 → 10 → 7B → 8C**. Trong Cài đặt thiết bị, phần THỜI GIAN
 HIỆN / ẨN BIA cho phép nhập hai mốc giây tính từ đầu bài cho cả bốn bia. Nhấn CHẤP NHẬN để lưu và
-áp dụng từ bài tiếp theo; HỦY không lưu. Mặc định Hiện là **15 / 32 / 42 / 64**,
-Ẩn là **22 / 39 / 49 / 82**. Tên kênh có ba mục, hiện chỉ lưu lựa chọn để phát triển sau.
+áp dụng từ bài tiếp theo. HỦY bỏ các thay đổi. Mặc định Hiện là **15 / 32 / 42 / 64**,
+Ẩn là **22 / 39 / 49 / 92**.
 
-`shooting.hardware_delay_time` trong config mặc định **1,5 giây**. Phần mềm gửi cả
-lệnh hiện và ẩn sớm hơn mốc trên màn hình 1,5 giây. Khoảng nhận điểm bắt đầu khi
-gửi lệnh hiện, kết thúc sau lệnh ẩn **3 giây** (hai lần tham số bù trễ), kể cả khi
-gập sớm do trúng. Mốc thực sự ghi lệnh ra cổng LoRa được dùng để hiệu chỉnh nếu
-hàng đợi gửi bị trễ. Bài tự kết thúc sau lệnh ẩn cuối cùng thêm **6 giây** (bốn lần bù trễ), tính theo lần gửi thực tế.
-Nếu lệnh chưa gửi được, có thể kết thúc thủ công bằng nút KẾT THÚC.
+Lệnh hiện được hẹn đúng mốc Hiện. Lệnh ẩn theo lịch được hẹn sau mốc Ẩn **1 giây**.
+Với ba bia đầu, khoảng nhận điểm tính từ lần ghi lệnh hiện thực tế đến trước lần
+truyền lệnh ẩn cộng **3 giây**, bằng hai lần `shooting.hardware_delay_time` mặc định.
+Gập sớm khi trúng cũng dùng mốc ghi lệnh thực tế. Bia 8C dùng phản hồi của xe và
+thời hạn bài đã nêu ở trên.
 
 | Bia | Hiện / Ẩn đặt trước | Gửi lệnh hiện / ẩn | Khoảng nhận mặc định |
 | --- | --- | --- | --- |
-| 6 | 15 / 22 | 13,5 / 20,5 | [13,5; 23,5) giây |
-| 10 | 32 / 39 | 30,5 / 37,5 | [30,5; 40,5) giây |
-| 7B | 42 / 49 | 40,5 / 47,5 | [40,5; 50,5) giây |
-| 8C | 64 / 82 | 62,5 / 80,5 | [62,5; 83,5) giây |
-
-Theo lịch mặc định, bài tự kết thúc ở giây **86,5** nếu các lệnh gửi đúng lịch.
-Khi chồng lịch hoặc gập sớm, tính theo lệnh ẩn thực tế cuối cùng của các bia.
+| 6 | 15 / 22 | 15 / 23 | Từ 15 đến trước 26 giây |
+| 10 | 32 / 39 | 32 / 40 | Từ 32 đến trước 43 giây |
+| 7B | 42 / 49 | 42 / 50 | Từ 42 đến trước 53 giây |
+| 8C | 64 / 92 | 64 / xe tự gập | Từ 64 đến khi kết thúc bài, chậm nhất giây 96 nếu gửi đúng lịch |
 
 Phát nhận trước khi lệnh hiện thực sự gửi đi không được tính trúng. Chỉ tính trúng khi nhận
 diện đúng bia trong cửa sổ nhận tại thời điểm PC nhận ảnh; ngoài cửa sổ hoặc nhận

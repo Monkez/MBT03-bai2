@@ -33,6 +33,9 @@ class TimingFixture:
 
 
 class TimingTests(TimingFixture, unittest.TestCase):
+    def test_default_target_eight_times_are_sixty_four_and_ninety_two(self):
+        self.assertEqual(get_target_times()[3], {"show_seconds": 64, "hide_seconds": 92})
+
     def test_inconsistent_delay_falls_back_and_large_valid_delay_is_supported(self):
         with patch.dict(cf.APP_CONFIG["shooting"], hardware_delay_time=50, target_times=[]):
             self.assertEqual(hardware_delay_time(), 1.5)
@@ -65,11 +68,11 @@ class TimingTests(TimingFixture, unittest.TestCase):
         self.assertIsNone(session.active_target(193, 3))
         self.assertFalse(session.expired(195.999))
         self.assertTrue(session.expired(196))
-    def test_configurable_delay_changes_command_times(self):
+    def test_hardware_delay_does_not_shift_scheduled_raise_times(self):
         for delay in (0, .75, 2):
             with patch.dict(cf.APP_CONFIG["shooting"], hardware_delay_time=delay, target_times=TIMES):
                 self.assertEqual([item[0] for item in _configured_lora_script()],
-                                 [10 - delay, 27 - delay, 40 - delay, 59 - delay])
+                                 [10, 27, 40, 59])
 
     def test_save_and_restart_preserve_values_channel_delay_and_unrelated_config(self):
         save_timing_settings(TIMES, 3)
@@ -192,7 +195,7 @@ class TimingUiTests(TimingFixture, unittest.TestCase):
         dialog.cancel_btn.click()
         self.assertEqual(self.path.read_bytes(), before)
 
-    def test_main_window_sends_both_commands_early_and_stops_without_leaving_target_raised(self):
+    def test_main_window_sends_raise_at_setting_and_hide_one_second_later(self):
         save_timing_settings(TIMES, 2)
         option = patch("gui.main_window.OptionWindow").start().return_value
         option.exec_.return_value = option.Accepted = 1
@@ -207,16 +210,16 @@ class TimingUiTests(TimingFixture, unittest.TestCase):
             command, clock.return_value, clock.return_value)
         window.start_test()
         self.assertEqual([t.interval() for t in window._lora_schedule_timers],
-                         [8500, 15500, 25500, 35500, 38500, 48500, 57500])
-        clock.return_value = 108.5
+                         [10000, 18000, 27000, 38000, 40000, 51000, 59000])
+        clock.return_value = 110
         window._lora_schedule_timers[0].timeout.emit()
         window.lora.send_command.assert_called_with("@114#")
-        clock.return_value = 115.5
+        clock.return_value = 118
         window._lora_schedule_timers[1].timeout.emit()
         window.lora.send_command.assert_called_with("@112#")
-        self.assertEqual(window._shooting_session.active_target(118.499).class_id, 1)
-        self.assertIsNone(window._shooting_session.active_target(118.5))
-        clock.return_value = 125.5
+        self.assertEqual(window._shooting_session.active_target(120.999).class_id, 1)
+        self.assertIsNone(window._shooting_session.active_target(121))
+        clock.return_value = 127
         window._lora_schedule_timers[2].timeout.emit()
         window.stop_test()
         window.lora.send_command.assert_called_with("@222#")
@@ -238,20 +241,20 @@ class TimingUiTests(TimingFixture, unittest.TestCase):
         window.lora.send_command.side_effect = lambda command: window._on_lora_command_sent(
             command, clock.return_value, clock.return_value)
         window.start_test()
-        clock.return_value = 108.5
+        clock.return_value = 110
         window._lora_schedule_timers[0].timeout.emit()
         window._lora_schedule_timers[1].timeout.emit()
         self.assertEqual([call.args[0] for call in window.lora.send_command.call_args_list],
                          ["@114#", "@224#"])
-        clock.return_value = 110
+        clock.return_value = 111.5
         window._refresh_target_presentation()
         widget = window.client_widgets[0]
         self.assertEqual(widget._visible_target_classes, (1, 0))
         widget.compose_target_image()
         self.assertEqual(set(widget._rendered_target_rects), {1, 0})
-        clock.return_value = 111
+        clock.return_value = 112
         self.assertTrue(window._maybe_close_hit_target(1, True))
-        clock.return_value = 112.5
+        clock.return_value = 113.5
         window._refresh_target_presentation()
         self.assertEqual(widget._visible_target_classes, (0,))
         self.assertEqual(widget._target_presentation, (0, True))
