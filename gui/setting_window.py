@@ -7,7 +7,10 @@ from PyQt5.QtWidgets import QAbstractSpinBox, QDialog, QGridLayout, QLabel, QDou
 
 import config as cf
 import scoring
-from gui.target_timing import get_target_times, save_timing_settings, validate_times, hardware_delay_time, TARGET_LABELS, MAX_SETTING_SECONDS
+from gui.target_timing import (
+    MAX_SETTING_SECONDS, TARGET_LABELS, get_target_times, hardware_delay_time,
+    save_control_channel, save_timing_settings, validate_times,
+)
 from gui.client_widget import TARGET_IMAGE_FILES
 from gui.shooting_session import TARGET_CLASS_SEQUENCE
 
@@ -20,15 +23,19 @@ class SettingWindow(QDialog):
         "calibration.uart_command", "0Q000\n"
     )
 
-    def __init__(self, p_num=1, servers=None, lora_controller=None, parent=None):
+    def __init__(self, p_num=1, servers=None, lora_controller=None, parent=None, *, calibration_active=False):
         super().__init__(parent)
         uic.loadUi(cf.DATA_DIR + "assets/qt/setting.ui", self)
+        self.setWindowTitle("Cài đặt")
         self.setWindowIcon(QtGui.QIcon(cf.DATA_DIR + "assets/images/icon.png"))
         self.setWindowModality(Qt.ApplicationModal)
 
         self.p_num = p_num
         self.servers = list(servers or [])
         self.lora_controller = lora_controller
+        self._lora_applying = False
+        self._calibration_active = calibration_active
+        self.calibration_target_suspended = False
         self._stream_server = None
         self._current_server_index = -1
         self._current_stream_frame = None
@@ -71,6 +78,17 @@ class SettingWindow(QDialog):
         self.Q0_btn.clicked.connect(self._toggle_q0)
         self.cancel_btn.clicked.connect(self.reject)
         self.confirm_btn.clicked.connect(self._confirm_settings)
+        self.lora_accept_btn.clicked.connect(self.apply_lora_selection)
+        self.lora_accept_btn.setEnabled(self.lora_controller is not None)
+        self.lora_log_label.setTextFormat(Qt.PlainText)
+        self.lora_log_label.setWordWrap(True)
+        self.lora_log_label.setStyleSheet(
+            "QLabel { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; "
+            "border-radius: 5px; padding: 5px 8px; font-size: 12px; }"
+        )
+        self._show_lora_error("")
+        if self.lora_controller is not None:
+            self.lora_controller.configuration_finished.connect(self._on_lora_configuration_finished)
 
         self.adjust_btn.setEnabled(False)
         self.adjust_btn.setCheckable(True)
@@ -110,7 +128,7 @@ class SettingWindow(QDialog):
             self.channel_combo.addItem(f"Kênh {channel}", userData=channel)
         self._initial_channel = cf.config_int("shooting.control_channel", 1, minimum=1, maximum=3)
         self.channel_combo.setCurrentIndex(self._initial_channel - 1)
-        self.channel_combo.setToolTip("Kênh sẽ được áp dụng cho E32 ở cổng COM LoRa đã chọn khi bấm Chấp nhận.")
+        self.channel_combo.setToolTip("Bấm ĐẶT để áp dụng cổng LoRa và gửi lại kênh cho E32.")
         self._initial_times = get_target_times()
         grid = QGridLayout(self.time_setting_frame)
         grid.setContentsMargins(12, 10, 12, 10)
@@ -278,9 +296,8 @@ class SettingWindow(QDialog):
         if not self._validate_target_times():
             return
         times = self._target_time_values()
-        channel = self.channel_combo.currentData()
         try:
-            save_timing_settings(times, channel)
+            save_timing_settings(times)
         except (OSError, ValueError) as error:
             self._set_timing_error(f"Chưa lưu được cài đặt: {error}")
             return
@@ -305,9 +322,44 @@ class SettingWindow(QDialog):
         self.accept()
 
     def apply_lora_selection(self):
-        if self.lora_controller is not None:
-            selected_port = self.comport_combo.currentData() or ""
-            self.lora_controller.request_connection(selected_port, self.channel_combo.currentData())
+        controller = self.lora_controller
+        if controller is None or self._lora_applying:
+            return
+        port = self.comport_combo.currentData() or ""
+        channel = self.channel_combo.currentData()
+        self._show_lora_error("")
+        try:
+            save_control_channel(channel)
+        except (OSError, ValueError) as error:
+            self._show_lora_error(f"Chưa lưu được kênh LoRa: {error}")
+            return
+        if self._calibration_active and (port != (controller.port_name or "") or channel != controller.channel):
+            if controller.port_name and not self.calibration_target_suspended:
+                controller.send_command(cf.config_str("calibration.target_lower_command", "@112#"))
+            self.calibration_target_suspended = True
+        self._set_lora_applying(True)
+        if not controller.request_connection(port, channel, force_channel=True):
+            self._on_lora_configuration_finished(False, "Chưa gửi được yêu cầu đặt LoRa")
+
+    def _set_lora_applying(self, applying):
+        self._lora_applying = applying
+        for widget in (self.lora_accept_btn, self.comport_combo, self.channel_combo,
+                       self.confirm_btn, self.cancel_btn):
+            widget.setEnabled(not applying)
+
+    def _show_lora_error(self, message):
+        self.lora_log_label.setText(message.split(": ", 1)[0])
+        self.lora_log_label.setToolTip(message)
+        self.lora_log_label.setVisible(bool(message))
+
+    def _on_lora_configuration_finished(self, success, message):
+        if not self._lora_applying:
+            return
+        self._set_lora_applying(False)
+        self._show_lora_error("" if success else message)
+        if success and self.calibration_target_suspended and self.lora_controller.port_name:
+            self.lora_controller.send_command(cf.config_str("calibration.target_raise_command", "@114#"))
+            self.calibration_target_suspended = False
 
     def _initial_q0(self):
         port_id = self._current_server_index + 1
@@ -392,6 +444,13 @@ class SettingWindow(QDialog):
         server.request_stream_stop()
 
     def done(self, result):
+        if self._lora_applying:
+            return
+        if self.lora_controller is not None:
+            try:
+                self.lora_controller.configuration_finished.disconnect(self._on_lora_configuration_finished)
+            except (TypeError, RuntimeError):
+                pass
         self._frame_timer.stop()
         self._stop_stream()
         parent = self.parent()

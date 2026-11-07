@@ -13,7 +13,7 @@
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout_2" stretch="0,1,0,0,0">
+  <layout class="QVBoxLayout" name="verticalLayout_2" stretch="0,1,0,0,0,0">
    <property name="spacing">
     <number>4</number>
    </property>
@@ -325,7 +325,7 @@ ComboBox:disabled {
        </layout>
       </item>
       <item>
-       <layout class="QHBoxLayout" name="horizontalLayout_5" stretch="1,1">
+       <layout class="QHBoxLayout" name="horizontalLayout_5" stretch="3,4">
         <item>
          <widget class="QFrame" name="frame_3">
           <property name="minimumSize">
@@ -447,7 +447,7 @@ ComboBox:disabled {
           <property name="frameShadow">
            <enum>QFrame::Raised</enum>
           </property>
-          <layout class="QHBoxLayout" name="horizontalLayout_4" stretch="0,1">
+          <layout class="QHBoxLayout" name="horizontalLayout_4" stretch="0,1,0">
            <property name="leftMargin">
             <number>0</number>
            </property>
@@ -481,7 +481,7 @@ ComboBox:disabled {
               </font>
              </property>
              <property name="text">
-              <string>Chọn kênh điều khiển</string>
+              <string>Kênh LoRa</string>
              </property>
             </widget>
            </item>
@@ -525,12 +525,82 @@ ComboBox:disabled {
              </property>
             </widget>
            </item>
+           <item>
+            <widget class="MonkezButton" name="lora_accept_btn">
+             <property name="minimumSize">
+              <size>
+               <width>60</width>
+               <height>35</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>10000</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="font">
+              <font>
+               <pointsize>8</pointsize>
+               <bold>true</bold>
+              </font>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">QPushButton {
+    border-radius: 10px;
+    background-color: rgba(255, 255, 255, 255);
+    color: #000000;
+    border: none;
+}</string>
+             </property>
+             <property name="text">
+              <string>ĐẶT</string>
+             </property>
+             <property name="isChecked" stdset="0">
+              <bool>false</bool>
+             </property>
+             <property name="filledButton" stdset="0">
+              <bool>true</bool>
+             </property>
+             <property name="outlinedButton" stdset="0">
+              <bool>false</bool>
+             </property>
+             <property name="DeactiveColor" stdset="0">
+              <color>
+               <red>255</red>
+               <green>255</green>
+               <blue>255</blue>
+              </color>
+             </property>
+             <property name="textColor" stdset="0">
+              <color>
+               <red>0</red>
+               <green>0</green>
+               <blue>0</blue>
+              </color>
+             </property>
+             <property name="hoverTextColor" stdset="0">
+              <color>
+               <red>68</red>
+               <green>68</green>
+               <blue>68</blue>
+              </color>
+             </property>
+            </widget>
+           </item>
           </layout>
          </widget>
         </item>
        </layout>
       </item>
      </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QLabel" name="lora_log_label">
+     <property name="text">
+      <string>Lora_log_label</string>
+     </property>
     </widget>
    </item>
    <item>

@@ -138,19 +138,34 @@ class TimingUiTests(TimingFixture, unittest.TestCase):
         self.addCleanup(dialog.reject)
         return dialog
 
-    def test_port_combo_preserves_device_data_with_current_ui_widget(self):
+    def test_lora_button_saves_channel_reapplies_and_shows_errors_only(self):
         lora = MagicMock()
         lora.port_name = "COM7"
+        lora.channel = 3
         lora.available_ports.return_value = [{"device": "COM7", "description": "USB Serial"}]
         dialog = SettingWindow(lora_controller=lora)
         self.addCleanup(dialog.reject)
+        self.assertTrue(dialog.lora_log_label.isHidden())
         self.assertEqual(dialog.comport_combo.currentData(), "COM7")
         dialog.channel_combo.setCurrentIndex(2)
-        dialog.apply_lora_selection()
-        lora.request_connection.assert_called_once_with("COM7", 3)
+        dialog.lora_accept_btn.click()
+        lora.request_connection.assert_called_once_with("COM7", 3, force_channel=True)
+        self.assertFalse(dialog.confirm_btn.isEnabled())
+        dialog._on_lora_configuration_finished(False, "Không mở được COM7: chi tiết hệ thống")
+        self.assertFalse(dialog.lora_log_label.isHidden())
+        self.assertEqual(dialog.lora_log_label.text(), "Không mở được COM7")
+        dialog.lora_accept_btn.click()
+        dialog._on_lora_configuration_finished(True, "COM7 · Kênh 3")
+        self.assertTrue(dialog.lora_log_label.isHidden())
+        self.assertTrue(dialog.confirm_btn.isEnabled())
+        self.assertEqual(lora.request_connection.call_count, 2)
+        saved = json.loads(self.path.read_text(encoding="utf-8"))["shooting"]
+        self.assertEqual(saved["control_channel"], 3)
+        self.assertNotIn("target_times", saved)
 
-    def test_dialog_reuses_channel_combo_and_saves_on_accept_then_reloads(self):
+    def test_general_accept_saves_timing_without_saving_unapplied_channel(self):
         dialog = self.dialog()
+        saved_channel = dialog.channel_combo.currentData()
         self.assertEqual([dialog.channel_combo.itemText(i) for i in range(3)],
                          ["Kênh 1", "Kênh 2", "Kênh 3"])
         for pair, values in zip(dialog.target_time_inputs, TIMES):
@@ -161,7 +176,7 @@ class TimingUiTests(TimingFixture, unittest.TestCase):
         self.assertEqual(dialog.result(), dialog.Accepted, dialog.timing_error_label.text())
         reopened = self.dialog()
         self.assertEqual(reopened._target_time_values(), TIMES)
-        self.assertEqual(reopened.channel_combo.currentData(), 3)
+        self.assertEqual(reopened.channel_combo.currentData(), saved_channel)
         self.assertFalse(dialog._frame_timer.isActive())
 
     def test_target8_absolute_times_persist_and_difference_sets_twenty_second_limit(self):

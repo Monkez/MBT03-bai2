@@ -87,10 +87,25 @@ def target8_timeout_seconds(times):
     return last["hide_seconds"] - last["show_seconds"] + 4
 
 
-def save_timing_settings(values, channel, path=None):
-    times = validate_times(values, hardware_delay_time())
-    if type(channel) is not int or channel not in (1, 2, 3):
-        raise ValueError("Chọn Kênh 1, 2 hoặc 3.")
+_CHANNEL_UNSET = object()
+
+
+def save_timing_settings(values, channel=_CHANNEL_UNSET, path=None):
+    updates = {"target_times": validate_times(values, hardware_delay_time())}
+    if channel is not _CHANNEL_UNSET:
+        updates["control_channel"] = channel
+    _save_shooting_settings(updates, path)
+
+
+def save_control_channel(channel, path=None):
+    _save_shooting_settings({"control_channel": channel}, path)
+
+
+def _save_shooting_settings(updates, path):
+    if "control_channel" in updates:
+        channel = updates["control_channel"]
+        if type(channel) is not int or channel not in (1, 2, 3):
+            raise ValueError("Chọn Kênh 1, 2 hoặc 3.")
     destination = Path(cf.CONFIG_PATH if path is None else path)
     try:
         raw = json.loads(destination.read_text(encoding="utf-8"))
@@ -98,7 +113,7 @@ def save_timing_settings(values, channel, path=None):
         raw = {}
     if not isinstance(raw, dict) or not isinstance(raw.get("shooting", {}), dict):
         raise ValueError("File cấu hình có dữ liệu không hợp lệ; chưa lưu thay đổi.")
-    raw.setdefault("shooting", {}).update(target_times=times, control_channel=channel)
+    raw.setdefault("shooting", {}).update(updates)
     temporary = None
     try:
         with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=destination.parent,
@@ -113,4 +128,4 @@ def save_timing_settings(values, channel, path=None):
     finally:
         if temporary is not None:
             os.unlink(temporary)
-    cf.APP_CONFIG["shooting"].update(target_times=copy.deepcopy(times), control_channel=channel)
+    cf.APP_CONFIG["shooting"].update(copy.deepcopy(updates))

@@ -81,11 +81,7 @@ class ShootingScriptTests(unittest.TestCase):
                     self.assertEqual(calls_while_open, [call("@114#")])
                     self.assertEqual(window.lora.send_command.call_args_list,
                                      [call("@114#"), call("@112#")])
-                    if close_action == "confirm_btn":
-                        self.assertEqual(lora.method_calls, [call.available_ports(), call.send_command("@114#"),
-                                                           call.send_command("@112#"), call.request_connection("COM7", 3)])
-                    else:
-                        lora.request_connection.assert_not_called()
+                    lora.request_connection.assert_not_called()
                     self.assertIsNone(window._setting_window)
                     for server in servers:
                         server.send_uart_command.assert_called_once_with("0S000\n")
@@ -96,7 +92,7 @@ class ShootingScriptTests(unittest.TestCase):
     def test_settings_failure_still_lowers_target_and_clears_dialog(self):
         servers = [MagicMock(), MagicMock()]
         window = SimpleNamespace(testing=False, p_num=1, servers=servers, lora=MagicMock())
-        dialog = MagicMock()
+        dialog = MagicMock(calibration_target_suspended=False)
         dialog.exec_.side_effect = RuntimeError("dialog failure")
         with patch("gui.main_window.SettingWindow", return_value=dialog):
             with self.assertRaisesRegex(RuntimeError, "dialog failure"):

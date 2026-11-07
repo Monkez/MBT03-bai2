@@ -20,6 +20,7 @@ class LoraController(QObject):
 
     connection_changed = pyqtSignal(bool, str)
     configuration_busy = pyqtSignal(bool)
+    configuration_finished = pyqtSignal(bool, str)
     command_finished = pyqtSignal(str, bool, int)
     command_sent = pyqtSignal(str, float, float)  # command, queued_at, sent_at
     sequence_finished = pyqtSignal()
@@ -44,6 +45,7 @@ class LoraController(QObject):
         self._serial = None
         self._port_name = None
         self._channel = cf.config_int("shooting.control_channel", 1, minimum=1, maximum=3)
+        self._channel_config_failed = False
         self._lock = threading.Lock()
         self._executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="LoRa")
         self._closing = False
@@ -56,9 +58,13 @@ class LoraController(QObject):
         return self._port_name
 
     @property
+    def channel(self):
+        return self._channel
+
+    @property
     def is_connected(self):
         with self._lock:
-            return bool(self._serial is not None and self._serial.is_open)
+            return bool(self._serial is not None and self._serial.is_open and not self._channel_config_failed)
 
     @staticmethod
     def available_ports():
@@ -84,33 +90,37 @@ class LoraController(QObject):
         self.connection_changed.emit(False, "Không tìm thấy cổng USB Serial Port")
         return False
 
-    def request_connection(self, port_name, channel):
+    def request_connection(self, port_name, channel, *, force_channel=False):
         """Queue the port/channel change behind any pending device commands."""
         if self._closing:
             return False
         self.configuration_busy.emit(True)
-        self._executor.submit(self._configure_connection, port_name, channel)
+        self._executor.submit(self._configure_connection, port_name, channel, force_channel)
         return True
 
-    def _configure_connection(self, port_name, channel):
+    def _configure_connection(self, port_name, channel, force_channel):
         try:
-            self.connect_port(port_name, channel)
+            self.connect_port(port_name, channel, force_channel=force_channel)
         finally:
             self.configuration_busy.emit(False)
 
-    def connect_port(self, port_name, channel=None):
+    def connect_port(self, port_name, channel=None, *, force_channel=False):
         port_name = (port_name or "").strip()
         channel = self._channel if channel is None else channel
         if type(channel) is not int or channel not in self.E32_CHANNEL_CODES:
-            self.connection_changed.emit(False, "Chọn Kênh 1, 2 hoặc 3")
+            message = "Chọn Kênh 1, 2 hoặc 3"
+            self.connection_changed.emit(False, message)
+            self.configuration_finished.emit(False, message)
             return False
         with self._lock:
             if self._closing:
-                return False
-            already_ready = (self._serial is not None and self._serial.is_open
-                             and self._port_name == port_name and self._channel == channel)
-            if already_ready:
-                success, message = True, f"{port_name} · Kênh {channel}"
+                success, message = False, "Đang đóng LoRa"
+            elif self._serial is not None and self._serial.is_open and self._port_name == port_name:
+                if force_channel or self._channel != channel or self._channel_config_failed:
+                    self._channel = channel
+                    success, message = self._configure_open_port_locked()
+                else:
+                    success, message = True, f"{port_name} · Kênh {channel}"
             else:
                 self._close_locked()
                 self._port_name = port_name or None
@@ -120,10 +130,11 @@ class LoraController(QObject):
                 else:
                     success, message = False, "Không sử dụng LoRa"
         self.connection_changed.emit(success, message)
+        self.configuration_finished.emit(success or not port_name, message)
         return success
 
     def _open_configured_locked(self):
-        port_name, channel = self._port_name, self._channel
+        port_name = self._port_name
         if serial is None:
             return False, "Chưa cài thư viện pyserial"
         if self._closing:
@@ -133,13 +144,23 @@ class LoraController(QObject):
                 port=port_name, baudrate=self.DEFAULT_BAUD_RATE,
                 timeout=0.2, write_timeout=self.ACK_TIMEOUT_SECONDS,
             )
-            if self._program_e32_channel(self._serial, channel) and not self._closing:
-                return True, f"{port_name} · Kênh {channel}"
-            message = f"{port_name} · E32 chưa xác nhận Kênh {channel}"
         except (OSError, serial.SerialException) as error:
-            message = f"{port_name} · Không áp dụng được Kênh {channel}: {error}"
-        self._close_locked()
-        return False, message
+            return False, f"Không mở được {port_name}: {error}"
+        success, message = self._configure_open_port_locked()
+        if not success:
+            self._close_locked()
+        return success, message
+
+    def _configure_open_port_locked(self):
+        port_name, channel = self._port_name, self._channel
+        self._channel_config_failed = True
+        try:
+            if self._program_e32_channel(self._serial, channel) and not self._closing:
+                self._channel_config_failed = False
+                return True, f"{port_name} · Kênh {channel}"
+            return False, f"{port_name} · E32 chưa xác nhận Kênh {channel}"
+        except (OSError, serial.SerialException) as error:
+            return False, f"{port_name} · Lỗi đặt Kênh {channel}: {error}"
 
     def _program_e32_channel(self, device, channel):
         frame = bytes((0xC0, 0x00, 0x00, 0x1A, self.E32_CHANNEL_CODES[channel], 0x44))
@@ -226,7 +247,7 @@ class LoraController(QObject):
 
             max_attempts = self.MAX_ATTEMPTS if requires_ack and not status_query else 1
             for attempts in range(1, max_attempts + 1):
-                if self._closing or device is None or not device.is_open:
+                if self._closing or device is None or not device.is_open or self._channel_config_failed:
                     attempts = 0
                     break
                 try:
@@ -282,6 +303,7 @@ class LoraController(QObject):
     def _close_locked(self):
         device = self._serial
         self._serial = None
+        self._channel_config_failed = False
         if device is not None:
             try:
                 device.close()
@@ -295,7 +317,7 @@ class LoraController(QObject):
         # the only hide of a target raised with a persistent manual command.
         with self._lock:
             device = self._serial
-            if device is not None and device.is_open:
+            if device is not None and device.is_open and not self._channel_config_failed:
                 for command in final_commands:
                     try:
                         device.write(command.encode("ascii"))

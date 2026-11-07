@@ -28,6 +28,7 @@ class OptionWindow(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         uic.loadUi(cf.DATA_DIR + "assets/qt/start_window.ui", self)
+        self.setWindowTitle("Khởi động")
 
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         self.setWindowIcon(QtGui.QIcon(cf.DATA_DIR + "assets/images/icon.png"))

@@ -1,3 +1,8 @@
+# V58-071126 — Nút đặt LoRa và tiêu đề cửa sổ
+
+- Nút ĐẶT áp dụng riêng cổng và kênh. Mỗi lần bấm gửi lại kênh, dùng lại COM đang mở nếu cổng giữ nguyên. Dòng trạng thái trong Cài đặt chỉ hiện lỗi.
+- Đặt tiêu đề Khởi động, Cài đặt và tên đầy đủ thiết bị MBT-03 Bài 2.
+
 # V57-071126 — Đồng bộ hình bia với lệnh
 
 - Hình bia hiện khi gửi lệnh hiện và gập 1 giây sau lệnh ẩn. Với lịch gửi ẩn muộn 1 giây, hình gập sau mốc Ẩn đã đặt 2 giây.

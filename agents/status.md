@@ -1,3 +1,9 @@
+## Nút ĐẶT LoRa và tiêu đề — 2026-11-07
+
+- Cài đặt tách lưu channel khỏi lưu timing. lora_accept_btn yêu cầu force_channel=True. Controller lập trình lại trên COM đang mở, đổi cổng mới thì mở lại. Lỗi trên cổng đang mở giữ COM và chặn lệnh điều khiển đến khi xác nhận kênh.
+- configuration_finished cập nhật lora_log_label ẩn mặc định, chỉ hiện lỗi ngắn. Khi chuyển cổng/kênh, hạ bia hiệu chỉnh ở link cũ và dựng lại sau khi xác nhận link mới. Tiêu đề ba cửa sổ đặt khi tải .ui.
+- 389 kiểm tra đạt. Native Qt/PYZ + LoRa giả lập kiểm tra đổi kênh tại chỗ, gửi lại cùng kênh, chuyển COM, dòng lỗi và cả ba tiêu đề. Bản V58-071126 trên Desktop.
+
 ## Hiển thị bia theo lần gửi lệnh — 2026-11-07
 
 - MainWindow truyền display_delays=(0,1) cho ShootingSession. Hiện theo actual sent, gập sau actual hide +1. Khoảng điểm vẫn dùng hardware_delay_time, xe 8C thật dùng feedback.

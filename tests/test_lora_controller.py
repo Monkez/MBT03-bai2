@@ -144,21 +144,39 @@ class LoraControllerTests(unittest.TestCase):
                 self.assertEqual(device.writes, [bytes((0xC0, 0, 0, 0x1A, channel_byte, 0x44))])
                 self.assertEqual(device.rts_changes, [False, True])
 
-    def test_channel_change_retries_partial_or_mismatched_echo_and_skips_resaving_same_channel(self):
+    def test_same_com_programs_channel_and_forced_reapply_without_reopening(self):
         controller = LoraController()
         self.addCleanup(controller.close)
-        old_device = FakeE32()
-        frame = bytes.fromhex("C0 00 00 1A 05 44")
-        new_device = FakeE32((frame[:5], bytes.fromhex("C0 00 00 1A 03 44"), frame))
-        with patch("gui.lora_controller.serial.Serial", side_effect=(old_device, new_device)) as factory, patch.object(
+        first = bytes.fromhex("C0 00 00 1A 01 44")
+        third = bytes.fromhex("C0 00 00 1A 05 44")
+        device = FakeE32((first, third[:5], first, third, third))
+        with patch("gui.lora_controller.serial.Serial", return_value=device) as factory, patch.object(
                 controller._stop_event, "wait", return_value=False):
             self.assertTrue(controller.connect_port("COM7", 1))
             self.assertTrue(controller.connect_port("COM7", 3))
             self.assertTrue(controller.connect_port("COM7", 3))
-        self.assertFalse(old_device.is_open)
-        self.assertEqual(factory.call_count, 2)
-        self.assertEqual(new_device.writes, [frame] * 3)
-        self.assertEqual(new_device.rts_changes, [False, False, False, True])
+            self.assertTrue(controller.connect_port("COM7", 3, force_channel=True))
+        factory.assert_called_once()
+        self.assertTrue(device.is_open)
+        self.assertEqual(device.writes, [first] + [third] * 4)
+        self.assertEqual(device.rts_changes, [False, True, False, False, False, True, False, True])
+
+    def test_failed_reapply_keeps_com_open_and_waits_for_channel_confirmation(self):
+        controller = LoraController()
+        self.addCleanup(controller.close)
+        frame = bytes.fromhex("C0 00 00 1A 01 44")
+        device = FakeE32((frame, b"", b"", b"", frame))
+        with patch("gui.lora_controller.serial.Serial", return_value=device) as factory, patch.object(
+                controller._stop_event, "wait", return_value=False):
+            self.assertTrue(controller.connect_port("COM7", 1))
+            self.assertFalse(controller.connect_port("COM7", 1, force_channel=True))
+            self.assertTrue(device.is_open)
+            self.assertFalse(controller.is_connected)
+            self.assertFalse(controller._send_with_retry("@114#"))
+            self.assertTrue(controller.connect_port("COM7", 1, force_channel=True))
+            self.assertTrue(controller._send_with_retry("@114#"))
+        factory.assert_called_once()
+        self.assertEqual(device.writes, [frame] * 5 + [b"@114#"])
 
     def test_unconfirmed_channel_never_transmits_target_command_even_on_reconnect(self):
         controller = LoraController()

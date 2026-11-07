@@ -89,6 +89,7 @@ class MainWindow(QMainWindow):
             raise StartupCancelled()
 
         uic.loadUi(cf.DATA_DIR + "assets/qt/main.ui", self)
+        self.setWindowTitle("HỌC VIỆN KỸ THUẬT QUÂN SỰ - THIẾT BỊ BẮN TẬP MBT-03 BÀI 2")
         self.setWindowIcon(QtGui.QIcon(cf.DATA_DIR + "assets/images/icon.png"))
 
         self.options = option_dialog
@@ -1048,18 +1049,17 @@ class MainWindow(QMainWindow):
             servers=self.servers,
             lora_controller=self.lora,
             parent=self,
+            calibration_active=True,
         )
         try:
             self.lora.send_command(cf.config_str("calibration.target_raise_command", "@114#"))
-            result = dialog.exec_()
+            dialog.exec_()
         finally:
             self._setting_window = None
             for server in self.servers:
                 server.send_uart_command("0S000\n")
-            self.lora.send_command(cf.config_str("calibration.target_lower_command", "@112#"))
-        if result == dialog.Accepted:
-            # Queue the channel change after lowering the calibration target on its current link.
-            dialog.apply_lora_selection()
+            if not dialog.calibration_target_suspended:
+                self.lora.send_command(cf.config_str("calibration.target_lower_command", "@112#"))
 
     def request_score_speak(self, port_id):
         if self.testing or self._closing or not (1 <= port_id <= len(self.client_widgets)):

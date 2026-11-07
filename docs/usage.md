@@ -218,7 +218,7 @@ nối vẫn được ưu tiên. Chỉ gửi đến súng đang kết nối, khô
 thất bại. Mất kết nối sẽ xóa trạng thái tìm súng trên giao diện; đóng ứng dụng gửi
 lệnh trở về đèn xanh tới các súng đang tìm và còn kết nối.
 
-Trong **Cài đặt thiết bị**, chọn **Cổng LoRa** và **Kênh 1, 2 hoặc 3**, rồi bấm **Chấp nhận**. Phần mềm lưu lựa chọn và áp dụng cho E32 trên cổng đã chọn. Thanh trạng thái báo cổng và kênh đã xác nhận hoặc lỗi nếu E32 chưa phản hồi đúng. Khi khởi động, phần mềm áp dụng kênh đã lưu, mặc định là Kênh 1. Các module LoRa của cùng bộ luyện tập cần dùng cùng kênh.
+Trong **Cài đặt thiết bị**, chọn **Cổng LoRa** và **Kênh 1, 2 hoặc 3**, rồi bấm **ĐẶT**. Mỗi lần bấm sẽ gửi lại cấu hình kênh cho E32 trên cổng đã chọn, kể cả khi chọn lại kênh hiện tại. Nếu cổng đang mở và giữ nguyên, phần mềm dùng kết nối COM đó. Khi có lỗi, dòng đỏ dưới phần LoRa báo nguyên nhân ngắn gọn. **CHẤP NHẬN** dùng để lưu thời gian bia và kết quả hiệu chỉnh. Khi khởi động, phần mềm áp dụng kênh đã lưu, mặc định là Kênh 1. Các module LoRa của cùng bộ luyện tập cần dùng cùng kênh.
 
 Nhấn nút **ẨN BIA** (`close_target_btn`) để gửi `@661#` qua LoRa **một lần**,
 không chờ ACK và không gửi lại. Nút
