@@ -28,8 +28,8 @@ Nhóm `shooting`:
 Bài bắn kết thúc theo bia xe 8C: xác nhận gập +2 giây hoặc hết thời gian chạy +4 giây từ @444#, lấy mốc sớm hơn. Với ba bia đầu cần
 `hardware_delay_time ≤ Hiện < Ẩn ≤ 3600`; 8C cũng nhập Hiện < Ẩn là mốc từ đầu bài. Thứ tự mốc hiện là 6 → 10 → 7B → 8C, có thể bằng nhau.
 Cho phép các khoảng hiện chồng nhau, mốc ẩn không cần cùng thứ tự.
-Khi chỉnh xong, nhấn CHẤP NHẬN để lưu vào JSON và dùng cho bài kế tiếp; khởi động
-lại vẫn giữ các mốc và kênh. Hủy/Esc/X không lưu thay đổi. Lỗi ghi file giữ nguyên
+Khi chỉnh xong, nhấn ĐÓNG CỬA SỔ để lưu vào JSON và dùng cho bài kế tiếp. Khi khởi động
+lại, phần mềm nạp các mốc và kênh đã lưu. Esc hoặc X bỏ chỉnh sửa thời gian chưa lưu. Lỗi ghi file giữ nguyên
 cấu hình cũ và không đóng hộp thoại.
 
 Ba bia đầu hẹn lệnh hiện tại `Hiện` và lệnh ẩn tại `Ẩn + 1 giây`. 8C gửi `@444#` tại `Hiện`. Mặc định 8C đặt Hiện 64, Ẩn 92, tương ứng giới hạn chờ 32 giây từ lần gửi lệnh chạy thực tế.

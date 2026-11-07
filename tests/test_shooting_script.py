@@ -54,7 +54,7 @@ class ShootingScriptTests(unittest.TestCase):
         window._start_followup_timer.start.assert_called_once_with(300)
 
     def test_settings_raises_target_and_lowers_on_every_close_path(self):
-        for close_action in ("confirm_btn", "cancel_btn", "close", "escape"):
+        for close_action in ("close_window_btn", "close", "escape"):
             with self.subTest(close_action=close_action):
                 lora = MagicMock()
                 lora.port_name = "COM7"
@@ -147,7 +147,7 @@ class ShootingScriptTests(unittest.TestCase):
             parent.process_q0_calibration.assert_not_called()
             self.assertTrue(QSignalSpy(dialog._q0_start_timer.timeout).wait(1000))
             dialog._on_q0_shoot_image(frame, {})
-            parent.process_q0_calibration.assert_called_once_with(1, frame)
+            parent.process_q0_calibration.assert_called_once_with(1, frame, dialog._q0_request)
 
     def test_q0_switch_pedestal_cancels_pending_command_and_clears_samples(self):
         dialog, servers = self.q0_dialog()
@@ -229,17 +229,62 @@ class ShootingScriptTests(unittest.TestCase):
         self.assertTrue(np.array_equal(displayed[60, 100], [0, 255, 255]))
 
     def test_q0_confirm_waits_for_all_required_shots(self):
-        accept = MagicMock()
-        window = SimpleNamespace(
-            Q0=True,
-            Q0_SAMPLE_COUNT=3,
-            Q0_values=[(0.4, 0.5), (0.5, 0.5)],
-            accept=accept,
-        )
+        dialog, servers = self.q0_dialog()
+        dialog.Q0 = True
+        dialog.Q0_values = [(0.4, 0.5), (0.5, 0.5)]
+        dialog._confirm_q0()
+        servers[0].send_q0_to_client.assert_not_called()
 
-        SettingWindow._confirm_settings(window)
+    def test_q0_retry_accept_and_next_pedestal_keep_settings_open(self):
+        dialog, servers = self.q0_dialog()
+        dialog.show()
+        parent = SimpleNamespace(process_q0_calibration=MagicMock(return_value=True), _q0_calibrated={})
+        frame = np.zeros((8, 8, 3), dtype=np.uint8)
 
-        accept.assert_not_called()
+        def collect(port):
+            dialog._q0_start_timer.stop()
+            dialog._send_q0_command()
+            for x in (.25, .5, .75):
+                dialog._on_q0_shoot_image(frame, {})
+                dialog._on_q0_done({"port_id": port, "request_id": dialog._q0_request,
+                                    "ok": True, "q0": [x, .5], "target_size": 30})
+            self.assertTrue(dialog.close_window_btn.isHidden())
+            self.assertFalse(dialog.cancel_btn.isHidden())
+            self.assertFalse(dialog.confirm_btn.isHidden())
+
+        self.assertFalse(dialog.close_window_btn.isHidden())
+        self.assertTrue(dialog.cancel_btn.isHidden())
+        self.assertTrue(dialog.confirm_btn.isHidden())
+        with patch.object(dialog, "parent", return_value=parent):
+            dialog.Q0_btn.click()
+            collect(1)
+            dialog.cancel_btn.click()
+            self.assertEqual(dialog.Q0_values, [])
+            self.assertFalse(dialog.close_window_btn.isHidden())
+            self.assertEqual(servers[0].send_uart_command.call_args_list,
+                             [call("0F003\n"), call("0Q000\n"), call("0F003\n")])
+            servers[0].send_q0_to_client.assert_not_called()
+            collect(1)
+            dialog.confirm_btn.click()
+            servers[0].send_q0_to_client.assert_called_once_with([.5, .5], 30)
+            servers[0].send_uart_command.assert_called_with("0S000\n")
+            self.assertTrue(dialog.isVisible())
+            self.assertTrue(dialog.confirm_btn.isHidden())
+            self.assertTrue(dialog.cancel_btn.isHidden())
+            self.assertFalse(dialog.close_window_btn.isHidden())
+            self.assertEqual(parent._q0_calibrated[1], {"q0": [.5, .5], "size": 30})
+
+            dialog.client_combo.setCurrentIndex(2)
+            dialog.Q0_btn.click()
+            collect(2)
+            dialog.confirm_btn.click()
+            servers[1].send_q0_to_client.assert_called_once_with([.5, .5], 30)
+            self.assertTrue(dialog.isVisible())
+            self.assertEqual(set(parent._q0_calibrated), {1, 2})
+            self.save_timing.assert_not_called()
+            dialog.close_window_btn.click()
+            self.save_timing.assert_called_once()
+            self.assertFalse(dialog.isVisible())
 
     def test_auto_close_commands_match_model_classes(self):
         self.assertEqual(

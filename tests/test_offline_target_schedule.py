@@ -106,7 +106,7 @@ class OfflineScheduleTests(unittest.TestCase):
         dialog.target_time_inputs[0]["hide_seconds"].setValue(22)
         self.assertTrue(dialog.timing_error_label.isHidden())
         with patch("gui.setting_window.save_timing_settings", side_effect=PermissionError("locked")):
-            dialog.confirm_btn.click()
+            dialog.close_window_btn.click()
         self.assertFalse(dialog.timing_error_label.isHidden())
         self.assertIn("locked", dialog.timing_error_label.text())
 

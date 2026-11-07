@@ -1,3 +1,9 @@
+## Quy 0 nhiều súng liên tiếp — 2026-11-07
+
+- Đóng cửa sổ mặc định hiện và tự lưu thời gian bia. Khi đủ mẫu Q0 hiện Hủy/Chấp nhận. Hủy rearm 0F003 → 300ms → 0Q000. Chấp nhận gửi SET_Q0, dừng súng vừa hiệu chỉnh và reset UI, giữ stream/cửa sổ.
+- request_id phân biệt kết quả worker của các lượt Q0 khi đổi súng hoặc bắt đầu lại. Khi gửi SET_Q0 lỗi, giữ mẫu để thử lại.
+- 390 kiểm tra đạt. Native Qt/PYZ + worker thật và súng giả lập xác nhận hủy, nhận hai súng liên tiếp và tự lưu khi đóng. Bản V59-071126 trên Desktop.
+
 ## Nút ĐẶT LoRa và tiêu đề — 2026-11-07
 
 - Cài đặt tách lưu channel khỏi lưu timing. lora_accept_btn yêu cầu force_channel=True. Controller lập trình lại trên COM đang mở, đổi cổng mới thì mở lại. Lỗi trên cổng đang mở giữ COM và chặn lệnh điều khiển đến khi xác nhận kênh.

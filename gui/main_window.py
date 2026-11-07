@@ -520,11 +520,11 @@ class MainWindow(QMainWindow):
             }
         return shot_number
 
-    def process_q0_calibration(self, port_id, frame):
+    def process_q0_calibration(self, port_id, frame, request_id=None):
         """Calculate the class-1 reference center on a captured camera frame."""
         if not (1 <= port_id <= len(self.client_widgets)):
             return False
-        self._scoring_pool.submit(self._q0_worker, port_id, frame.copy())
+        self._scoring_pool.submit(self._q0_worker, port_id, frame.copy(), request_id)
         return True
 
     def _get_scoring_session(self):
@@ -583,7 +583,7 @@ class MainWindow(QMainWindow):
                 "exposure": exposure,
             })
 
-    def _q0_worker(self, port_id, frame):
+    def _q0_worker(self, port_id, frame, request_id=None):
         try:
             reference = self._reference_images.get(scoring.Q0_TARGET_CLASS_ID)
             if reference is None:
@@ -596,7 +596,7 @@ class MainWindow(QMainWindow):
                 reference,
                 self._get_scoring_session(),
             )
-            result.update(port_id=port_id, frame=frame)
+            result.update(port_id=port_id, frame=frame, request_id=request_id)
             self.q0_done_signal.emit(result)
         except Exception as exc:
             self.q0_done_signal.emit({
@@ -604,6 +604,7 @@ class MainWindow(QMainWindow):
                 "port_id": port_id,
                 "status": str(exc),
                 "frame": frame,
+                "request_id": request_id,
             })
 
     def _on_scoring_done(self, result):

@@ -1,3 +1,8 @@
+# V59-071126 — Quy 0 nhiều súng trong cùng cửa sổ
+
+- Chờ đủ mẫu Quy 0 mới hiện HỦY và CHẤP NHẬN. Hủy cấp lại 3 phát. Chấp nhận gửi kết quả và giữ Cài đặt mở để chọn súng tiếp theo.
+- ĐÓNG CỬA SỔ tự lưu thời gian hiện và ẩn bia.
+
 # V58-071126 — Nút đặt LoRa và tiêu đề cửa sổ
 
 - Nút ĐẶT áp dụng riêng cổng và kênh. Mỗi lần bấm gửi lại kênh, dùng lại COM đang mở nếu cổng giữ nguyên. Dòng trạng thái trong Cài đặt chỉ hiện lỗi.

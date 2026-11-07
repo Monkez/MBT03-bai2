@@ -205,11 +205,11 @@ lỗi kết nối không tự chuyển sang mô phỏng. Cổng đã chọn như
 
 Nút `Cài đặt thiết bị` mở cửa sổ cài đặt từ `assets/qt/setting.ui`, cho phép chọn bệ đang kết nối, xem luồng camera, hiệu chỉnh camera và thực hiện quy không.
 
-Khi mở cửa sổ này, phần mềm gửi LoRa `@114#` để dựng bia số 6 phục vụ bắn Q0. Khi đóng bằng Chấp nhận, Hủy, Esc hoặc nút X, phần mềm gửi `@112#` để gập bia xuống, độc lập với tùy chọn gập bia tự động trong bài bắn. Cần kết nối LoRa để bia nhận được lệnh.
+Khi mở cửa sổ này, phần mềm gửi LoRa `@114#` để dựng bia số 6 phục vụ bắn Q0. Khi thoát bằng Đóng cửa sổ, Esc hoặc nút X, phần mềm gửi `@112#` để gập bia xuống, độc lập với tùy chọn gập bia tự động trong bài bắn. Cần kết nối LoRa để bia nhận được lệnh.
 
 Trong lúc bắn Q0, camera tiếp tục hiển thị stream trực tiếp sau mỗi phát. Các dấu Q0 của những phát đã xử lý được vẽ chồng lên các frame mới để vừa theo dõi hình ảnh hiện tại vừa đối chiếu các phát trước.
 
-Trải nghiệm Quy không được đồng bộ với `MBT03-wireless`: các chấm xanh ở góc trên ảnh camera biểu thị số phát hợp lệ còn thiếu; mỗi phát hợp lệ được đánh dấu bằng chữ thập vàng. Nút `CHẤP NHẬN` chỉ lưu giá trị trung bình và đóng cửa sổ sau khi đã nhận đủ số phát cấu hình. Khi không bắn Quy không, chữ thập xanh hiển thị vị trí Q0 đã lưu của bệ đang chọn.
+Trải nghiệm Quy không được đồng bộ với `MBT03-wireless`: các chấm xanh ở góc trên ảnh camera biểu thị số phát hợp lệ còn thiếu; mỗi phát hợp lệ được đánh dấu bằng chữ thập vàng. Khi đủ 3 phát hợp lệ theo mặc định, nút **ĐÓNG CỬA SỔ** nhường chỗ cho **HỦY** và **CHẤP NHẬN**. **HỦY** xóa mẫu và cấp lại 3 phát cho súng đang chọn. **CHẤP NHẬN** gửi giá trị trung bình đến súng, kết thúc lượt Quy 0 và hiện lại nút **ĐÓNG CỬA SỔ**. Cửa sổ vẫn mở để chọn súng khác và Quy 0 tiếp. Khi không bắn Quy không, chữ thập xanh hiển thị vị trí Q0 đã lưu của bệ đang chọn.
 
 Bấm chuột trái vào nhãn **BỆ SỐ …** để súng của bệ đó nhấp nháy đèn đỏ tìm súng
 (`0LR01\n`); bấm lại để trở về đèn xanh (`0LG00\n`). Có thể dùng Tab chọn nhãn rồi
@@ -218,7 +218,7 @@ nối vẫn được ưu tiên. Chỉ gửi đến súng đang kết nối, khô
 thất bại. Mất kết nối sẽ xóa trạng thái tìm súng trên giao diện; đóng ứng dụng gửi
 lệnh trở về đèn xanh tới các súng đang tìm và còn kết nối.
 
-Trong **Cài đặt thiết bị**, chọn **Cổng LoRa** và **Kênh 1, 2 hoặc 3**, rồi bấm **ĐẶT**. Mỗi lần bấm sẽ gửi lại cấu hình kênh cho E32 trên cổng đã chọn, kể cả khi chọn lại kênh hiện tại. Nếu cổng đang mở và giữ nguyên, phần mềm dùng kết nối COM đó. Khi có lỗi, dòng đỏ dưới phần LoRa báo nguyên nhân ngắn gọn. **CHẤP NHẬN** dùng để lưu thời gian bia và kết quả hiệu chỉnh. Khi khởi động, phần mềm áp dụng kênh đã lưu, mặc định là Kênh 1. Các module LoRa của cùng bộ luyện tập cần dùng cùng kênh.
+Trong **Cài đặt thiết bị**, chọn **Cổng LoRa** và **Kênh 1, 2 hoặc 3**, rồi bấm **ĐẶT**. Mỗi lần bấm sẽ gửi lại cấu hình kênh cho E32 trên cổng đã chọn, kể cả khi chọn lại kênh hiện tại. Nếu cổng đang mở và giữ nguyên, phần mềm dùng kết nối COM đó. Khi có lỗi, dòng đỏ dưới phần LoRa báo nguyên nhân ngắn gọn. **ĐÓNG CỬA SỔ** tự lưu thời gian bia. Khi khởi động, phần mềm áp dụng kênh đã lưu, mặc định là Kênh 1. Các module LoRa của cùng bộ luyện tập cần dùng cùng kênh.
 
 Nhấn nút **ẨN BIA** (`close_target_btn`) để gửi `@661#` qua LoRa **một lần**,
 không chờ ACK và không gửi lại. Nút
@@ -247,11 +247,11 @@ Riêng **bia số 8C**, phần mềm gửi **@444# một lần** cho xe chạy, 
 
 Ô **Ẩn của 8C** là **mốc thời gian từ đầu bài**, giống ba bia còn lại. Thời gian chạy bằng **Ẩn − Hiện**; giới hạn chờ từ lần ghi @444# thực tế bằng **Ẩn − Hiện + 4 giây**. Ví dụ **Hiện 64, Ẩn 80 → chạy 16 giây, giới hạn chờ 20 giây**. Nếu đã thấy bia hiện rồi nhận phản hồi gập, kết thúc bài sau **2 giây**, nhưng không vượt giới hạn trên. Phản hồi 0 lúc xe vừa khởi hành chưa làm kết thúc bài; mất phản hồi vẫn kết thúc khi hết giới hạn chờ. Có thể kết thúc thủ công bằng nút trên màn hình. Các khoảng +2/+4 giây riêng của 8C là số giây cố định, không nhân hardware_delay_time.
 Khi kết thúc bài (thủ công, hết giờ hoặc thoát ứng dụng trong bài), phần mềm gửi
-`0S000` kèm xuống dòng đến tất cả súng. Đóng cửa sổ cài đặt bằng Chấp nhận, Hủy,
-Esc hoặc nút X cũng gửi lệnh này đến tất cả súng.
+`0S000` kèm xuống dòng đến tất cả súng. Đóng cài đặt bằng **ĐÓNG CỬA SỔ**,
+Esc hoặc nút X cũng gửi lệnh này đến tất cả súng. Chấp nhận Quy 0 gửi lệnh dừng đến súng vừa hiệu chỉnh.
 Bia hiện theo thứ tự **6 → 10 → 7B → 8C**. Trong Cài đặt thiết bị, phần THỜI GIAN
-HIỆN / ẨN BIA cho phép nhập hai mốc giây tính từ đầu bài cho cả bốn bia. Nhấn CHẤP NHẬN để lưu và
-áp dụng từ bài tiếp theo. HỦY bỏ các thay đổi. Mặc định Hiện là **15 / 32 / 42 / 64**,
+HIỆN / ẨN BIA cho phép nhập hai mốc giây tính từ đầu bài cho cả bốn bia. Nhấn **ĐÓNG CỬA SỔ** để lưu và
+áp dụng từ bài tiếp theo. Esc và nút X bỏ các chỉnh sửa thời gian chưa lưu. Mặc định Hiện là **15 / 32 / 42 / 64**,
 Ẩn là **22 / 39 / 49 / 92**.
 
 Lệnh hiện được hẹn đúng mốc Hiện. Lệnh ẩn theo lịch được hẹn sau mốc Ẩn **1 giây**.
