@@ -1,5 +1,10 @@
 import os
 import time
+from pathlib import Path
+import tempfile
+
+import cv2
+import numpy as np
 import unittest
 from unittest.mock import MagicMock, patch
 
@@ -110,9 +115,31 @@ class OfflineScheduleTests(unittest.TestCase):
         self.assertFalse(dialog.timing_error_label.isHidden())
         self.assertIn("locked", dialog.timing_error_label.text())
 
+    def test_switch_to_offline_gun_replaces_live_frame_with_bundled_placeholder(self):
+        online, offline = MagicMock(is_connected=True), MagicMock(is_connected=False)
+        dialog = SettingWindow(p_num=2, servers=[online, offline])
+        self.addCleanup(dialog.reject)
+        dialog.client_combo.setCurrentIndex(1)
+        self.assertTrue(dialog.adjust_btn.isEnabled())
+        self.assertTrue(dialog.Q0_btn.isEnabled())
+        dialog.monkezusbcamera.set_image(np.full((80, 120, 3), 255, np.uint8))
+        image = np.full((60, 80, 3), (12, 40, 90), np.uint8)
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "monkez_assets/images/CameraOffline.png"
+            path.parent.mkdir(parents=True)
+            path.write_bytes(cv2.imencode(".png", image)[1].tobytes())
+            with patch.object(cf, "DATA_DIR", directory):
+                dialog.client_combo.setCurrentIndex(2)
+                np.testing.assert_array_equal(dialog.monkezusbcamera.image, image)
+        self.assertFalse(dialog.adjust_btn.isEnabled())
+        self.assertFalse(dialog.Q0_btn.isEnabled())
+        self.assertIsNone(dialog._current_stream_frame)
+        offline.request_stream_start.assert_not_called()
+
     def test_unavailable_selected_port_is_not_mislabeled_as_no_lora(self):
         lora = MagicMock()
         lora.port_name = "COM7"
+        lora.connection_error = ""
         lora.available_ports.return_value = []
         dialog = SettingWindow(lora_controller=lora)
         self.addCleanup(dialog.reject)

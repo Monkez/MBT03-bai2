@@ -46,6 +46,7 @@ class LoraController(QObject):
         self._port_name = None
         self._channel = cf.config_int("shooting.control_channel", 1, minimum=1, maximum=3)
         self._channel_config_failed = False
+        self.connection_error = ""
         self._lock = threading.Lock()
         self._executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="LoRa")
         self._closing = False
@@ -87,7 +88,7 @@ class LoraController(QObject):
         port_name = self.default_port_name()
         if port_name:
             return self.request_connection(port_name, self._channel)
-        self.connection_changed.emit(False, "Không tìm thấy cổng USB Serial Port")
+        self._report_connection(False, "Không tìm thấy cổng USB Serial Port")
         return False
 
     def request_connection(self, port_name, channel, *, force_channel=False):
@@ -109,7 +110,7 @@ class LoraController(QObject):
         channel = self._channel if channel is None else channel
         if type(channel) is not int or channel not in self.E32_CHANNEL_CODES:
             message = "Chọn Kênh 1, 2 hoặc 3"
-            self.connection_changed.emit(False, message)
+            self._report_connection(False, message)
             self.configuration_finished.emit(False, message)
             return False
         with self._lock:
@@ -129,9 +130,13 @@ class LoraController(QObject):
                     success, message = self._open_configured_locked()
                 else:
                     success, message = False, "Không sử dụng LoRa"
-        self.connection_changed.emit(success, message)
+        self._report_connection(success, message)
         self.configuration_finished.emit(success or not port_name, message)
         return success
+
+    def _report_connection(self, connected, message):
+        self.connection_error = message if not connected and self._port_name else ""
+        self.connection_changed.emit(connected, message)
 
     def _open_configured_locked(self):
         port_name = self._port_name
@@ -188,6 +193,7 @@ class LoraController(QObject):
         with self._lock:
             self._close_locked()
             self._port_name = None
+            self.connection_error = ""
 
     def send_command(self, command):
         if not self._closing:
@@ -268,7 +274,7 @@ class LoraController(QObject):
                     break
 
         if connection_result is not None:
-            self.connection_changed.emit(*connection_result)
+            self._report_connection(*connection_result)
         self.command_finished.emit(command, success, attempts)
         return success
 

@@ -58,6 +58,7 @@ class ShootingScriptTests(unittest.TestCase):
             with self.subTest(close_action=close_action):
                 lora = MagicMock()
                 lora.port_name = "COM7"
+                lora.connection_error = ""
                 lora.available_ports.return_value = [{"device": "COM7", "description": "USB Serial"}]
                 dialog = SettingWindow(lora_controller=lora)
                 dialog.channel_combo.setCurrentIndex(2)
@@ -184,7 +185,10 @@ class ShootingScriptTests(unittest.TestCase):
         servers[0].send_uart_command.return_value = True
         dialog.Q0_btn.click()
         servers[0].is_connected = False
-        self.assertTrue(QSignalSpy(dialog._q0_start_timer.timeout).wait(1000))
+        dialog._update_frame()
+        self.assertFalse(dialog._q0_start_timer.isActive())
+        self.assertFalse(dialog.Q0_btn.isEnabled())
+        dialog._send_q0_command()
         self.assertEqual(servers[0].send_uart_command.call_args_list,
                          [call("0F003\n"), call("0F003\n")])
 
@@ -193,6 +197,7 @@ class ShootingScriptTests(unittest.TestCase):
         frozen_shot = np.full((120, 160, 3), 200, dtype=np.uint8)
         image_sink = MagicMock()
         window = SimpleNamespace(
+            _stream_available=False,
             _current_stream_frame=live_frame,
             _q0_capture_frame=frozen_shot,
             _adjusting_camera=False,
@@ -212,6 +217,7 @@ class ShootingScriptTests(unittest.TestCase):
         live_frame = np.zeros((120, 200, 3), dtype=np.uint8)
         image_sink = MagicMock()
         window = SimpleNamespace(
+            _stream_available=False,
             _current_stream_frame=live_frame,
             _adjusting_camera=False,
             Q0=True,

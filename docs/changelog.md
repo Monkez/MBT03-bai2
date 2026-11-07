@@ -1,3 +1,8 @@
+# V61-071126 — Báo lỗi LoRa và ảnh súng offline
+
+- Cài đặt hiển thị lỗi kết nối, lỗi đặt kênh và lệnh thiếu phản hồi. ĐẶT ở chế độ Không sử dụng LoRa hiện chữ vàng.
+- Dùng đúng tài nguyên ảnh offline trong bản đóng gói. Khóa hai nút hiệu chỉnh khi chọn súng offline hoặc súng đang chọn mất kết nối.
+
 # V60-071126 — Nút Quy 0 và tiêu đề chính
 
 - ĐÓNG CỬA SỔ và BẮN LẠI dùng nền trắng.

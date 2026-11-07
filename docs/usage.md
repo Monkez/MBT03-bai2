@@ -207,6 +207,8 @@ Nút `Cài đặt thiết bị` mở cửa sổ cài đặt từ `assets/qt/sett
 
 Khi mở cửa sổ này, phần mềm gửi LoRa `@114#` để dựng bia số 6 phục vụ bắn Q0. Khi thoát bằng Đóng cửa sổ, Esc hoặc nút X, phần mềm gửi `@112#` để gập bia xuống, độc lập với tùy chọn gập bia tự động trong bài bắn. Cần kết nối LoRa để bia nhận được lệnh.
 
+Khi chọn súng offline hoặc mất kết nối, Cài đặt hiển thị ảnh offline và khóa hai nút Hiệu chỉnh camera, Bắn quy không.
+
 Trong lúc bắn Q0, camera tiếp tục hiển thị stream trực tiếp sau mỗi phát. Các dấu Q0 của những phát đã xử lý được vẽ chồng lên các frame mới để vừa theo dõi hình ảnh hiện tại vừa đối chiếu các phát trước.
 
 Trải nghiệm Quy không được đồng bộ với `MBT03-wireless`: các chấm xanh ở góc trên ảnh camera biểu thị số phát hợp lệ còn thiếu; mỗi phát hợp lệ được đánh dấu bằng chữ thập vàng. Khi đủ 3 phát hợp lệ theo mặc định, nút **ĐÓNG CỬA SỔ** nhường chỗ cho **BẮN LẠI** và **CHẤP NHẬN**. **BẮN LẠI** xóa mẫu và cấp lại 3 phát cho súng đang chọn. **CHẤP NHẬN** gửi giá trị trung bình đến súng, kết thúc lượt Quy 0 và hiện lại nút **ĐÓNG CỬA SỔ**. Cửa sổ vẫn mở để chọn súng khác và Quy 0 tiếp. Khi không bắn Quy không, chữ thập xanh hiển thị vị trí Q0 đã lưu của bệ đang chọn.
@@ -218,7 +220,7 @@ nối vẫn được ưu tiên. Chỉ gửi đến súng đang kết nối, khô
 thất bại. Mất kết nối sẽ xóa trạng thái tìm súng trên giao diện; đóng ứng dụng gửi
 lệnh trở về đèn xanh tới các súng đang tìm và còn kết nối.
 
-Trong **Cài đặt thiết bị**, chọn **Cổng LoRa** và **Kênh 1, 2 hoặc 3**, rồi bấm **ĐẶT**. Mỗi lần bấm sẽ gửi lại cấu hình kênh cho E32 trên cổng đã chọn, kể cả khi chọn lại kênh hiện tại. Nếu cổng đang mở và giữ nguyên, phần mềm dùng kết nối COM đó. Khi có lỗi, dòng đỏ dưới phần LoRa báo nguyên nhân ngắn gọn. **ĐÓNG CỬA SỔ** tự lưu thời gian bia. Khi khởi động, phần mềm áp dụng kênh đã lưu, mặc định là Kênh 1. Các module LoRa của cùng bộ luyện tập cần dùng cùng kênh.
+Trong **Cài đặt thiết bị**, chọn **Cổng LoRa** và **Kênh 1, 2 hoặc 3**, rồi bấm **ĐẶT**. Mỗi lần bấm sẽ gửi lại cấu hình kênh cho E32 trên cổng đã chọn, kể cả khi chọn lại kênh hiện tại. Nếu cổng đang mở và giữ nguyên, phần mềm dùng kết nối COM đó. Dòng đỏ dưới phần LoRa báo lỗi kết nối, đặt kênh hoặc lệnh thiếu phản hồi. Khi chọn Không sử dụng LoRa rồi bấm ĐẶT, dòng chữ vàng báo chế độ đang dùng. **ĐÓNG CỬA SỔ** tự lưu thời gian bia. Khi khởi động, phần mềm áp dụng kênh đã lưu, mặc định là Kênh 1. Các module LoRa của cùng bộ luyện tập cần dùng cùng kênh.
 
 Nhấn nút **ẨN BIA** (`close_target_btn`) để gửi `@661#` qua LoRa **một lần**,
 không chờ ACK và không gửi lại. Nút

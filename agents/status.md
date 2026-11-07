@@ -1,3 +1,9 @@
+## Lỗi LoRa và súng offline trong Cài đặt — 2026-11-07
+
+- LoraController lưu connection_error cho cổng đã chọn. Cài đặt nhận cả connection_changed, command_finished và configuration_finished. ĐẶT không dùng LoRa hiện cảnh báo vàng.
+- Ảnh offline tìm monkez_assets ở gốc bundle trước rồi fallback MonkezCustomWidgets khi chạy nguồn. Stream đang chọn là nguồn frame duy nhất. Khi offline reset Q0 và khóa hai nút hiệu chỉnh.
+- 393 kiểm tra đạt. Qt/PYZ dùng cổng và súng giả lập xác nhận lỗi thiếu ACK, lỗi E32, cảnh báo vàng và ảnh offline từ thư mục bundle. Bản V61-071126 trên Desktop.
+
 ## Giao diện Quy 0 và cửa sổ chính — 2026-11-07
 
 - setting.ui dùng DeactiveColor trắng, chữ tối cho close_window_btn/cancel_btn. cancel_btn hiển thị BẮN LẠI. Bỏ showMessage LoRa trên MainWindow, giữ dòng lỗi lora_log_label trong Cài đặt và log console. Cập nhật tiêu đề chính.

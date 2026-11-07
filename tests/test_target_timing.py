@@ -141,6 +141,7 @@ class TimingUiTests(TimingFixture, unittest.TestCase):
     def test_lora_button_saves_channel_reapplies_and_shows_errors_only(self):
         lora = MagicMock()
         lora.port_name = "COM7"
+        lora.connection_error = ""
         lora.channel = 3
         lora.available_ports.return_value = [{"device": "COM7", "description": "USB Serial"}]
         dialog = SettingWindow(lora_controller=lora)
@@ -162,6 +163,38 @@ class TimingUiTests(TimingFixture, unittest.TestCase):
         saved = json.loads(self.path.read_text(encoding="utf-8"))["shooting"]
         self.assertEqual(saved["control_channel"], 3)
         self.assertNotIn("target_times", saved)
+
+    def test_pressing_lora_apply_in_no_lora_mode_shows_yellow_notice(self):
+        lora = MagicMock(port_name=None, connection_error="")
+        lora.available_ports.return_value = []
+        dialog = SettingWindow(lora_controller=lora)
+        self.addCleanup(dialog.reject)
+        self.assertTrue(dialog.lora_log_label.isHidden())
+        dialog.lora_accept_btn.click()
+        lora.request_connection.assert_called_once_with("", dialog.channel_combo.currentData(), force_channel=True)
+        dialog._on_lora_configuration_finished(True, "Không sử dụng LoRa")
+        self.assertFalse(dialog.lora_log_label.isHidden())
+        self.assertEqual(dialog.lora_log_label.text(), "Không sử dụng LoRa")
+        self.assertIn("#a16207", dialog.lora_log_label.styleSheet())
+
+    def test_lora_errors_include_current_connection_failure_and_unanswered_commands(self):
+        lora = MagicMock(port_name="COM7", connection_error="Không mở được COM7: access denied")
+        lora.available_ports.return_value = []
+        dialog = SettingWindow(lora_controller=lora)
+        self.addCleanup(dialog.reject)
+        self.assertFalse(dialog.lora_log_label.isHidden())
+        self.assertEqual(dialog.lora_log_label.text(), "Không mở được COM7")
+        lora.connection_error = ""
+        dialog._on_lora_connection_changed(True, "COM7 · Kênh 1")
+        self.assertTrue(dialog.lora_log_label.isHidden())
+        dialog._on_lora_command_finished("@114#", False, 3)
+        self.assertEqual(dialog.lora_log_label.text(), "LoRa không phản hồi @114#")
+        self.assertFalse(dialog.lora_log_label.isHidden())
+        dialog._on_lora_command_finished("@114#", True, 1)
+        self.assertTrue(dialog.lora_log_label.isHidden())
+        lora.port_name = None
+        dialog._on_lora_command_finished("@114#", False, 0)
+        self.assertTrue(dialog.lora_log_label.isHidden())
 
     def test_general_accept_saves_timing_without_saving_unapplied_channel(self):
         dialog = self.dialog()

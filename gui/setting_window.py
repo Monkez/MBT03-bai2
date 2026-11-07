@@ -1,6 +1,8 @@
 import os
+from pathlib import Path
 
 import cv2
+import numpy as np
 from PyQt5 import QtGui, uic
 from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtWidgets import QAbstractSpinBox, QDialog, QGridLayout, QLabel, QDoubleSpinBox, QMessageBox
@@ -39,6 +41,7 @@ class SettingWindow(QDialog):
         self._stream_server = None
         self._current_server_index = -1
         self._current_stream_frame = None
+        self._stream_available = False
         self._adjusting_camera = False
 
         self.Q0 = False
@@ -84,13 +87,12 @@ class SettingWindow(QDialog):
         self.lora_accept_btn.setEnabled(self.lora_controller is not None)
         self.lora_log_label.setTextFormat(Qt.PlainText)
         self.lora_log_label.setWordWrap(True)
-        self.lora_log_label.setStyleSheet(
-            "QLabel { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; "
-            "border-radius: 5px; padding: 5px 8px; font-size: 12px; }"
-        )
-        self._show_lora_error("")
+        self._show_lora_message("")
         if self.lora_controller is not None:
             self.lora_controller.configuration_finished.connect(self._on_lora_configuration_finished)
+            self.lora_controller.connection_changed.connect(self._on_lora_connection_changed)
+            self.lora_controller.command_finished.connect(self._on_lora_command_finished)
+            self._show_lora_message(self.lora_controller.connection_error)
 
         self.adjust_btn.setEnabled(False)
         self.adjust_btn.setCheckable(True)
@@ -202,12 +204,10 @@ class SettingWindow(QDialog):
         self._stop_stream()
         self._reset_controls()
         if index <= 0 or index > len(self.servers):
-            self._show_offline_image()
             return
 
         server = self.servers[index - 1]
         if not server.is_connected:
-            self._show_offline_image()
             return
 
         self._stream_server = server
@@ -218,18 +218,28 @@ class SettingWindow(QDialog):
         if not server.request_stream_start():
             self._stop_stream()
             self._reset_controls()
-            self._show_offline_image()
             return
-        self.adjust_btn.setEnabled(True)
-        self.Q0_btn.setEnabled(True)
+        self._set_stream_available(True)
 
     def _on_stream_frame(self, frame):
-        if frame is not None:
+        if (self._stream_available and self._stream_server is not None
+                and self.sender() is self._stream_server and frame is not None):
             self._current_stream_frame = frame
 
     def _on_stream_state_changed(self, active):
-        if not active:
+        server = self._stream_server
+        if server is not None and self.sender() is server:
+            self._set_stream_available(active and server.is_connected)
+
+    def _set_stream_available(self, available):
+        self._stream_available = available
+        self.adjust_btn.setEnabled(available)
+        self.Q0_btn.setEnabled(available)
+        if not available:
             self._current_stream_frame = None
+            self._adjusting_camera = False
+            self.adjust_btn.setChecked(False)
+            self._reset_q0_round()
             self._show_offline_image()
 
     def _toggle_camera_adjustment(self):
@@ -347,11 +357,11 @@ class SettingWindow(QDialog):
             return
         port = self.comport_combo.currentData() or ""
         channel = self.channel_combo.currentData()
-        self._show_lora_error("")
+        self._show_lora_message("")
         try:
             save_control_channel(channel)
         except (OSError, ValueError) as error:
-            self._show_lora_error(f"Chưa lưu được kênh LoRa: {error}")
+            self._show_lora_message(f"Chưa lưu được kênh LoRa: {error}")
             return
         if self._calibration_active and (port != (controller.port_name or "") or channel != controller.channel):
             if controller.port_name and not self.calibration_target_suspended:
@@ -367,16 +377,38 @@ class SettingWindow(QDialog):
                        self.confirm_btn, self.cancel_btn, self.close_window_btn):
             widget.setEnabled(not applying)
 
-    def _show_lora_error(self, message):
+    def _show_lora_message(self, message, *, warning=False):
+        colors = ("#fffbeb", "#a16207", "#fde68a") if warning else ("#fef2f2", "#991b1b", "#fecaca")
+        background, foreground, border = colors
+        self.lora_log_label.setStyleSheet(
+            f"QLabel {{ background: {background}; color: {foreground}; border: 1px solid {border}; "
+            "border-radius: 5px; padding: 5px 8px; font-size: 12px; }"
+        )
         self.lora_log_label.setText(message.split(": ", 1)[0])
         self.lora_log_label.setToolTip(message)
         self.lora_log_label.setVisible(bool(message))
+
+    def _on_lora_connection_changed(self, _connected, _message):
+        if not self._lora_applying:
+            self._show_lora_message(self.lora_controller.connection_error)
+
+    def _on_lora_command_finished(self, command, success, attempts):
+        controller = self.lora_controller
+        if self._lora_applying or not controller.port_name:
+            return
+        error = controller.connection_error
+        if not success and not error:
+            error = f"LoRa không phản hồi {command}" if attempts else f"Chưa gửi được {command}"
+        self._show_lora_message(error)
 
     def _on_lora_configuration_finished(self, success, message):
         if not self._lora_applying:
             return
         self._set_lora_applying(False)
-        self._show_lora_error("" if success else message)
+        if success and not self.lora_controller.port_name:
+            self._show_lora_message("Không sử dụng LoRa", warning=True)
+        else:
+            self._show_lora_message("" if success else message)
         if success and self.calibration_target_suspended and self.lora_controller.port_name:
             self.lora_controller.send_command(cf.config_str("calibration.target_raise_command", "@114#"))
             self.calibration_target_suspended = False
@@ -395,6 +427,9 @@ class SettingWindow(QDialog):
             return 0.5, 0.5
 
     def _update_frame(self):
+        if self._stream_available and self._stream_server is not None and not self._stream_server.is_connected:
+            self._set_stream_available(False)
+            return
         # Shoot images are calibration inputs only. Continue displaying the
         # latest live frame and overlay completed Q0 samples on top.
         frame = self._current_stream_frame
@@ -434,17 +469,13 @@ class SettingWindow(QDialog):
 
     def _reset_controls(self):
         self._current_server_index = -1
-        self._current_stream_frame = None
-        self._adjusting_camera = False
-        self._reset_q0_round()
-        self.adjust_btn.setChecked(False)
-        self.adjust_btn.setEnabled(False)
-        self.Q0_btn.setEnabled(False)
+        self._set_stream_available(False)
 
     def _stop_stream(self):
         self._cancel_q0_start()
         server = self._stream_server
         self._stream_server = None
+        self._stream_available = False
         self._current_stream_frame = None
         if server is None:
             return
@@ -463,10 +494,15 @@ class SettingWindow(QDialog):
         if self._lora_applying:
             return
         if self.lora_controller is not None:
-            try:
-                self.lora_controller.configuration_finished.disconnect(self._on_lora_configuration_finished)
-            except (TypeError, RuntimeError):
-                pass
+            for signal, slot in (
+                (self.lora_controller.configuration_finished, self._on_lora_configuration_finished),
+                (self.lora_controller.connection_changed, self._on_lora_connection_changed),
+                (self.lora_controller.command_finished, self._on_lora_command_finished),
+            ):
+                try:
+                    signal.disconnect(slot)
+                except (TypeError, RuntimeError):
+                    pass
         self._frame_timer.stop()
         self._stop_stream()
         parent = self.parent()
@@ -481,13 +517,16 @@ class SettingWindow(QDialog):
     def _show_offline_image(self):
         if not hasattr(self, "monkezusbcamera"):
             return
-        path = os.path.join(
-            cf.DATA_DIR,
-            "MonkezCustomWidgets",
-            "monkez_assets",
-            "images",
-            "CameraOffline.png",
-        )
-        image = cv2.imread(path, cv2.IMREAD_COLOR) if os.path.exists(path) else None
-        if image is not None:
-            self.monkezusbcamera.set_image(image)
+        camera = self.monkezusbcamera
+        base = Path(cf.DATA_DIR)
+        relative = Path("monkez_assets/images/CameraOffline.png")
+        for path in (base / relative, base / "MonkezCustomWidgets" / relative):
+            try:
+                image = cv2.imdecode(np.frombuffer(path.read_bytes(), dtype=np.uint8), cv2.IMREAD_COLOR)
+            except (OSError, cv2.error):
+                continue
+            if image is not None:
+                camera.set_image(image)
+                return
+        camera.image = None
+        camera.set_image(None)
