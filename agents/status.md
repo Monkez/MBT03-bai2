@@ -1,3 +1,9 @@
+## Hiển thị bia theo lần gửi lệnh — 2026-11-07
+
+- MainWindow truyền display_delays=(0,1) cho ShootingSession. Hiện theo actual sent, gập sau actual hide +1. Khoảng điểm vẫn dùng hardware_delay_time, xe 8C thật dùng feedback.
+- 8C mô phỏng tính +2 giây kết thúc từ mốc gập mô phỏng. Test Main xác nhận lệnh gửi trễ không làm ảnh hiện/gập theo mốc dự kiến sai.
+- 388 kiểm tra đạt. Test polling 8C chờ tín hiệu timer thay cho qWait cố định. Native Qt/PYZ giả lập xác nhận hiện theo lần gửi, gập đúng ngưỡng +1 và 8C theo feedback. Bản V57-071126 trên Desktop.
+
 ## Lịch bia và lời đọc 8C — 2026-11-07
 
 - MainWindow dùng mốc Hiện và Ẩn+1 để hẹn lệnh. Thời lượng theo lịch của ShootingSession khớp hai mốc gửi. 8C thật chỉ gửi @444 và theo dõi @448.

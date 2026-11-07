@@ -164,8 +164,7 @@ Viền bo góc đỏ biểu thị chưa trúng, xanh biểu thị đã trúng; l
 giúp dễ phân biệt từng bia. Dải đạn giữ rõ cả khi bia gập; viền giữ xanh/đỏ theo kết quả.
 Các bệ cùng theo trạng thái bia chung; trúng ở một bệ có thể gập bia chung khi bật chế độ này.
 
-Ba bia đầu mô phỏng theo lịch điều khiển và thời điểm gửi lệnh. Riêng 8C khi dùng LoRa hiển thị theo phản hồi @448; khi không dùng LoRa thì mô phỏng theo thời gian cài đặt. Khoảng cho phép chấm điểm ảnh đến sớm/muộn không kéo dài
-thời gian hiện bia trên màn hình. Dấu chạm chỉ hiện trên bia đang hiện; toàn bộ
+Hình mô phỏng hiện ngay khi lệnh hiện được gửi và gập sau khi gửi lệnh ẩn **1 giây**. Ví dụ bia 6 đặt Hiện 15, Ẩn 22 thì hình hiện ở giây 15 và gập ở giây 24 nếu gửi đúng lịch. Bia 8C khi dùng LoRa hiển thị theo phản hồi `@448`. Khoảng nhận điểm được tính riêng. Dấu chạm chỉ hiện trên bia đang hiện; toàn bộ
 dấu chạm được giữ lại để xem khi kết thúc. Khi mới mở ứng dụng hoặc kết thúc/dừng
 bài bắn, màn hình hiển thị lại cả bốn bia như trước.
 

@@ -82,6 +82,20 @@ class OfflineScheduleTests(unittest.TestCase):
             self.assertIsNone(window._shooting_session.active_target(116,1))
             window.lora.send_command.assert_called_with("@114#")
 
+            window._on_lora_command_sent("@114#", 115, 116)
+            self.assertEqual(window.client_widgets[0]._target_presentation, (1, True))
+            clock.return_value = 123
+            window._send_scheduled_target_hide(1)
+            clock.return_value = 124
+            window._on_lora_command_sent("@112#", 123, 124)
+            clock.return_value = 124.999
+            window._refresh_target_presentation()
+            self.assertEqual(window.client_widgets[0]._target_presentation, (1, True))
+            clock.return_value = 125
+            window._refresh_target_presentation()
+            self.assertEqual(window.client_widgets[0]._target_presentation, (1, False))
+            self.assertEqual(window._shooting_session.active_target(126.999, 1).class_id, 1)
+
     def test_error_row_hidden_when_empty_and_restored_on_validation_or_save_error(self):
         dialog = SettingWindow()
         self.addCleanup(dialog.reject)

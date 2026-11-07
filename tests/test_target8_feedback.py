@@ -4,7 +4,7 @@ import numpy as np
 from unittest.mock import MagicMock, patch
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 from PyQt5.QtWidgets import QApplication
-from PyQt5.QtTest import QTest
+from PyQt5.QtTest import QSignalSpy
 import config as cf
 from gui.main_window import MainWindow
 
@@ -120,8 +120,10 @@ class Target8FeedbackTests(unittest.TestCase):
 
     def test_real_timer_polls_then_stop_and_stale_status_do_not_change_next_run(self):
         self.begin_target8()
-        self.window._target8_poll_timer.setInterval(20)
-        QTest.qWait(55)
+        timer = self.window._target8_poll_timer
+        timer.setInterval(20)
+        timeout = QSignalSpy(timer.timeout)
+        self.assertTrue(timeout.wait(1000), "8C polling timer did not fire")
         self.assertGreaterEqual(self.window.lora.query_target8_state.call_count, 1)
         self.window.stop_test()
         self.assertFalse(self.window._target8_poll_timer.isActive())

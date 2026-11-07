@@ -21,7 +21,7 @@ Nhóm `shooting`:
 | `automatic_close_target.default_multiple_pedestals` | Mặc định bật/tắt gập bia tự động khi chọn từ 2 bệ. |
 | `automatic_close_target.commands_by_class` | Lệnh gập/ẩn bia theo class mô hình. Để `command` thành chuỗi rỗng nếu muốn vô hiệu hóa một bia. |
 | `target_times` | Bốn cặp `show_seconds` / `hide_seconds` theo thứ tự 6 → 10 → 7B → 8C; nhập và lưu trong Cài đặt thiết bị. Mốc tính từ lúc bắt đầu bài. |
-| `hardware_delay_time` | Thời gian bù trễ phần cứng, mặc định `1.5` giây. Dùng để mô phỏng độ trễ và tính khoảng nhận điểm sau lệnh ẩn. |
+| `hardware_delay_time` | Thời gian bù trễ phần cứng, mặc định `1.5` giây. Dùng để tính khoảng nhận điểm sau lệnh ẩn. |
 | `control_channel` | Kênh E32 đã chọn. Mặc định là 1. Kênh 1, 2, 3 tương ứng mã `01`, `03`, `05`. |
 | `lora_timeline` | Cấu hình cũ: khi chưa có `target_times`, lấy các mốc hiện cũ và thời lượng 7/7/7/28 giây làm giá trị ban đầu; chuyển sang dùng lệnh thủ công bên dưới. |
 
@@ -43,8 +43,7 @@ Khi chọn **Không sử dụng LoRa**, bài dùng mốc mô phỏng thay cho gh
 hiện/ẩn, nhận điểm và tự kết thúc theo cùng công thức; không gửi lệnh đến bia vật lý.
 Khi chọn COM, vẫn cần lần ghi thực tế, kể cả khi kết nối đang lỗi.
 
-Mô phỏng dự kiến bia đổi trạng thái sau lệnh một khoảng `hardware_delay_time`;
-ba bia đầu không trả vị trí cơ khí thực tế. 8C dùng phản hồi @4480/@4481 kèm xuống dòng để cập nhật ngay trạng thái.
+Hình mô phỏng hiện tại thời điểm gửi lệnh hiện và gập sau lần gửi lệnh ẩn 1 giây. Khi gửi theo lịch, mốc gập trên màn hình là `Ẩn + 2 giây`. Bia 8C khi dùng LoRa cập nhật theo phản hồi @4480/@4481 kèm xuống dòng.
 
 | Class | Bia | Lệnh hiện trong bài | Ẩn trong bài |
 | --- | --- | --- | --- |

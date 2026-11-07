@@ -892,6 +892,7 @@ class MainWindow(QMainWindow):
             hardware_delay_time=hardware_delay_time(),
             feedback_targets=() if self._simulate_targets else (3,),
             carriage_timeout_seconds=target8_timeout_seconds(self._target_timings),
+            display_delays=(0, 1),
         )
         logging.getLogger("mbt03_server").info(
             "[Exercise] session=%s | bắt đầu | %s bệ | giới hạn %ss",

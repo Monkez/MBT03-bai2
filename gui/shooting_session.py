@@ -22,9 +22,12 @@ class ShootingSession:
     """Track scoring windows separately from commanded visibility."""
 
     def __init__(self, started_at, target_delays=(), visible_seconds=None, hardware_delay_time=None,
-                 feedback_targets=(), carriage_timeout_seconds=None):
+                 feedback_targets=(), carriage_timeout_seconds=None, display_delays=None):
         self.visible_seconds = dict(TARGET_VISIBLE_SECONDS_BY_CLASS if visible_seconds is None else visible_seconds)
         self.hardware_delay_time = hardware_delay_time or 0
+        if display_delays is None:
+            display_delays = (self.hardware_delay_time, self.hardware_delay_time)
+        self._show_display_delay, self._hide_display_delay = display_delays
         self._hardware_mode = hardware_delay_time is not None
         self._early = TARGET_EARLY_SECONDS if hardware_delay_time is None else 0
         self._late = TARGET_LATE_SECONDS if hardware_delay_time is None else 2 * hardware_delay_time
@@ -44,7 +47,7 @@ class ShootingSession:
         self._carriage_timeout_seconds = carriage_timeout_seconds
         self._carriage_deadline = None
         self._confirmed_raises = set()
-        self._planned_shows = {target: started_at + delay + self.hardware_delay_time
+        self._planned_shows = {target: started_at + delay + self._show_display_delay
                                for target, delay in zip(TARGET_CLASS_SEQUENCE, target_delays)}
         self._planned_hides = {
             target: started_at + delay + self.visible_seconds[target]
@@ -88,7 +91,7 @@ class ShootingSession:
             hidden = self._lowered_times.get(target, raised + self.visible_seconds[target])
             if self._hardware_mode and target not in self._confirmed_hides:
                 hidden = float("inf")
-            if raised + self.hardware_delay_time <= now < hidden + self.hardware_delay_time:
+            if raised + self._show_display_delay <= now < hidden + self._hide_display_delay:
                 visible.append(target)
         return tuple(visible)
 
@@ -102,22 +105,20 @@ class ShootingSession:
         raised = [target for target in TARGET_CLASS_SEQUENCE
                   if target in self._raised_times
                   and (not self._hardware_mode or target in self._confirmed_raises)
-                  and self._raised_times[target] + self.hardware_delay_time <= now]
+                  and self._raised_times[target] + self._show_display_delay <= now]
         if not raised:
             return TARGET_CLASS_SEQUENCE[0], False
         class_id = raised[-1]
         closed_at = self._lowered_times.get(
             class_id, self._raised_times[class_id] + self.visible_seconds[class_id])
-        if self._hardware_mode:
-            closed_at += self.hardware_delay_time
-        closed_at = min(closed_at, self.deadline)
+        closed_at = min(closed_at + self._hide_display_delay, self.deadline)
         index = TARGET_CLASS_SEQUENCE.index(class_id)
         if index + 1 < len(TARGET_CLASS_SEQUENCE):
             upcoming = TARGET_CLASS_SEQUENCE[index + 1]
             next_show = self._planned_shows.get(upcoming)
             if upcoming in self._raised_times and (
                     not self._hardware_mode or upcoming in self._confirmed_raises):
-                next_show = self._raised_times[upcoming] + self.hardware_delay_time
+                next_show = self._raised_times[upcoming] + self._show_display_delay
             if next_show is not None and now >= (closed_at + next_show) / 2:
                 class_id = upcoming
         return class_id, False
@@ -207,7 +208,7 @@ class ShootingSession:
             self._confirmed_hides.add(class_id)
             self._lowered_times[class_id] = sent_at
             if class_id == 3 and class_id not in self._feedback_targets and self._carriage_deadline is not None:
-                self._carriage_deadline = min(self._carriage_deadline, sent_at + self.hardware_delay_time + 2)
+                self._carriage_deadline = min(self._carriage_deadline, sent_at + self._hide_display_delay + 2)
         else:
             return False
         self._update_windows()

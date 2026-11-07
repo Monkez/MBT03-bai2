@@ -1,3 +1,8 @@
+# V57-071126 — Đồng bộ hình bia với lệnh
+
+- Hình bia hiện khi gửi lệnh hiện và gập 1 giây sau lệnh ẩn. Với lịch gửi ẩn muộn 1 giây, hình gập sau mốc Ẩn đã đặt 2 giây.
+- Bia 8C dùng LoRa hiển thị theo trạng thái xe. Mô phỏng xe dùng mốc gập mới để tính hai giây cuối bài.
+
 # V56-071126 — Lịch gửi lệnh bia và lời đọc 8C
 
 - Gửi lệnh hiện đúng mốc Hiện và lệnh ẩn theo lịch sau mốc Ẩn 1 giây.
