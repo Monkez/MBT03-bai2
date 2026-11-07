@@ -156,7 +156,7 @@ Trong bài bắn, mỗi bệ chỉ hiển thị một bia được phóng to the
 **6 → 10 → 7B → 8C**. Khi bắt đầu, bia 6 mờ đen trắng và có nhãn **ĐANG GẬP**.
 Tên bia và trạng thái nằm trên một hàng, ví dụ **BIA SỐ 8C · ĐANG GẬP** (không ghi góc alpha).
 Đến thời điểm hiện bia, ảnh chuyển sang màu rõ và nhãn **ĐANG HIỆN**.
-Hết thời gian, hoặc có phát trúng hợp lệ khi bật tự động gập bia, ảnh trở lại mờ.
+Với ba bia đầu, hết thời gian hoặc có phát trúng hợp lệ khi bật tự động gập bia thì ảnh trở lại mờ. 8C tự chạy, chỉ cập nhật gập theo phản hồi.
 Bia vừa gập tiếp tục hiển thị đến mốc giữa thời điểm gập thực tế và thời điểm bia kế tiếp hiện theo lịch, rồi chuyển sang bia kế tiếp ở trạng thái gập. Ví dụ gập lúc 20 giây, bia sau hiện lúc 32 giây thì chuyển lúc 26 giây. Nếu đã có bia khác đang hiện, ưu tiên hiển thị các bia đang hiện.
 Khi nhiều bia cùng hiện, màn hình chia khung để hiển thị tất cả các bia đang hiện.
 Sau lượt bia cuối, giữ bia cuối ở trạng thái gập đến khi kết thúc bài.
@@ -164,8 +164,7 @@ Viền bo góc đỏ biểu thị chưa trúng, xanh biểu thị đã trúng; l
 giúp dễ phân biệt từng bia. Dải đạn giữ rõ cả khi bia gập; viền giữ xanh/đỏ theo kết quả.
 Các bệ cùng theo trạng thái bia chung; trúng ở một bệ có thể gập bia chung khi bật chế độ này.
 
-Màn hình mô phỏng theo lịch điều khiển và thời điểm gửi lệnh, không phải cảm biến
-xác nhận bia vật lý. Khoảng cho phép chấm điểm ảnh đến sớm/muộn không kéo dài
+Ba bia đầu mô phỏng theo lịch điều khiển và thời điểm gửi lệnh. Riêng 8C khi dùng LoRa hiển thị theo phản hồi @448; khi không dùng LoRa thì mô phỏng theo thời gian cài đặt. Khoảng cho phép chấm điểm ảnh đến sớm/muộn không kéo dài
 thời gian hiện bia trên màn hình. Dấu chạm chỉ hiện trên bia đang hiện; toàn bộ
 dấu chạm được giữ lại để xem khi kết thúc. Khi mới mở ứng dụng hoặc kết thúc/dừng
 bài bắn, màn hình hiển thị lại cả bốn bia như trước.
@@ -223,8 +222,8 @@ lệnh trở về đèn xanh tới các súng đang tìm và còn kết nối.
 Nhấn nút **ẨN BIA** (`close_target_btn`) để gửi `@661#` qua LoRa **một lần**,
 không chờ ACK và không gửi lại. Nút
 **HIỆN BIA** (`open_target_btn`) gửi lần lượt bia **6 → 10 → 7 → 8**, dùng các
-lệnh riêng `@114#`, `@224#`, `@334#`, `@441#`, độc lập với `shooting.lora_timeline`.
-Các lệnh HIỆN BIA chờ ACK (echo đúng lệnh). Nhận ACK thì chờ **100 ms** trước bia kế tiếp;
+lệnh riêng `@114#`, `@224#`, `@334#`, `@444#`, độc lập với `shooting.lora_timeline`.
+Ba bia đầu chờ ACK (echo đúng lệnh); riêng @444# gửi một lần và theo dõi bằng @448#. Nhận ACK thì chờ **100 ms** trước bia kế tiếp;
 hết số lần thử tối đa mà không có ACK thì chuyển ngay sang bia kế tiếp. Thời gian
 chờ và số lần thử dùng `lora.ack_timeout_seconds` / `lora.max_attempts` (mặc định
 1 giây / 3 lần gửi tổng cộng). Trong lúc gửi, hai nút điều khiển bia, Cài đặt và
@@ -234,7 +233,7 @@ Nút CẤP ĐẠN đã gộp vào **BẮT ĐẦU**. Khi nhấn `BẮT ĐẦU`, �
 `0F016\n` cấp 16 viên cho súng ở mỗi bệ, lập lịch bài bắn và sau khoảng **300 ms**
 gửi `0A000\n`. Lệnh cấp đạn dùng khóa cấu hình `shooting.start_uart_command`.
 Không tự gửi lệnh ẩn tất cả bia; lịch hiện bia trong bài bắn vẫn dùng
-`shooting.target_times`, dùng lệnh hiện thủ công `@114#`, `@224#`, `@334#`, `@441#` và lệnh ẩn tương ứng.
+`shooting.target_times`, dùng các lệnh hiện `@114#`, `@224#`, `@334#`, `@444#`; chỉ ba bia đầu có lệnh ẩn tương ứng.
 Lệnh đang chờ được hủy nếu kết thúc bài hoặc đóng ứng dụng trước khi hết thời gian chờ.
 
 Khi bật **Q0**, phần mềm gửi `0F003` đến súng của bệ đang chọn, chờ **300 ms** rồi
@@ -243,12 +242,14 @@ Tắt Q0, đổi bệ hoặc đóng cửa sổ sẽ hủy lệnh còn chờ; đ�
 bệ trước. Nếu gửi `0F003` thất bại hoặc bệ mất kết nối trước khi hết thời gian chờ,
 phần mềm không gửi tiếp `0Q000`.
 
-Bài bắn tự kết thúc sau lệnh ẩn cuối cùng thêm **4 × hardware_delay_time**; có thể kết thúc sớm bằng nút trên màn hình.
+Riêng **bia số 8C**, phần mềm gửi **@444# một lần** cho xe chạy, rồi hỏi **@448# mỗi giây**. Phản hồi `@4481` kèm xuống dòng là đang hiện, `@4480` là đã ẩn. Màn hình cập nhật theo phản hồi, không cộng thêm độ trễ hiển thị. Không gửi @442# do trúng, theo lịch, khi hết giờ hoặc thoát bài; xe tự chạy hết hành trình và gập.
+
+Ô **Ẩn của 8C** là **thời gian chạy**, khác với mốc ẩn tuyệt đối của ba bia đầu. Giới hạn chờ bằng giá trị này **+ 4 giây**, tính từ lần ghi @444# thực tế: nhập 16 thì tối đa 20 giây. Nếu đã thấy bia hiện rồi nhận phản hồi gập, kết thúc bài sau **2 giây**, nhưng không vượt giới hạn trên. Phản hồi 0 lúc xe vừa khởi hành chưa làm kết thúc bài; mất phản hồi vẫn kết thúc khi hết giới hạn chờ. Có thể kết thúc thủ công bằng nút trên màn hình. Các khoảng +2/+4 giây riêng của 8C là số giây cố định, không nhân hardware_delay_time.
 Khi kết thúc bài (thủ công, hết giờ hoặc thoát ứng dụng trong bài), phần mềm gửi
 `0S000` kèm xuống dòng đến tất cả súng. Đóng cửa sổ cài đặt bằng Chấp nhận, Hủy,
 Esc hoặc nút X cũng gửi lệnh này đến tất cả súng.
 Bia hiện theo thứ tự **6 → 10 → 7B → 8C**. Trong Cài đặt thiết bị, phần THỜI GIAN
-HIỆN / ẨN BIA cho phép nhập hai mốc giây của từng bia. Nhấn CHẤP NHẬN để lưu và
+HIỆN / ẨN BIA cho phép nhập hai mốc giây cho ba bia đầu; ô Ẩn của 8C nhập thời gian chạy. Nhấn CHẤP NHẬN để lưu và
 áp dụng từ bài tiếp theo; HỦY không lưu. Mặc định Hiện là **15 / 32 / 42 / 64**,
 Ẩn là **22 / 39 / 49 / 82**. Tên kênh có ba mục, hiện chỉ lưu lựa chọn để phát triển sau.
 

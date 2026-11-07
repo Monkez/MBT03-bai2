@@ -1,3 +1,11 @@
+## Xe bia 8C — 2026-11-07
+
+- Thay raise8C @441# bằng @444#, gửi một lần không chờ echo/retry để tránh chạy lại xe. Poll @448# mỗi 1000ms, coalesce tối đa một query đang chờ, timeout ≤1s; parse dòng @448[01]\n/CRLF, chịu phân mảnh, không nhận echo làm trạng thái. target_state_received kèm requested_at/observed_at, bỏ phản hồi cũ.
+- MainWindow phản ánh trạng thái thực 8C, dừng poll khi gập sau lần hiện, stop/close. Không gửi @442# khi hit/lịch/stop/close; ba bia kia giữ lệnh cũ. Manual HIỆN cũng dùng @444 và poll.
+- Session giữ history trạng thái cho attribution tại received_at; 0 ban đầu chưa phải hoàn thành. Giới hạn bài từ actual @444 sent = runtime+4s, feedback gập thì min(deadline, observed+2s). Hết hạn luôn dừng dù thiếu phản hồi/hide khác; ảnh nhận từ deadline bị loại dù timer chưa chạy.
+- Cài đặt hiển thị ô Ẩn 8C là duration, nội bộ JSON target_times vẫn absolute để tương thích. target8_timeout_seconds = hide_seconds-show_seconds+4. 16s trên GUI =>20s chờ; lưu/nạp có test.
+- 382 tests toàn bộ đạt; 23 test giao thức/lifecycle đạt sau chặn lệnh cũ khi khởi động lại. Build V52-071126 đạt. Native Qt từ PYZ với LoRa worker thật/cổng giả lập đã thử 2 bài, trạng thái hiện/gập, kết thúc +2s, timeout20s, không có @442. Bàn giao Desktop giữ dữ liệu/cấu hình. Chưa thử xe thật/EXE mặc định.
+
 ## Nâng riêng bia 10 — 2026-11-07
 
 - _draw_target nâng class 0 (bia 10) thêm 8*scale pixel, chặn tại top vùng ảnh để không chồng dải đạn. Bia khác, kích thước và phép ánh xạ marker giữ nguyên.

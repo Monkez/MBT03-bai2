@@ -25,34 +25,37 @@ Nhóm `shooting`:
 | `control_channel` | Lưu Kênh 1/2/3, chưa ảnh hưởng lệnh điều khiển. |
 | `lora_timeline` | Cấu hình cũ: khi chưa có `target_times`, lấy các mốc hiện cũ và thời lượng 7/7/7/18 giây làm giá trị ban đầu; chuyển sang dùng lệnh thủ công bên dưới. |
 
-Bài bắn tự kết thúc khi lệnh ẩn cuối cùng thực sự gửi đi cộng `4 × hardware_delay_time`. Với từng bia, cần
-`hardware_delay_time ≤ Hiện < Ẩn ≤ 3600`; thứ tự mốc hiện là 6 → 10 → 7B → 8C, có thể bằng nhau.
+Bài bắn kết thúc theo bia xe 8C: xác nhận gập +2 giây hoặc hết thời gian chạy +4 giây từ @444#, lấy mốc sớm hơn. Với ba bia đầu cần
+`hardware_delay_time ≤ Hiện < Ẩn ≤ 3600`; ô Ẩn của 8C là thời gian chạy dương. Thứ tự mốc hiện là 6 → 10 → 7B → 8C, có thể bằng nhau.
 Cho phép các khoảng hiện chồng nhau, mốc ẩn không cần cùng thứ tự.
 Khi chỉnh xong, nhấn CHẤP NHẬN để lưu vào JSON và dùng cho bài kế tiếp; khởi động
 lại vẫn giữ các mốc và kênh. Hủy/Esc/X không lưu thay đổi. Lỗi ghi file giữ nguyên
 cấu hình cũ và không đóng hộp thoại.
 
-Lệnh được hẹn tại `Hiện - hardware_delay_time` và `Ẩn - hardware_delay_time`.
-Khoảng nhận trúng bắt đầu tại lúc lệnh hiện thực sự ghi ra cổng LoRa, kết thúc
+Ba bia đầu hẹn lệnh tại `Hiện - hardware_delay_time` và `Ẩn - hardware_delay_time`. 8C chỉ gửi @444# tại `Hiện - hardware_delay_time`.
+Với ba bia đầu, khoảng nhận trúng bắt đầu tại lúc lệnh hiện thực sự ghi ra cổng LoRa, kết thúc
 **trước** lúc ghi lệnh ẩn cộng `2 × hardware_delay_time`.
 Công thức áp dụng cả khi gập sớm do trúng. Không dùng padding 2 giây sớm/4 giây
 muộn của bản trước. Ảnh được xét theo thời điểm PC nhận, không phải khi model chấm xong.
-Chỉ bắt đầu nhận điểm sau khi đã gửi lệnh hiện. Nếu chưa gửi đủ lệnh ẩn, phần mềm
-chờ gửi xong hoặc người vận hành kết thúc thủ công; gửi trễ thì mốc tự kết thúc cũng dịch theo.
+Chỉ bắt đầu nhận điểm sau khi đã gửi lệnh hiện. 8C nhận điểm từ lần ghi @444# thực tế, dừng theo giới hạn bài hoặc khi đã gập hết khoảng nhận điểm; không chờ lệnh ẩn 8C.
 
 Khi chọn **Không sử dụng LoRa**, bài dùng mốc mô phỏng thay cho ghi serial để
 hiện/ẩn, nhận điểm và tự kết thúc theo cùng công thức; không gửi lệnh đến bia vật lý.
 Khi chọn COM, vẫn cần lần ghi thực tế, kể cả khi kết nối đang lỗi.
 
 Mô phỏng dự kiến bia đổi trạng thái sau lệnh một khoảng `hardware_delay_time`;
-giao thức không trả vị trí cơ khí thực tế.
+ba bia đầu không trả vị trí cơ khí thực tế. 8C dùng phản hồi @4480/@4481 kèm xuống dòng để cập nhật ngay trạng thái.
 
 | Class | Bia | Hiện thủ công | Ẩn thủ công |
 | --- | --- | --- | --- |
 | `1` | BIA SỐ 6 | `@114#` | `@112#` |
 | `0` | BIA SỐ 10 | `@224#` | `@222#` |
 | `2` | BIA SỐ 7B | `@334#` | `@332#` |
-| `3` | BIA SỐ 8C | `@441#` | `@442#` |
+| `3` | BIA SỐ 8C | `@444#` (chạy một lần) | Tự gập, hỏi `@448#` mỗi giây |
+
+Riêng ô Ẩn của 8C trong Cài đặt là thời gian chạy (ví dụ 16 giây). Giới hạn bài từ lần ghi @444# thực tế là thời gian chạy +4 giây; nhận gập sau khi đã hiện thì kết thúc sau 2 giây, lấy mốc sớm hơn. Không gập 8C khi trúng và không gửi @442# khi kết thúc. Khóa `shooting.automatic_close_target.commands_by_class.3` cũ không áp dụng cho xe 8C.
+
+Để tương thích cấu hình cũ, `target_times[3].hide_seconds` trong JSON vẫn lưu mốc tuyệt đối (show_seconds + thời gian chạy); Cài đặt hiển thị/nạp/lưu ô Ẩn theo thời gian chạy. Ví dụ show_seconds=64 và chạy 16 thì hide_seconds=80, giới hạn chờ 20 giây từ @444#. Mất phản hồi không kéo dài giới hạn này. Trạng thái 0 trước lần hiện đầu tiên được coi là xe chưa hiện, không phải đã hoàn thành.
 
 ## Nhận diện và tính điểm
 

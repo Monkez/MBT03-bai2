@@ -12,7 +12,7 @@ from gui.shooting_session import (
 )
 
 TARGET_LABELS = ("BIA SỐ 6", "BIA SỐ 10", "BIA SỐ 7B", "BIA SỐ 8C")
-RAISE_COMMANDS = ("@114#", "@224#", "@334#", "@441#")
+RAISE_COMMANDS = ("@114#", "@224#", "@334#", "@444#")
 HIDE_COMMANDS = {1: "@112#", 0: "@222#", 2: "@332#", 3: "@442#"}
 MAX_SETTING_SECONDS = 3600
 
@@ -78,6 +78,11 @@ def get_target_times():
         except ValueError:
             continue
     raise ValueError("Lịch mặc định không hợp lệ.")
+
+
+def target8_timeout_seconds(times):
+    last = times[-1]
+    return last["hide_seconds"] - last["show_seconds"] + 4
 
 
 def save_timing_settings(values, channel, path=None):

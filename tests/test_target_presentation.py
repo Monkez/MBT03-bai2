@@ -104,10 +104,14 @@ class TargetPresentationFlowTests(unittest.TestCase):
         self.assert_state((1, False))
         for index, target, at in ((0, 1, 115), (1, 0, 132), (2, 2, 142), (3, 3, 164)):
             self.raise_target(index, at)
+            if target == 3:
+                self.window._on_target_state_received(3, True, at - .1, at)
             self.assert_state((target, True))
             self.clock.return_value = at + (18 if target == 3 else 7) - 1.5
             self.window._send_scheduled_target_hide(target)
             self.clock.return_value += 1.5
+            if target == 3:
+                self.window._on_target_state_received(3, False, self.clock.return_value - .1, self.clock.return_value)
             self.window._refresh_target_presentation()
             self.assert_state((target, False))
             next_show = {1: 132, 0: 142, 2: 164, 3: 182}[target]

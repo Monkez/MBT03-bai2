@@ -21,7 +21,8 @@ class TargetExposure:
 class ShootingSession:
     """Track scoring windows separately from commanded visibility."""
 
-    def __init__(self, started_at, target_delays=(), visible_seconds=None, hardware_delay_time=None):
+    def __init__(self, started_at, target_delays=(), visible_seconds=None, hardware_delay_time=None,
+                 feedback_targets=(), carriage_timeout_seconds=None):
         self.visible_seconds = dict(TARGET_VISIBLE_SECONDS_BY_CLASS if visible_seconds is None else visible_seconds)
         self.hardware_delay_time = hardware_delay_time or 0
         self._hardware_mode = hardware_delay_time is not None
@@ -37,6 +38,11 @@ class ShootingSession:
         self._raised_times = {}
         self._lowered_times = {}
         self._confirmed_hides = set()
+        self._feedback_targets = frozenset(feedback_targets)
+        self._target_states = {}
+        self._feedback_complete = set()
+        self._carriage_timeout_seconds = carriage_timeout_seconds
+        self._carriage_deadline = None
         self._confirmed_raises = set()
         self._planned_shows = {target: started_at + delay + self.hardware_delay_time
                                for target, delay in zip(TARGET_CLASS_SEQUENCE, target_delays)}
@@ -56,19 +62,27 @@ class ShootingSession:
         }
 
     def expired(self, now):
+        if self._carriage_deadline is not None:
+            return now >= self._carriage_deadline
         if self._hardware_mode and not self.all_hides_sent:
             return False
         return now >= self.deadline
 
     @property
     def all_hides_sent(self):
-        return all(target in self._confirmed_hides for target in TARGET_CLASS_SEQUENCE)
+        return (all(target in self._confirmed_hides for target in TARGET_CLASS_SEQUENCE)
+                and self._feedback_targets <= self._feedback_complete)
 
     def visible_target_classes(self, now):
         if self.stopped_at is not None or self.expired(now):
             return ()
         visible = []
         for target, raised in self._raised_times.items():
+            if target in self._feedback_targets:
+                states = [shown for at, shown in self._target_states.get(target, ()) if at <= now]
+                if states and states[-1]:
+                    visible.append(target)
+                continue
             if self._hardware_mode and target not in self._confirmed_raises:
                 continue
             hidden = self._lowered_times.get(target, raised + self.visible_seconds[target])
@@ -114,7 +128,8 @@ class ShootingSession:
 
     def accepts_receipt(self, received_at):
         end = self.deadline if self.stopped_at is None else self.stopped_at
-        if self.stopped_at is None and self._hardware_mode and not self.all_hides_sent:
+        if (self.stopped_at is None and self._hardware_mode and not self.all_hides_sent
+                and self._carriage_deadline is None):
             end = float("inf")
         return self.started_at <= received_at < end
 
@@ -139,6 +154,8 @@ class ShootingSession:
         if self._hardware_mode and self._planned_hides:
             self.deadline = max(self._lowered_times.get(target, hidden)
                                 for target, hidden in self._planned_hides.items()) + 4 * self.hardware_delay_time
+        if self._carriage_deadline is not None:
+            self.deadline = self._carriage_deadline
         for class_id in self._raised_times:
             raised_at = self._raised_times[class_id]
             visible_until = min(raised_at + self.visible_seconds[class_id], self.deadline)
@@ -154,6 +171,27 @@ class ShootingSession:
                 self._raised_at = raised_at
                 self._visible_until = visible_until
 
+    def record_target_state(self, target, shown, observed_at):
+        """Return True once physical feedback confirms the end of this run."""
+        if (target not in self._feedback_targets or target not in self._confirmed_raises
+                or self.stopped_at is not None or observed_at < self._raised_times[target]):
+            return False
+        states = self._target_states.setdefault(target, [])
+        if states and observed_at < states[-1][0]:
+            return False
+        was_shown = any(state for _, state in states)
+        if not states or states[-1][1] != shown:
+            states.append((observed_at, shown))
+        if not shown and (was_shown or target in self._confirmed_hides):
+            if target not in self._confirmed_hides:
+                self.close_target(target, observed_at, scheduled=True)
+                self.confirm_command_sent(target, observed_at, raised=False)
+            self._feedback_complete.add(target)
+            if target == 3 and self._carriage_deadline is not None:
+                self._carriage_deadline = min(self._carriage_deadline, observed_at + 2)
+                self._update_windows()
+        return target in self._feedback_complete
+
     def confirm_command_sent(self, class_id, sent_at, *, raised):
         """Align the window with the first serial write, not executor queueing."""
         if (class_id not in self._raised_times or sent_at < self.started_at
@@ -163,9 +201,13 @@ class ShootingSession:
             self._confirmed_raises.add(class_id)
             self._raised_times[class_id] = sent_at
             self._scheduled[class_id].opened_at = max(self.started_at, sent_at - self._early)
+            if class_id == 3 and self._carriage_timeout_seconds is not None:
+                self._carriage_deadline = sent_at + self._carriage_timeout_seconds
         elif class_id in self._lowered_times:
             self._confirmed_hides.add(class_id)
             self._lowered_times[class_id] = sent_at
+            if class_id == 3 and class_id not in self._feedback_targets and self._carriage_deadline is not None:
+                self._carriage_deadline = min(self._carriage_deadline, sent_at + self.hardware_delay_time + 2)
         else:
             return False
         self._update_windows()

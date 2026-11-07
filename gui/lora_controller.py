@@ -1,3 +1,4 @@
+import re
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -21,6 +22,7 @@ class LoraController(QObject):
     command_finished = pyqtSignal(str, bool, int)
     command_sent = pyqtSignal(str, float, float)  # command, queued_at, sent_at
     sequence_finished = pyqtSignal()
+    target_state_received = pyqtSignal(int, bool, float, float)  # target, visible, requested_at, received_at
 
     DEFAULT_PORT_DESCRIPTION = cf.config_str(
         "lora.port_description", "USB Serial Port"
@@ -43,6 +45,8 @@ class LoraController(QObject):
         self._executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="LoRa")
         self._closing = False
         self._stop_event = threading.Event()
+        self._query_lock = threading.Lock()
+        self._target8_query_pending = False
 
     @property
     def port_name(self):
@@ -117,6 +121,21 @@ class LoraController(QObject):
         if not self._closing:
             self._executor.submit(self._send_with_retry, command, time.monotonic())
 
+    def query_target8_state(self):
+        with self._query_lock:
+            if self._closing or self._target8_query_pending:
+                return False
+            self._target8_query_pending = True
+            self._executor.submit(self._query_target8_state, time.monotonic())
+        return True
+
+    def _query_target8_state(self, requested_at):
+        try:
+            self._send_with_retry("@448#", requested_at)
+        finally:
+            with self._query_lock:
+                self._target8_query_pending = False
+
     def send_sequence(self, commands):
         """Queue one ordered batch; no other queued commands can interleave."""
         if self._closing:
@@ -140,8 +159,9 @@ class LoraController(QObject):
     def _send_with_retry(self, command, queued_at=None):
         queued_at = time.monotonic() if queued_at is None else queued_at
         payload = command.encode("ascii")
-        # The fold-all broadcast has no echo from the target controller.
-        requires_ack = command != "@661#"
+        # Broadcast and carriage launch are sent once; poll 8C for its state.
+        requires_ack = command not in ("@661#", "@444#")
+        status_query = command == "@448#"
         attempts = 0
         success = False
 
@@ -165,7 +185,7 @@ class LoraController(QObject):
                     self.command_finished.emit(command, False, attempts)
                     return False
 
-            max_attempts = self.MAX_ATTEMPTS if requires_ack else 1
+            max_attempts = self.MAX_ATTEMPTS if requires_ack and not status_query else 1
             for attempts in range(1, max_attempts + 1):
                 if self._closing:
                     break
@@ -175,6 +195,9 @@ class LoraController(QObject):
                     device.flush()
                     if attempts == 1:
                         self.command_sent.emit(command, queued_at, time.monotonic())
+                    if status_query:
+                        success = self._wait_for_target8_state(device, queued_at)
+                        break
                     if not requires_ack or self._wait_for_echo(device, payload):
                         success = True
                         break
@@ -184,6 +207,21 @@ class LoraController(QObject):
 
         self.command_finished.emit(command, success, attempts)
         return success
+
+    def _wait_for_target8_state(self, device, requested_at):
+        deadline = time.monotonic() + min(self.ACK_TIMEOUT_SECONDS, 1.0)
+        received = bytearray()
+        while not self._closing and time.monotonic() < deadline:
+            chunk = device.read(max(1, device.in_waiting))
+            if chunk:
+                received.extend(chunk)
+                match = re.search(rb"(?:^|[\r\n#])@448([01])\r?\n", received)
+                if match:
+                    self.target_state_received.emit(3, match[1] == b"1", requested_at, time.monotonic())
+                    return True
+                if len(received) > 256:
+                    del received[:-32]
+        return False
 
     def _wait_for_echo(self, device, payload):
         deadline = time.monotonic() + self.ACK_TIMEOUT_SECONDS

@@ -153,11 +153,54 @@ class LoraControllerTests(unittest.TestCase):
             lambda command, success, attempts: results.append((command, success, attempts))
         )
 
-        controller._send_with_retry("@444#")
+        controller._send_with_retry("@114#")
 
         self.assertEqual(device.write_count, 3)
-        self.assertEqual(results, [("@444#", False, 3)])
+        self.assertEqual(results, [("@114#", False, 3)])
         controller.close()
+
+    def test_carriage_launch_sends_once_without_restarting_on_missing_echo(self):
+        controller = LoraController()
+        self.addCleanup(controller.close)
+        device = FakeSerialPort()
+        controller._serial = device
+        with patch.object(device, "read", side_effect=AssertionError("Launch uses status polling")):
+            self.assertTrue(controller._send_with_retry("@444#"))
+        self.assertEqual(device.write_count, 1)
+
+    def test_target8_status_accepts_fragmented_lines_and_rejects_echo_or_invalid_state(self):
+        for response, expected in ((b"@4480\n", False), (b"@4481\r\n", True),
+                                   (b"@448#\r\n@4481\n", True), (b"@448#", None),
+                                   (b"@4482\n", None), (b"@44810\n", None)):
+            with self.subTest(response=response):
+                controller = LoraController()
+                self.addCleanup(controller.close)
+                controller.ACK_TIMEOUT_SECONDS = .01
+                device = FakeSerialPort()
+                controller._serial = device
+                states = []
+                controller.target_state_received.connect(lambda *args: states.append(args))
+                def write(payload):
+                    device.write_count += 1
+                    device._response = response
+                    return len(payload)
+                read = device.read
+                with patch.object(device, "write", side_effect=write), patch.object(
+                        device, "read", side_effect=lambda size: read(1)):
+                    self.assertEqual(controller._send_with_retry("@448#", 10), expected is not None)
+                self.assertEqual(device.write_count, 1)
+                self.assertEqual([item[:3] for item in states], [] if expected is None else [(3, expected, 10)])
+
+    def test_poll_coalesces_while_queued_and_releases_after_failure(self):
+        controller = LoraController()
+        self.addCleanup(controller.close)
+        with patch.object(controller._executor, "submit") as submit:
+            self.assertTrue(controller.query_target8_state())
+            self.assertFalse(controller.query_target8_state())
+            submit.assert_called_once()
+        with patch.object(controller, "_send_with_retry", return_value=False):
+            controller._query_target8_state(10)
+        self.assertFalse(controller._target8_query_pending)
 
     def test_fold_all_sends_once_without_reading_a_response(self):
         controller = LoraController()

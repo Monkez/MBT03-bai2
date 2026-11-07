@@ -149,9 +149,9 @@ class TimingUiTests(TimingFixture, unittest.TestCase):
         dialog = self.dialog()
         self.assertEqual([dialog.channel_combo.itemText(i) for i in range(3)],
                          ["Kênh 1", "Kênh 2", "Kênh 3"])
-        for pair, values in zip(dialog.target_time_inputs, TIMES):
+        for index, (pair, values) in enumerate(zip(dialog.target_time_inputs, TIMES)):
             for key, value in values.items():
-                pair[key].setValue(value)
+                pair[key].setValue(value - values["show_seconds"] if index == 3 and key == "hide_seconds" else value)
         dialog.channel_combo.setCurrentIndex(2)
         dialog.confirm_btn.click()
         self.assertEqual(dialog.result(), dialog.Accepted, dialog.timing_error_label.text())
@@ -159,6 +159,19 @@ class TimingUiTests(TimingFixture, unittest.TestCase):
         self.assertEqual(reopened._target_time_values(), TIMES)
         self.assertEqual(reopened.channel_combo.currentData(), 3)
         self.assertFalse(dialog._frame_timer.isActive())
+
+    def test_target8_hidden_field_is_run_duration_and_persists_sixteen_seconds(self):
+        from gui.target_timing import target8_timeout_seconds
+        dialog = self.dialog()
+        pair = dialog.target_time_inputs[3]
+        pair["hide_seconds"].setValue(16)
+        shown = pair["show_seconds"].value()
+        dialog.confirm_btn.click()
+        self.assertEqual(dialog.result(), dialog.Accepted, dialog.timing_error_label.text())
+        reopened = self.dialog()
+        self.assertEqual(reopened.target_time_inputs[3]["hide_seconds"].value(), 16)
+        self.assertEqual(get_target_times()[3]["hide_seconds"], shown + 16)
+        self.assertEqual(target8_timeout_seconds(get_target_times()), 20)
 
     def test_cancel_validation_and_write_failure_do_not_change_settings(self):
         before = self.path.read_bytes()
@@ -191,7 +204,7 @@ class TimingUiTests(TimingFixture, unittest.TestCase):
             command, clock.return_value, clock.return_value)
         window.start_test()
         self.assertEqual([t.interval() for t in window._lora_schedule_timers],
-                         [8500, 15500, 25500, 35500, 38500, 48500, 57500, 77500])
+                         [8500, 15500, 25500, 35500, 38500, 48500, 57500])
         clock.return_value = 108.5
         window._lora_schedule_timers[0].timeout.emit()
         window.lora.send_command.assert_called_with("@114#")

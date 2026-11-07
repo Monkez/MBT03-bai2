@@ -1,3 +1,9 @@
+# V52-071126 — Điều khiển xe bia 8C bằng trạng thái thực
+
+- Gửi @444# một lần, hỏi @448# mỗi giây; nhận @4480/@4481 kèm xuống dòng để cập nhật gập/hiện. Không gập sớm 8C khi trúng, theo lịch hoặc khi kết thúc bài.
+- Ô Ẩn của 8C là thời gian chạy: nhập 16 thì giới hạn chờ 20 giây từ lần ghi lệnh chạy thực tế. Nếu xe đã hiện rồi báo gập, kết thúc sau 2 giây, không vượt giới hạn chờ.
+- Giữ cấu hình thời gian cũ; Cài đặt chuyển đổi ô Ẩn 8C thành thời gian chạy và lưu/nạp đúng. Mất phản hồi vẫn kết thúc; phản hồi cũ không ảnh hưởng bài mới.
+
 # V51-071126 — Nâng riêng bia 10
 
 - Nâng riêng ảnh bia số 10 thêm một chút, giới hạn trong vùng ảnh để không đè lên dải đạn; giữ cố định vị trí khi bắn.

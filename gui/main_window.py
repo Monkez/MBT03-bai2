@@ -30,7 +30,7 @@ from gui.hit_sound import HitSound
 from gui.result_sound import ResultSound
 from gui.uart_debug_dialog import UartDebugDialog
 from gui.shooting_roster import ShootingRoster
-from gui.target_timing import get_target_times, hardware_delay_time, RAISE_COMMANDS, HIDE_COMMANDS, TARGET_LABELS
+from gui.target_timing import get_target_times, hardware_delay_time, RAISE_COMMANDS, HIDE_COMMANDS, TARGET_LABELS, target8_timeout_seconds
 from gui.shooting_session import (
     TARGET_CLASS_SEQUENCE,
     ShootingSession,
@@ -73,7 +73,7 @@ class MainWindow(QMainWindow):
     scoring_done_signal = pyqtSignal(object)
     q0_done_signal = pyqtSignal(object)
     START_UART_COMMAND = cf.ammunition_command()
-    MANUAL_OPEN_TARGET_COMMANDS = ("@114#", "@224#", "@334#", "@441#")
+    MANUAL_OPEN_TARGET_COMMANDS = RAISE_COMMANDS
     AUTO_CLOSE_TARGET_COMMANDS = _configured_auto_close_commands()
     LORA_SCRIPT = _configured_lora_script()
 
@@ -123,6 +123,13 @@ class MainWindow(QMainWindow):
         self._target_presentation_timer.setInterval(100)
         self._target_presentation_timer.setTimerType(Qt.PreciseTimer)
         self._target_presentation_timer.timeout.connect(self._refresh_target_presentation)
+        self._target8_poll_timer = QTimer(self)
+        self._target8_poll_timer.setInterval(1000)
+        self._target8_poll_timer.setTimerType(Qt.PreciseTimer)
+        self._target8_poll_timer.timeout.connect(self._poll_target8_state)
+        self._target8_poll_started_at = None
+        self._target8_poll_session_id = None
+        self._target8_poll_seen_visible = False
         self._closing = False
         self.servers = []
         self.hub_registrar = None
@@ -167,6 +174,7 @@ class MainWindow(QMainWindow):
         self.lora.connection_changed.connect(self._on_lora_connection_changed)
         self.lora.command_finished.connect(self._on_lora_command_finished)
         self.lora.command_sent.connect(self._on_lora_command_sent)
+        self.lora.target_state_received.connect(self._on_target_state_received)
         self.lora.sequence_finished.connect(self._on_manual_targets_finished)
 
         self._configure_main_ui()
@@ -866,6 +874,7 @@ class MainWindow(QMainWindow):
         self.testing = True
         self.start_btn.setToolTip("Kết thúc bài bắn")
         self._roster.begin_session(self._active_review_session_id)
+        self._stop_target8_poll()
         self._test_start_time = time.monotonic()
         self._target_timings = get_target_times()
         self._simulate_targets = not bool(self.lora.port_name)
@@ -875,6 +884,8 @@ class MainWindow(QMainWindow):
             {target: item["hide_seconds"] - item["show_seconds"]
              for target, item in zip(TARGET_CLASS_SEQUENCE, self._target_timings)},
             hardware_delay_time=hardware_delay_time(),
+            feedback_targets=() if self._simulate_targets else (3,),
+            carriage_timeout_seconds=target8_timeout_seconds(self._target_timings),
         )
         logging.getLogger("mbt03_server").info(
             "[Exercise] session=%s | bắt đầu | %s bệ | giới hạn %ss",
@@ -935,6 +946,8 @@ class MainWindow(QMainWindow):
             server.send_uart_command("0A000\n")
 
     def _maybe_close_hit_target(self, class_id, hit):
+        if class_id == 3:
+            return False
         if not self.testing or not self.automatic_close_target_enabled or not hit:
             return False
         command_info = self.AUTO_CLOSE_TARGET_COMMANDS.get(class_id)
@@ -952,6 +965,7 @@ class MainWindow(QMainWindow):
         if not self.testing:
             return
         self.testing = False
+        self._stop_target8_poll()
         self._start_sound.stop()
         self._target_presentation_timer.stop()
         session_id = self._active_review_session_id
@@ -963,7 +977,7 @@ class MainWindow(QMainWindow):
                 session_id, widget.id, received, completed, received - completed, widget.bullet_count,
             )
         for target in self._shooting_session.raised_target_classes:
-            if target not in self._auto_closed_target_classes:
+            if target != 3 and target not in self._auto_closed_target_classes:
                 self._shooting_session.close_target(target, time.monotonic(), scheduled=True)
                 self._auto_closed_target_classes.add(target)
                 if not self._simulate_targets:
@@ -1011,7 +1025,7 @@ class MainWindow(QMainWindow):
             return
         self.start_btn.setText(f"KẾT THÚC ({elapsed}s)")
         if time.monotonic() >= self._shooting_session.deadline and not self._shooting_session.all_hides_sent:
-            self.start_btn.setToolTip("Chờ gửi đủ lệnh ẩn bia. Bấm để kết thúc thủ công nếu LoRa chưa kết nối.")
+            self.start_btn.setToolTip("Chờ ẩn đủ các bia và phản hồi ẩn của 8C. Bấm để kết thúc thủ công nếu mất kết nối.")
         if not self._test_timeout_timer.isActive():
             self._test_timeout_timer.start(250)
 
@@ -1071,7 +1085,8 @@ class MainWindow(QMainWindow):
         events = [(seconds, 1, target, command, description)
                   for target, (seconds, command, description) in zip(TARGET_CLASS_SEQUENCE, self.LORA_SCRIPT)]
         events.extend((item["hide_seconds"] - hardware_delay_time(), 0, target, "", "")
-                      for target, item in zip(TARGET_CLASS_SEQUENCE, self._target_timings))
+                      for target, item in zip(TARGET_CLASS_SEQUENCE, self._target_timings)
+                      if target != 3 or self._simulate_targets)
         for seconds, raised, target, command, description in sorted(events, key=lambda event: (event[0], event[1])):
             timer = QTimer(self)
             timer.setSingleShot(True)
@@ -1085,6 +1100,8 @@ class MainWindow(QMainWindow):
             self._lora_schedule_timers.append(timer)
 
     def _send_scheduled_target_hide(self, target):
+        if target == 3 and not self._simulate_targets:
+            return
         if not self.testing or target in self._auto_closed_target_classes:
             return
         self._shooting_session.close_target(target, time.monotonic(), scheduled=True)
@@ -1118,12 +1135,39 @@ class MainWindow(QMainWindow):
         else:
             self.lora.send_command(command)
 
+    def _stop_target8_poll(self):
+        self._target8_poll_timer.stop()
+        self._target8_poll_started_at = None
+        self._target8_poll_session_id = None
+
+    def _poll_target8_state(self):
+        if self._target8_poll_started_at is not None and not self._closing:
+            self.lora.query_target8_state()
+
+    def _on_target_state_received(self, target, shown, requested_at, observed_at):
+        started = self._target8_poll_started_at
+        if target != 3 or started is None or requested_at < started or self._closing:
+            return
+        if self._target8_poll_session_id is None:
+            finished = not shown and self._target8_poll_seen_visible
+            self._target8_poll_seen_visible |= shown
+        elif (self.testing and self._target8_poll_session_id == self._active_review_session_id):
+            finished = self._shooting_session.record_target_state(target, shown, observed_at)
+            if finished:
+                self._auto_closed_target_classes.add(target)
+            self._refresh_target_presentation()
+        else:
+            return
+        logging.getLogger("mbt03_server").info("[Target8C] phản hồi @448%s | thời điểm=%.6f", int(shown), observed_at)
+        if finished:
+            self._stop_target8_poll()
+
     def _on_lora_connection_changed(self, connected, message):
         state = "da ket noi" if connected else "chua ket noi"
         print(f"[LoRa] {state}: {message}")
 
     def _on_lora_command_finished(self, command, success, attempts):
-        if command == "@661#":
+        if command in ("@661#", "@444#"):
             if success:
                 print(f"[LoRa] {command} da gui 1 lan; lenh khong co phan hoi")
             else:
@@ -1134,6 +1178,18 @@ class MainWindow(QMainWindow):
             print(f"[LoRa] {command} khong co phan hoi hop le sau {attempts} lan gui")
 
     def _on_lora_command_sent(self, command, queued_at, sent_at):
+        previous = self._shooting_session
+        if (command == "@444#" and previous is not None
+                and ((self.testing and queued_at < previous.started_at)
+                     or (previous.stopped_at is not None and queued_at < previous.stopped_at))):
+            return
+        if command == "@444#" and (not self.testing or not self._simulate_targets) and not self._closing:
+            self._target8_poll_started_at = sent_at
+            self._target8_poll_session_id = self._active_review_session_id if self.testing else None
+            self._target8_poll_seen_visible = False
+            self._target8_poll_timer.start()
+        elif command == "@661#" and not self.testing:
+            self._stop_target8_poll()
         session = self._shooting_session
         if session is None or not session.accepts_receipt(queued_at) or self._closing:
             return
@@ -1155,6 +1211,7 @@ class MainWindow(QMainWindow):
             event.accept()
             return
         self._closing = True
+        self._stop_target8_poll()
         self._roster.shutdown()
         self.stop_test()
         if self._uart_debug_dialog is not None:
@@ -1178,7 +1235,7 @@ class MainWindow(QMainWindow):
         if self.hub_registrar is not None:
             self.hub_registrar.close()
         self._cancel_lora_script()
-        final_targets = (self._shooting_session.raised_target_classes
+        final_targets = (tuple(target for target in self._shooting_session.raised_target_classes if target != 3)
                          if self._shooting_session is not None and not self._simulate_targets else ())
         self.lora.close(final_commands=tuple(HIDE_COMMANDS[target] for target in final_targets))
         if self._raw_image_pool is not None:

@@ -48,11 +48,11 @@ class OfflineScheduleTests(unittest.TestCase):
             for index, at in enumerate((117.5,118.5,119.5,120.5), 4):
                 clock.return_value = at
                 timers[index].timeout.emit()
-            self.assertEqual(window._shooting_session.deadline, 126.5)
-            clock.return_value = 126.499
+            self.assertEqual(window._shooting_session.deadline, 124)
+            clock.return_value = 123.999
             window.update_app()
             self.assertTrue(window.testing)
-            clock.return_value = 126.5
+            clock.return_value = 124
             window.update_app()
             self.assertFalse(window.testing)
             self.assertIsNone(window.client_widgets[0]._target_presentation)

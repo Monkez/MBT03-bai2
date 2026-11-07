@@ -325,7 +325,7 @@ class ShootingFlowTests(unittest.TestCase):
         self.assertTrue(self.window.start_btn.isEnabled())
         self.assertTrue(self.window.open_target_btn.isEnabled())
         self.window.open_target_btn.click()
-        self.window.lora.send_sequence.assert_called_with(("@114#", "@224#", "@334#", "@441#"))
+        self.window.lora.send_sequence.assert_called_with(("@114#", "@224#", "@334#", "@444#"))
         self.window._on_manual_targets_finished()
         self.assertTrue(self.window.close_target_btn.isEnabled())
 
@@ -381,7 +381,7 @@ class ShootingFlowTests(unittest.TestCase):
         with patch.object(self.window, "LORA_SCRIPT", ((1, "@114#", "test"),)):
             self.window.open_target_btn.click()
         self.window.lora.send_sequence.assert_called_once_with(
-            ("@114#", "@224#", "@334#", "@441#"))
+            ("@114#", "@224#", "@334#", "@444#"))
         self.window._on_manual_targets_finished()
 
     def test_close_cancels_followup(self):
@@ -557,7 +557,7 @@ class ShootingFlowTests(unittest.TestCase):
         self.assertEqual(self.window.client_widgets[0].hit_targets, {3})
         self.assertEqual(self.window.client_widgets[0].bullet_count, 1)
         self.assertTrue(self.window._review_sessions[1][1][0]["hit"])
-        self.assertEqual(self.window.lora.send_command.call_count, 8)
+        self.assertEqual(self.window.lora.send_command.call_count, 7)
 
     def test_receipt_enforces_deadline_even_before_timer_callback(self):
         for index in range(4):
@@ -609,6 +609,7 @@ class ShootingFlowTests(unittest.TestCase):
             self.open_target(index)
         self.send_planned_hides()
         self.window.timer.stop()
+        self.window._target_presentation_timer.stop()
         self.clock.return_value = 189.5
         timeout = QSignalSpy(self.window._test_timeout_timer.timeout)
         self.window._test_timeout_timer.start(1)

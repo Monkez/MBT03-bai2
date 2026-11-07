@@ -266,7 +266,7 @@ class ShootingScriptTests(unittest.TestCase):
 
         window.lora.send_command.assert_called_once_with("@112#")
 
-    def test_hit_hides_target_8_only_once(self):
+    def test_hit_does_not_hide_target_8_carriage(self):
         window = type("WindowState", (), {})()
         window.testing = True
         window.automatic_close_target_enabled = True
@@ -280,14 +280,14 @@ class ShootingScriptTests(unittest.TestCase):
         for class_id in (1, 0, 2, 3):
             window._shooting_session.open_target(class_id, now)
 
-        self.assertTrue(MainWindow._maybe_close_hit_target(window, 3, True))
         self.assertFalse(MainWindow._maybe_close_hit_target(window, 3, True))
-        window.lora.send_command.assert_called_once_with("@442#")
+        self.assertFalse(MainWindow._maybe_close_hit_target(window, 3, True))
+        window.lora.send_command.assert_not_called()
 
     def test_lora_commands_match_the_required_timeline(self):
         self.assertEqual(
             [(seconds, command) for seconds, command, _ in MainWindow.LORA_SCRIPT],
-            [(13.5, "@114#"), (30.5, "@224#"), (40.5, "@334#"), (62.5, "@441#")],
+            [(13.5, "@114#"), (30.5, "@224#"), (40.5, "@334#"), (62.5, "@444#")],
         )
 
     def test_single_pedestal_defaults_auto_close_on_and_allows_toggle(self):
