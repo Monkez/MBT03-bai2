@@ -146,7 +146,7 @@ Nhóm `runtime`:
 | Khóa | Ý nghĩa |
 | --- | --- |
 | `main_status_refresh_ms` | Chu kỳ cập nhật thời gian/trạng thái màn hình chính. |
-| `settings_frame_refresh_ms` | Chu kỳ vẽ ảnh camera trong cửa sổ cài đặt. |
+| `settings_frame_refresh_ms` | Chu kỳ vẽ ảnh camera trong cửa sổ Quy không. |
 | `max_scoring_workers` | Số luồng tính điểm tối đa. Số thực tế không vượt số bệ. |
 | `onnx_intra_op_threads` | Số luồng CPU bên trong mỗi phiên ONNX Runtime. |
 

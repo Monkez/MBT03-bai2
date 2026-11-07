@@ -1,3 +1,9 @@
+## Tách Cài đặt và Quy không — 2026-11-07
+
+- SettingWindow chỉ có timing/LoRa. Thêm lại lora_log_label trong khung trống của form mới. QuyKhongWindow dùng quy_khong.ui và chứa camera/Quy 0 cùng offline UI từ bản trước.
+- MainWindow nối quy_khong_btn, chuyển vòng đời dựng/hạ bia và 0S000 sang Quy không. _quy_khong_window định tuyến ảnh Q0. Khóa hai nút trong bài hoặc thao tác LoRa.
+- 394 kiểm tra đạt. Native Qt/PYZ xác nhận cả hai nút mở đúng form, lưu lịch ở Cài đặt và Quy 0 hai súng trong cửa sổ riêng. Bản V62-071126 trên Desktop.
+
 ## Lỗi LoRa và súng offline trong Cài đặt — 2026-11-07
 
 - LoraController lưu connection_error cho cổng đã chọn. Cài đặt nhận cả connection_changed, command_finished và configuration_finished. ĐẶT không dùng LoRa hiện cảnh báo vàng.

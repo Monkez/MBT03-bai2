@@ -15,7 +15,7 @@ from PyQt5.QtWidgets import QApplication
 from gui.main_window import MainWindow
 from gui.option_window import OptionWindow
 from gui.client_widget import ClientWidget
-from gui.setting_window import SettingWindow
+from gui.quy_khong_window import QuyKhongWindow
 from gui.shooting_session import ShootingSession
 
 
@@ -53,17 +53,22 @@ class ShootingScriptTests(unittest.TestCase):
             server.send_uart_command.assert_called_once_with("0F016\n")
         window._start_followup_timer.start.assert_called_once_with(300)
 
-    def test_settings_raises_target_and_lowers_on_every_close_path(self):
+    def test_settings_opens_without_raising_targets_or_stopping_guns(self):
+        window = SimpleNamespace(testing=False, lora=MagicMock(), servers=[MagicMock()])
+        dialog = MagicMock()
+        with patch("gui.main_window.SettingWindow", return_value=dialog) as factory:
+            MainWindow.open_setting_window(window)
+        factory.assert_called_once_with(lora_controller=window.lora, parent=window)
+        dialog.exec_.assert_called_once()
+        window.lora.send_command.assert_not_called()
+        window.servers[0].send_uart_command.assert_not_called()
+
+    def test_q0_window_raises_target_and_lowers_on_every_close_path(self):
         for close_action in ("close_window_btn", "close", "escape"):
             with self.subTest(close_action=close_action):
-                lora = MagicMock()
-                lora.port_name = "COM7"
-                lora.connection_error = ""
-                lora.available_ports.return_value = [{"device": "COM7", "description": "USB Serial"}]
-                dialog = SettingWindow(lora_controller=lora)
-                dialog.channel_combo.setCurrentIndex(2)
+                dialog = QuyKhongWindow()
                 servers = [MagicMock(), MagicMock()]
-                window = SimpleNamespace(testing=False, p_num=1, servers=servers, lora=lora)
+                window = SimpleNamespace(testing=False, p_num=1, servers=servers, lora=MagicMock())
                 calls_while_open = []
 
                 def close_dialog():
@@ -76,37 +81,37 @@ class ShootingScriptTests(unittest.TestCase):
                         getattr(dialog, close_action)()
 
                 try:
-                    with patch("gui.main_window.SettingWindow", return_value=dialog):
+                    with patch("gui.main_window.QuyKhongWindow", return_value=dialog):
                         QTimer.singleShot(0, close_dialog)
-                        MainWindow.open_setting_window(window)
+                        MainWindow.open_quy_khong_window(window)
                     self.assertEqual(calls_while_open, [call("@114#")])
                     self.assertEqual(window.lora.send_command.call_args_list,
                                      [call("@114#"), call("@112#")])
-                    lora.request_connection.assert_not_called()
-                    self.assertIsNone(window._setting_window)
+                    window.lora.request_connection.assert_not_called()
+                    self.assertIsNone(window._quy_khong_window)
                     for server in servers:
                         server.send_uart_command.assert_called_once_with("0S000\n")
                 finally:
                     dialog._frame_timer.stop()
                     dialog.deleteLater()
 
-    def test_settings_failure_still_lowers_target_and_clears_dialog(self):
+    def test_q0_window_failure_still_lowers_target_and_clears_dialog(self):
         servers = [MagicMock(), MagicMock()]
         window = SimpleNamespace(testing=False, p_num=1, servers=servers, lora=MagicMock())
-        dialog = MagicMock(calibration_target_suspended=False)
+        dialog = MagicMock()
         dialog.exec_.side_effect = RuntimeError("dialog failure")
-        with patch("gui.main_window.SettingWindow", return_value=dialog):
+        with patch("gui.main_window.QuyKhongWindow", return_value=dialog):
             with self.assertRaisesRegex(RuntimeError, "dialog failure"):
-                MainWindow.open_setting_window(window)
+                MainWindow.open_quy_khong_window(window)
         self.assertEqual(window.lora.send_command.call_args_list,
                          [call("@114#"), call("@112#")])
-        self.assertIsNone(window._setting_window)
+        self.assertIsNone(window._quy_khong_window)
         for server in servers:
             server.send_uart_command.assert_called_once_with("0S000\n")
 
     def q0_dialog(self):
         servers = [MagicMock(), MagicMock()]
-        dialog = SettingWindow(p_num=2, servers=servers)
+        dialog = QuyKhongWindow(p_num=2, servers=servers)
         self.addCleanup(dialog.deleteLater)
         self.addCleanup(dialog._frame_timer.stop)
         self.addCleanup(dialog.reject)
@@ -206,7 +211,7 @@ class ShootingScriptTests(unittest.TestCase):
             monkezusbcamera=image_sink,
         )
 
-        SettingWindow._update_frame(window)
+        QuyKhongWindow._update_frame(window)
 
         displayed = image_sink.set_image.call_args.args[0]
         self.assertTrue(np.array_equal(displayed[0, 0], live_frame[0, 0]))
@@ -226,7 +231,7 @@ class ShootingScriptTests(unittest.TestCase):
             monkezusbcamera=image_sink,
         )
 
-        SettingWindow._update_frame(window)
+        QuyKhongWindow._update_frame(window)
 
         displayed = image_sink.set_image.call_args.args[0]
         # Hai chấm xanh còn lại giống chỉ báo tiến độ của MBT03-wireless.
@@ -289,7 +294,7 @@ class ShootingScriptTests(unittest.TestCase):
             self.assertEqual(set(parent._q0_calibrated), {1, 2})
             self.save_timing.assert_not_called()
             dialog.close_window_btn.click()
-            self.save_timing.assert_called_once()
+            self.save_timing.assert_not_called()
             self.assertFalse(dialog.isVisible())
 
     def test_auto_close_commands_match_model_classes(self):

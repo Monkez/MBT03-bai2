@@ -186,7 +186,7 @@ class PcBurstCountingTests(unittest.TestCase):
             _review_receipts={}, _last_burst_receipt={},
             _scoring_pool=_DeferredExecutor(), _get_scoring_session=lambda: None,
             _maybe_close_hit_target=MagicMock(), scoring_done_signal=MagicMock(),
-            _setting_window=None, _queue_raw_camera_image=MagicMock(side_effect=saves),
+            _quy_khong_window=None, _queue_raw_camera_image=MagicMock(side_effect=saves),
             _shot_sound=MagicMock(), _shooting_session=ShootingSession(time.monotonic()),
             automatic_close_target_enabled=True,
         )

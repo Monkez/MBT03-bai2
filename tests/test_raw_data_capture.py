@@ -60,7 +60,7 @@ class RawDataCaptureTests(unittest.TestCase):
         queue_raw = MagicMock(return_value=True)
         window = SimpleNamespace(
             _queue_raw_camera_image=queue_raw,
-            _setting_window=SimpleNamespace(Q0=True),
+            _quy_khong_window=SimpleNamespace(Q0=True),
             _shot_sound=MagicMock(),
         )
 

@@ -15,6 +15,7 @@ from PyQt5.QtTest import QTest
 import config as cf
 from gui.main_window import MainWindow
 from gui.setting_window import SettingWindow
+from gui.quy_khong_window import QuyKhongWindow
 
 
 class OfflineScheduleTests(unittest.TestCase):
@@ -117,7 +118,7 @@ class OfflineScheduleTests(unittest.TestCase):
 
     def test_switch_to_offline_gun_replaces_live_frame_with_bundled_placeholder(self):
         online, offline = MagicMock(is_connected=True), MagicMock(is_connected=False)
-        dialog = SettingWindow(p_num=2, servers=[online, offline])
+        dialog = QuyKhongWindow(p_num=2, servers=[online, offline])
         self.addCleanup(dialog.reject)
         dialog.client_combo.setCurrentIndex(1)
         self.assertTrue(dialog.adjust_btn.isEnabled())

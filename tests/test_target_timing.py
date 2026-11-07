@@ -210,7 +210,7 @@ class TimingUiTests(TimingFixture, unittest.TestCase):
         reopened = self.dialog()
         self.assertEqual(reopened._target_time_values(), TIMES)
         self.assertEqual(reopened.channel_combo.currentData(), saved_channel)
-        self.assertFalse(dialog._frame_timer.isActive())
+        self.assertFalse(hasattr(dialog, "monkezusbcamera"))
 
     def test_target8_absolute_times_persist_and_difference_sets_twenty_second_limit(self):
         from gui.target_timing import target8_timeout_seconds

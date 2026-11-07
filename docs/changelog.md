@@ -1,3 +1,8 @@
+# V62-071126 — Tách Cài đặt và Quy không
+
+- Cài đặt dùng setting.ui để chỉnh lịch bia và LoRa. Nút Quy không trên màn hình chính mở quy_khong.ui để chọn súng, xem camera và hiệu chỉnh.
+- Dựng bia hiệu chỉnh khi mở Quy không, hạ bia và dừng súng khi đóng. Giữ dòng lỗi và cảnh báo LoRa trong Cài đặt.
+
 # V61-071126 — Báo lỗi LoRa và ảnh súng offline
 
 - Cài đặt hiển thị lỗi kết nối, lỗi đặt kênh và lệnh thiếu phản hồi. ĐẶT ở chế độ Không sử dụng LoRa hiện chữ vàng.

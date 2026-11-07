@@ -217,6 +217,7 @@ class UartDebugDialogTests(unittest.TestCase):
         window._uart_debug_dialog = None
         window.servers = self.servers
         window.setting_btn = MagicMock()
+        window.quy_khong_btn = MagicMock()
         window.start_btn = MagicMock()
         window.close_target_btn = MagicMock()
         window.open_target_btn = MagicMock()

@@ -6,14 +6,14 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>521</width>
-    <height>597</height>
+    <width>461</width>
+    <height>277</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout_2" stretch="0,1,0,0,0,0">
+  <layout class="QVBoxLayout" name="verticalLayout_2" stretch="0,1,0,0,0">
    <property name="spacing">
     <number>4</number>
    </property>
@@ -63,7 +63,289 @@ border-radius:5px;</string>
     </widget>
    </item>
    <item>
-    <widget class="MonkezUSBCamera" name="monkezusbcamera" native="true"/>
+    <widget class="QFrame" name="time_setting_frame">
+     <property name="minimumSize">
+      <size>
+       <width>0</width>
+       <height>100</height>
+      </size>
+     </property>
+     <property name="frameShape">
+      <enum>QFrame::StyledPanel</enum>
+     </property>
+     <property name="frameShadow">
+      <enum>QFrame::Raised</enum>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout_5" stretch="0,4">
+     <item>
+      <widget class="QFrame" name="frame_3">
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>42</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>16777215</width>
+         <height>42</height>
+        </size>
+       </property>
+       <property name="frameShape">
+        <enum>QFrame::StyledPanel</enum>
+       </property>
+       <property name="frameShadow">
+        <enum>QFrame::Raised</enum>
+       </property>
+       <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="0,1">
+        <property name="leftMargin">
+         <number>0</number>
+        </property>
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <property name="rightMargin">
+         <number>0</number>
+        </property>
+        <property name="bottomMargin">
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="QLabel" name="label_2">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>35</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>40</height>
+           </size>
+          </property>
+          <property name="font">
+           <font>
+            <pointsize>9</pointsize>
+            <bold>true</bold>
+           </font>
+          </property>
+          <property name="text">
+           <string>Cổng LORA:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="ComboBox" name="comport_combo">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>35</height>
+           </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">ComboBox {
+    border: 1px solid rgba(0, 0, 0, 0.073);
+    border-radius: 10px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.183);
+    padding: 5px 31px 6px 11px;
+    /* font: 14px 'Segoe UI', 'Microsoft YaHei', 'PingFang SC'; */
+    color: black;
+    background-color: rgba(255, 255, 255, 0.7);
+    text-align: left;
+}
+
+ComboBox:hover {
+    background-color: rgba(249, 249, 249, 0.5);
+}
+
+ComboBox:pressed {
+    background-color: rgba(249, 249, 249, 0.3);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.073);
+    color: rgba(0, 0, 0, 0.63);
+}
+
+ComboBox:disabled {
+    color: rgba(0, 0, 0, 0.36);
+    background: rgba(249, 249, 249, 0.3);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item>
+      <widget class="QFrame" name="frame_4">
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>42</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>16777215</width>
+         <height>42</height>
+        </size>
+       </property>
+       <property name="frameShape">
+        <enum>QFrame::StyledPanel</enum>
+       </property>
+       <property name="frameShadow">
+        <enum>QFrame::Raised</enum>
+       </property>
+       <layout class="QHBoxLayout" name="horizontalLayout_4" stretch="0,1,0">
+        <property name="leftMargin">
+         <number>0</number>
+        </property>
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <property name="rightMargin">
+         <number>0</number>
+        </property>
+        <property name="bottomMargin">
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="QLabel" name="label_3">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>35</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>40</height>
+           </size>
+          </property>
+          <property name="font">
+           <font>
+            <pointsize>9</pointsize>
+            <bold>true</bold>
+           </font>
+          </property>
+          <property name="text">
+           <string>Kênh LoRa</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="ComboBox" name="channel_combo">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>35</height>
+           </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">ComboBox {
+    border: 1px solid rgba(0, 0, 0, 0.073);
+    border-radius: 10px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.183);
+    padding: 5px 31px 6px 11px;
+    /* font: 14px 'Segoe UI', 'Microsoft YaHei', 'PingFang SC'; */
+    color: black;
+    background-color: rgba(255, 255, 255, 0.7);
+    text-align: left;
+}
+
+ComboBox:hover {
+    background-color: rgba(249, 249, 249, 0.5);
+}
+
+ComboBox:pressed {
+    background-color: rgba(249, 249, 249, 0.3);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.073);
+    color: rgba(0, 0, 0, 0.63);
+}
+
+ComboBox:disabled {
+    color: rgba(0, 0, 0, 0.36);
+    background: rgba(249, 249, 249, 0.3);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="MonkezButton" name="lora_accept_btn">
+          <property name="minimumSize">
+           <size>
+            <width>60</width>
+            <height>35</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>10000</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <property name="font">
+           <font>
+            <pointsize>8</pointsize>
+            <bold>true</bold>
+           </font>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QPushButton {
+    border-radius: 10px;
+    background-color: rgba(255, 255, 255, 255);
+    color: #000000;
+    border: none;
+}</string>
+          </property>
+          <property name="text">
+           <string>ĐẶT</string>
+          </property>
+          <property name="isChecked" stdset="0">
+           <bool>false</bool>
+          </property>
+          <property name="filledButton" stdset="0">
+           <bool>true</bool>
+          </property>
+          <property name="outlinedButton" stdset="0">
+           <bool>false</bool>
+          </property>
+          <property name="DeactiveColor" stdset="0">
+           <color>
+            <red>255</red>
+            <green>255</green>
+            <blue>255</blue>
+           </color>
+          </property>
+          <property name="textColor" stdset="0">
+           <color>
+            <red>0</red>
+            <green>0</green>
+            <blue>0</blue>
+           </color>
+          </property>
+          <property name="hoverTextColor" stdset="0">
+           <color>
+            <red>68</red>
+            <green>68</green>
+            <blue>68</blue>
+           </color>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+    </layout>
    </item>
    <item>
     <widget class="QFrame" name="frame_5">
@@ -90,533 +372,13 @@ border-radius:5px;</string>
        <number>2</number>
       </property>
       <item>
-       <layout class="QHBoxLayout" name="horizontalLayout_6" stretch="2,1,1">
-        <item>
-         <widget class="QFrame" name="frame">
-          <property name="minimumSize">
-           <size>
-            <width>0</width>
-            <height>42</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>16777215</width>
-            <height>42</height>
-           </size>
-          </property>
-          <property name="frameShape">
-           <enum>QFrame::StyledPanel</enum>
-          </property>
-          <property name="frameShadow">
-           <enum>QFrame::Raised</enum>
-          </property>
-          <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,1">
-           <property name="leftMargin">
-            <number>0</number>
-           </property>
-           <property name="topMargin">
-            <number>0</number>
-           </property>
-           <property name="rightMargin">
-            <number>0</number>
-           </property>
-           <property name="bottomMargin">
-            <number>0</number>
-           </property>
-           <item>
-            <widget class="QLabel" name="label">
-             <property name="minimumSize">
-              <size>
-               <width>0</width>
-               <height>35</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>80</width>
-               <height>40</height>
-              </size>
-             </property>
-             <property name="font">
-              <font>
-               <pointsize>10</pointsize>
-               <bold>true</bold>
-              </font>
-             </property>
-             <property name="text">
-              <string>Chọn súng:</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="ComboBox" name="client_combo">
-             <property name="minimumSize">
-              <size>
-               <width>0</width>
-               <height>35</height>
-              </size>
-             </property>
-             <property name="styleSheet">
-              <string notr="true">ComboBox {
-    border: 1px solid rgba(0, 0, 0, 0.073);
-    border-radius: 10px;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.183);
-    padding: 5px 31px 6px 11px;
-    /* font: 14px 'Segoe UI', 'Microsoft YaHei', 'PingFang SC'; */
-    color: black;
-    background-color: rgba(255, 255, 255, 0.7);
-    text-align: left;
-}
-
-ComboBox:hover {
-    background-color: rgba(249, 249, 249, 0.5);
-}
-
-ComboBox:pressed {
-    background-color: rgba(249, 249, 249, 0.3);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.073);
-    color: rgba(0, 0, 0, 0.63);
-}
-
-ComboBox:disabled {
-    color: rgba(0, 0, 0, 0.36);
-    background: rgba(249, 249, 249, 0.3);
-    border: 1px solid rgba(0, 0, 0, 0.06);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-}
-</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
-        <item>
-         <widget class="MonkezButton" name="adjust_btn">
-          <property name="minimumSize">
-           <size>
-            <width>155</width>
-            <height>35</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>10000</width>
-            <height>16777215</height>
-           </size>
-          </property>
-          <property name="font">
-           <font>
-            <bold>true</bold>
-           </font>
-          </property>
-          <property name="styleSheet">
-           <string notr="true">QPushButton {
-    border-radius: 8px;
-    background-color: rgba(255, 255, 255, 255);
-    color: #000000;
-    border: none;
-}</string>
-          </property>
-          <property name="text">
-           <string>HIỆU CHỈNH CAMERA</string>
-          </property>
-          <property name="isChecked" stdset="0">
-           <bool>false</bool>
-          </property>
-          <property name="filledButton" stdset="0">
-           <bool>true</bool>
-          </property>
-          <property name="outlinedButton" stdset="0">
-           <bool>false</bool>
-          </property>
-          <property name="DeactiveColor" stdset="0">
-           <color>
-            <red>255</red>
-            <green>255</green>
-            <blue>255</blue>
-           </color>
-          </property>
-          <property name="textColor" stdset="0">
-           <color>
-            <red>0</red>
-            <green>0</green>
-            <blue>0</blue>
-           </color>
-          </property>
-          <property name="hoverTextColor" stdset="0">
-           <color>
-            <red>68</red>
-            <green>68</green>
-            <blue>68</blue>
-           </color>
-          </property>
-          <property name="radius" stdset="0">
-           <number>8</number>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="MonkezButton" name="Q0_btn">
-          <property name="minimumSize">
-           <size>
-            <width>155</width>
-            <height>35</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>10000</width>
-            <height>16777215</height>
-           </size>
-          </property>
-          <property name="font">
-           <font>
-            <bold>true</bold>
-           </font>
-          </property>
-          <property name="styleSheet">
-           <string notr="true">QPushButton {
-    border-radius: 8px;
-    background-color: rgba(255, 255, 255, 255);
-    color: #000000;
-    border: none;
-}</string>
-          </property>
-          <property name="text">
-           <string>BẮN QUY KHÔNG</string>
-          </property>
-          <property name="isChecked" stdset="0">
-           <bool>false</bool>
-          </property>
-          <property name="filledButton" stdset="0">
-           <bool>true</bool>
-          </property>
-          <property name="outlinedButton" stdset="0">
-           <bool>false</bool>
-          </property>
-          <property name="DeactiveColor" stdset="0">
-           <color>
-            <red>255</red>
-            <green>255</green>
-            <blue>255</blue>
-           </color>
-          </property>
-          <property name="textColor" stdset="0">
-           <color>
-            <red>0</red>
-            <green>0</green>
-            <blue>0</blue>
-           </color>
-          </property>
-          <property name="hoverTextColor" stdset="0">
-           <color>
-            <red>68</red>
-            <green>68</green>
-            <blue>68</blue>
-           </color>
-          </property>
-          <property name="radius" stdset="0">
-           <number>8</number>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </item>
-      <item>
-       <layout class="QHBoxLayout" name="horizontalLayout_5" stretch="3,4">
-        <item>
-         <widget class="QFrame" name="frame_3">
-          <property name="minimumSize">
-           <size>
-            <width>0</width>
-            <height>42</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>16777215</width>
-            <height>42</height>
-           </size>
-          </property>
-          <property name="frameShape">
-           <enum>QFrame::StyledPanel</enum>
-          </property>
-          <property name="frameShadow">
-           <enum>QFrame::Raised</enum>
-          </property>
-          <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="0,1">
-           <property name="leftMargin">
-            <number>0</number>
-           </property>
-           <property name="topMargin">
-            <number>0</number>
-           </property>
-           <property name="rightMargin">
-            <number>0</number>
-           </property>
-           <property name="bottomMargin">
-            <number>0</number>
-           </property>
-           <item>
-            <widget class="QLabel" name="label_2">
-             <property name="minimumSize">
-              <size>
-               <width>0</width>
-               <height>35</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>16777215</width>
-               <height>40</height>
-              </size>
-             </property>
-             <property name="font">
-              <font>
-               <pointsize>10</pointsize>
-               <bold>true</bold>
-              </font>
-             </property>
-             <property name="text">
-              <string>Cổng LORA:</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="ComboBox" name="comport_combo">
-             <property name="minimumSize">
-              <size>
-               <width>0</width>
-               <height>35</height>
-              </size>
-             </property>
-             <property name="styleSheet">
-              <string notr="true">ComboBox {
-    border: 1px solid rgba(0, 0, 0, 0.073);
-    border-radius: 10px;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.183);
-    padding: 5px 31px 6px 11px;
-    /* font: 14px 'Segoe UI', 'Microsoft YaHei', 'PingFang SC'; */
-    color: black;
-    background-color: rgba(255, 255, 255, 0.7);
-    text-align: left;
-}
-
-ComboBox:hover {
-    background-color: rgba(249, 249, 249, 0.5);
-}
-
-ComboBox:pressed {
-    background-color: rgba(249, 249, 249, 0.3);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.073);
-    color: rgba(0, 0, 0, 0.63);
-}
-
-ComboBox:disabled {
-    color: rgba(0, 0, 0, 0.36);
-    background: rgba(249, 249, 249, 0.3);
-    border: 1px solid rgba(0, 0, 0, 0.06);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-}
-</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
-        <item>
-         <widget class="QFrame" name="frame_4">
-          <property name="minimumSize">
-           <size>
-            <width>0</width>
-            <height>42</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>16777215</width>
-            <height>42</height>
-           </size>
-          </property>
-          <property name="frameShape">
-           <enum>QFrame::StyledPanel</enum>
-          </property>
-          <property name="frameShadow">
-           <enum>QFrame::Raised</enum>
-          </property>
-          <layout class="QHBoxLayout" name="horizontalLayout_4" stretch="0,1,0">
-           <property name="leftMargin">
-            <number>0</number>
-           </property>
-           <property name="topMargin">
-            <number>0</number>
-           </property>
-           <property name="rightMargin">
-            <number>0</number>
-           </property>
-           <property name="bottomMargin">
-            <number>0</number>
-           </property>
-           <item>
-            <widget class="QLabel" name="label_3">
-             <property name="minimumSize">
-              <size>
-               <width>0</width>
-               <height>35</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>16777215</width>
-               <height>40</height>
-              </size>
-             </property>
-             <property name="font">
-              <font>
-               <pointsize>10</pointsize>
-               <bold>true</bold>
-              </font>
-             </property>
-             <property name="text">
-              <string>Kênh LoRa</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="ComboBox" name="channel_combo">
-             <property name="minimumSize">
-              <size>
-               <width>0</width>
-               <height>35</height>
-              </size>
-             </property>
-             <property name="styleSheet">
-              <string notr="true">ComboBox {
-    border: 1px solid rgba(0, 0, 0, 0.073);
-    border-radius: 10px;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.183);
-    padding: 5px 31px 6px 11px;
-    /* font: 14px 'Segoe UI', 'Microsoft YaHei', 'PingFang SC'; */
-    color: black;
-    background-color: rgba(255, 255, 255, 0.7);
-    text-align: left;
-}
-
-ComboBox:hover {
-    background-color: rgba(249, 249, 249, 0.5);
-}
-
-ComboBox:pressed {
-    background-color: rgba(249, 249, 249, 0.3);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.073);
-    color: rgba(0, 0, 0, 0.63);
-}
-
-ComboBox:disabled {
-    color: rgba(0, 0, 0, 0.36);
-    background: rgba(249, 249, 249, 0.3);
-    border: 1px solid rgba(0, 0, 0, 0.06);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-}
-</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="MonkezButton" name="lora_accept_btn">
-             <property name="minimumSize">
-              <size>
-               <width>60</width>
-               <height>35</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>10000</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="font">
-              <font>
-               <pointsize>8</pointsize>
-               <bold>true</bold>
-              </font>
-             </property>
-             <property name="styleSheet">
-              <string notr="true">QPushButton {
-    border-radius: 10px;
-    background-color: rgba(255, 255, 255, 255);
-    color: #000000;
-    border: none;
-}</string>
-             </property>
-             <property name="text">
-              <string>ĐẶT</string>
-             </property>
-             <property name="isChecked" stdset="0">
-              <bool>false</bool>
-             </property>
-             <property name="filledButton" stdset="0">
-              <bool>true</bool>
-             </property>
-             <property name="outlinedButton" stdset="0">
-              <bool>false</bool>
-             </property>
-             <property name="DeactiveColor" stdset="0">
-              <color>
-               <red>255</red>
-               <green>255</green>
-               <blue>255</blue>
-              </color>
-             </property>
-             <property name="textColor" stdset="0">
-              <color>
-               <red>0</red>
-               <green>0</green>
-               <blue>0</blue>
-              </color>
-             </property>
-             <property name="hoverTextColor" stdset="0">
-              <color>
-               <red>68</red>
-               <green>68</green>
-               <blue>68</blue>
-              </color>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
-       </layout>
+       <widget class="QLabel" name="lora_log_label">
+        <property name="visible">
+         <bool>false</bool>
+        </property>
+       </widget>
       </item>
      </layout>
-    </widget>
-   </item>
-   <item>
-    <widget class="QLabel" name="lora_log_label">
-     <property name="text">
-      <string>Lora_log_label</string>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QFrame" name="time_setting_frame">
-     <property name="minimumSize">
-      <size>
-       <width>0</width>
-       <height>100</height>
-      </size>
-     </property>
-     <property name="frameShape">
-      <enum>QFrame::StyledPanel</enum>
-     </property>
-     <property name="frameShadow">
-      <enum>QFrame::Raised</enum>
-     </property>
     </widget>
    </item>
    <item>
@@ -689,125 +451,8 @@ ComboBox:disabled {
         </property>
         <property name="DeactiveColor" stdset="0">
          <color>
-          <red>255</red>
-          <green>255</green>
-          <blue>255</blue>
-         </color>
-        </property>
-        <property name="textColor" stdset="0">
-         <color>
-          <red>0</red>
+          <red>170</red>
           <green>0</green>
-          <blue>0</blue>
-         </color>
-        </property>
-        <property name="hoverTextColor" stdset="0">
-         <color>
-          <red>68</red>
-          <green>68</green>
-          <blue>68</blue>
-         </color>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="MonkezButton" name="cancel_btn">
-        <property name="minimumSize">
-         <size>
-          <width>130</width>
-          <height>35</height>
-         </size>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>16777215</width>
-          <height>35</height>
-         </size>
-        </property>
-        <property name="font">
-         <font>
-          <bold>true</bold>
-         </font>
-        </property>
-        <property name="styleSheet">
-         <string notr="true">QPushButton {
-	background-color: rgb(255, 255, 255);
-    border-radius: 12px;
-    border: none;
-}</string>
-        </property>
-        <property name="text">
-         <string>BẮN LẠI</string>
-        </property>
-        <property name="filledButton" stdset="0">
-         <bool>true</bool>
-        </property>
-        <property name="outlinedButton" stdset="0">
-         <bool>false</bool>
-        </property>
-        <property name="DeactiveColor" stdset="0">
-         <color>
-          <red>255</red>
-          <green>255</green>
-          <blue>255</blue>
-         </color>
-        </property>
-        <property name="textColor" stdset="0">
-         <color>
-          <red>0</red>
-          <green>0</green>
-          <blue>0</blue>
-         </color>
-        </property>
-        <property name="hoverTextColor" stdset="0">
-         <color>
-          <red>68</red>
-          <green>68</green>
-          <blue>68</blue>
-         </color>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="MonkezButton" name="confirm_btn">
-        <property name="minimumSize">
-         <size>
-          <width>130</width>
-          <height>35</height>
-         </size>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>16777215</width>
-          <height>35</height>
-         </size>
-        </property>
-        <property name="font">
-         <font>
-          <bold>true</bold>
-         </font>
-        </property>
-        <property name="styleSheet">
-         <string notr="true">QPushButton {
-    border-radius: 12px;
-    background-color: rgba(0, 170, 0, 255);
-    color: #ffffff;
-    border: none;
-}</string>
-        </property>
-        <property name="text">
-         <string>CHẤP NHẬN</string>
-        </property>
-        <property name="filledButton" stdset="0">
-         <bool>true</bool>
-        </property>
-        <property name="outlinedButton" stdset="0">
-         <bool>false</bool>
-        </property>
-        <property name="DeactiveColor" stdset="0">
-         <color>
-          <red>0</red>
-          <green>170</green>
           <blue>0</blue>
          </color>
         </property>
@@ -842,16 +487,6 @@ ComboBox:disabled {
    <class>MonkezButton</class>
    <extends>QPushButton</extends>
    <header>monkez_button</header>
-  </customwidget>
-  <customwidget>
-   <class>MonkezImage</class>
-   <extends>QWidget</extends>
-   <header>monkez_image</header>
-  </customwidget>
-  <customwidget>
-   <class>MonkezUSBCamera</class>
-   <extends>MonkezImage</extends>
-   <header>monkez_usb_camera</header>
   </customwidget>
  </customwidgets>
  <resources/>

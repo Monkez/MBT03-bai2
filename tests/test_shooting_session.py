@@ -648,11 +648,14 @@ class ShootingFlowTests(unittest.TestCase):
             self.complete(3, job_index=job_index)
         self.assertEqual(self.window._shot_sound.play.call_count, 3)
 
-    def test_settings_cannot_raise_another_target_during_exercise(self):
+    def test_settings_and_q0_windows_stay_closed_during_exercise(self):
         self.assertFalse(self.window.setting_btn.isEnabled())
-        with patch("gui.main_window.SettingWindow") as dialog:
+        self.assertFalse(self.window.quy_khong_btn.isEnabled())
+        with patch("gui.main_window.SettingWindow") as settings, patch("gui.main_window.QuyKhongWindow") as q0:
             self.window.open_setting_window()
-        dialog.assert_not_called()
+            self.window.open_quy_khong_window()
+        settings.assert_not_called()
+        q0.assert_not_called()
         self.window.lora.send_command.assert_not_called()
 
 

@@ -25,6 +25,7 @@ from gui.option_window import OptionWindow
 from gui.review_window import ShotReviewDialog
 from gui.shot_groups import same_burst, single_shot_violations, target_round_groups
 from gui.setting_window import SettingWindow
+from gui.quy_khong_window import QuyKhongWindow
 from gui.shot_sound import ShotSound
 from gui.hit_sound import HitSound
 from gui.result_sound import ResultSound
@@ -142,7 +143,7 @@ class MainWindow(QMainWindow):
         self._battery_data = {}
         self._confirmed_ports = set()
         self._q0_calibrated = {}
-        self._setting_window = None
+        self._quy_khong_window = None
         self._uart_debug_dialog = None
         self._review_sessions = {}
         self._review_shot_counters = {}
@@ -199,6 +200,7 @@ class MainWindow(QMainWindow):
 
     def _configure_main_ui(self):
         self.setting_btn.clicked.connect(self.open_setting_window)
+        self.quy_khong_btn.clicked.connect(self.open_quy_khong_window)
         self.start_btn.clicked.connect(self.start_btn_clicked)
         self.close_target_btn.clicked.connect(self._close_targets_manually)
         self.open_target_btn.clicked.connect(self._open_targets_manually)
@@ -405,7 +407,7 @@ class MainWindow(QMainWindow):
     def _on_shoot_image(self, port_id, frame, q0_data):
         """Queue scoring for an image received from a physical pedestal."""
         raw_image_save = self._queue_raw_camera_image(port_id, frame)
-        if self._setting_window is not None and self._setting_window.Q0:
+        if self._quy_khong_window is not None and self._quy_khong_window.Q0:
             self._shot_sound.play()
             return
         q0 = (q0_data or {}).get("q0", [0.5, 0.5])
@@ -902,8 +904,7 @@ class MainWindow(QMainWindow):
         )
         self._armed_deadline = self._shooting_session.deadline
         self._test_timeout_timer.start(max(1, round((self._armed_deadline - time.monotonic()) * 1000)))
-        self.setting_btn.setEnabled(False)
-        self._update_manual_target_buttons()
+        self._update_device_buttons()
         self._send_start_uart_command()
         self._schedule_lora_script()
         self._set_start_button_active(True)
@@ -914,17 +915,16 @@ class MainWindow(QMainWindow):
         self._target_presentation_timer.start()
         self._update_score_speak_buttons()
 
-    def _update_manual_target_buttons(self):
+    def _update_device_buttons(self):
         enabled = not (self.testing or self._manual_targets_busy or self._lora_configuring or self._closing)
-        self.close_target_btn.setEnabled(enabled)
-        self.open_target_btn.setEnabled(enabled)
+        for button in (self.close_target_btn, self.open_target_btn, self.setting_btn, self.quy_khong_btn):
+            button.setEnabled(enabled)
 
     def _send_manual_target_sequence(self, commands):
         if self.testing or self._manual_targets_busy or self._lora_configuring or self._closing:
             return
         self._manual_targets_busy = True
-        self._update_manual_target_buttons()
-        self.setting_btn.setEnabled(False)
+        self._update_device_buttons()
         self._roster.refresh_controls()
         if not self.lora.send_sequence(commands):
             self._on_manual_targets_finished()
@@ -939,8 +939,7 @@ class MainWindow(QMainWindow):
         if self._closing:
             return
         self._manual_targets_busy = False
-        self._update_manual_target_buttons()
-        self.setting_btn.setEnabled(not self.testing and not self._lora_configuring)
+        self._update_device_buttons()
         self._roster.refresh_controls()
 
     def _send_start_uart_command(self):
@@ -993,11 +992,10 @@ class MainWindow(QMainWindow):
                     self.lora.send_command(HIDE_COMMANDS[target])
         self._shooting_session.stop(time.monotonic())
         self._test_timeout_timer.stop()
-        self._update_manual_target_buttons()
+        self._update_device_buttons()
         self._start_followup_timer.stop()
         for server in self.servers:
             server.send_uart_command("0S000\n")
-        self.setting_btn.setEnabled(True)
         self._finish_review_session()
         self._cancel_lora_script()
         self._set_start_button_active(False)
@@ -1043,24 +1041,22 @@ class MainWindow(QMainWindow):
             self.start_btn.setChecked(active)
 
     def open_setting_window(self):
-        if self.testing or getattr(self, "_lora_configuring", False):
+        if self.testing or getattr(self, "_lora_configuring", False) or getattr(self, "_manual_targets_busy", False):
             return
-        dialog = self._setting_window = SettingWindow(
-            p_num=self.p_num,
-            servers=self.servers,
-            lora_controller=self.lora,
-            parent=self,
-            calibration_active=True,
-        )
+        SettingWindow(lora_controller=self.lora, parent=self).exec_()
+
+    def open_quy_khong_window(self):
+        if self.testing or getattr(self, "_lora_configuring", False) or getattr(self, "_manual_targets_busy", False):
+            return
+        dialog = self._quy_khong_window = QuyKhongWindow(p_num=self.p_num, servers=self.servers, parent=self)
         try:
             self.lora.send_command(cf.config_str("calibration.target_raise_command", "@114#"))
             dialog.exec_()
         finally:
-            self._setting_window = None
+            self._quy_khong_window = None
             for server in self.servers:
                 server.send_uart_command("0S000\n")
-            if not dialog.calibration_target_suspended:
-                self.lora.send_command(cf.config_str("calibration.target_lower_command", "@112#"))
+            self.lora.send_command(cf.config_str("calibration.target_lower_command", "@112#"))
 
     def request_score_speak(self, port_id):
         if self.testing or self._closing or not (1 <= port_id <= len(self.client_widgets)):
@@ -1177,8 +1173,7 @@ class MainWindow(QMainWindow):
         if self._closing:
             return
         self._lora_configuring = busy
-        self._update_manual_target_buttons()
-        self.setting_btn.setEnabled(not (self.testing or self._manual_targets_busy or busy))
+        self._update_device_buttons()
         self._roster.refresh_controls()
 
     def _on_lora_connection_changed(self, connected, message):

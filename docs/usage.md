@@ -203,11 +203,11 @@ Khi đã chọn cổng COM, thời điểm hiện bia/nhận điểm vẫn theo 
 lỗi kết nối không tự chuyển sang mô phỏng. Cổng đã chọn nhưng không còn trong danh sách
 được ghi rõ “chưa kết nối”.
 
-Nút `Cài đặt thiết bị` mở cửa sổ cài đặt từ `assets/qt/setting.ui`, cho phép chọn bệ đang kết nối, xem luồng camera, hiệu chỉnh camera và thực hiện quy không.
+Nút **Cài đặt** mở `assets/qt/setting.ui` để chỉnh thời gian bia và LoRa. Nút **Quy không** mở `assets/qt/quy_khong.ui` để chọn súng, xem camera, hiệu chỉnh và thực hiện Quy 0.
 
-Khi mở cửa sổ này, phần mềm gửi LoRa `@114#` để dựng bia số 6 phục vụ bắn Q0. Khi thoát bằng Đóng cửa sổ, Esc hoặc nút X, phần mềm gửi `@112#` để gập bia xuống, độc lập với tùy chọn gập bia tự động trong bài bắn. Cần kết nối LoRa để bia nhận được lệnh.
+Khi mở **Quy không**, phần mềm gửi LoRa `@114#` để dựng bia số 6 phục vụ bắn Q0. Khi thoát bằng Đóng cửa sổ, Esc hoặc nút X, phần mềm gửi `@112#` để gập bia xuống, độc lập với tùy chọn gập bia tự động trong bài bắn. Cần kết nối LoRa để bia nhận được lệnh.
 
-Khi chọn súng offline hoặc mất kết nối, Cài đặt hiển thị ảnh offline và khóa hai nút Hiệu chỉnh camera, Bắn quy không.
+Khi chọn súng offline hoặc mất kết nối, Quy không hiển thị ảnh offline và khóa hai nút Hiệu chỉnh camera, Bắn quy không.
 
 Trong lúc bắn Q0, camera tiếp tục hiển thị stream trực tiếp sau mỗi phát. Các dấu Q0 của những phát đã xử lý được vẽ chồng lên các frame mới để vừa theo dõi hình ảnh hiện tại vừa đối chiếu các phát trước.
 
@@ -249,7 +249,7 @@ Riêng **bia số 8C**, phần mềm gửi **@444# một lần** cho xe chạy, 
 
 Ô **Ẩn của 8C** là **mốc thời gian từ đầu bài**, giống ba bia còn lại. Thời gian chạy bằng **Ẩn − Hiện**; giới hạn chờ từ lần ghi @444# thực tế bằng **Ẩn − Hiện + 4 giây**. Ví dụ **Hiện 64, Ẩn 80 → chạy 16 giây, giới hạn chờ 20 giây**. Nếu đã thấy bia hiện rồi nhận phản hồi gập, kết thúc bài sau **2 giây**, nhưng không vượt giới hạn trên. Phản hồi 0 lúc xe vừa khởi hành chưa làm kết thúc bài; mất phản hồi vẫn kết thúc khi hết giới hạn chờ. Có thể kết thúc thủ công bằng nút trên màn hình. Các khoảng +2/+4 giây riêng của 8C là số giây cố định, không nhân hardware_delay_time.
 Khi kết thúc bài (thủ công, hết giờ hoặc thoát ứng dụng trong bài), phần mềm gửi
-`0S000` kèm xuống dòng đến tất cả súng. Đóng cài đặt bằng **ĐÓNG CỬA SỔ**,
+`0S000` kèm xuống dòng đến tất cả súng. Đóng **Quy không** bằng **ĐÓNG CỬA SỔ**,
 Esc hoặc nút X cũng gửi lệnh này đến tất cả súng. Chấp nhận Quy 0 gửi lệnh dừng đến súng vừa hiệu chỉnh.
 Bia hiện theo thứ tự **6 → 10 → 7B → 8C**. Trong Cài đặt thiết bị, phần THỜI GIAN
 HIỆN / ẨN BIA cho phép nhập hai mốc giây tính từ đầu bài cho cả bốn bia. Nhấn **ĐÓNG CỬA SỔ** để lưu và
@@ -286,8 +286,7 @@ gập bia của lượt sau. Ảnh nhận từ mốc kết thúc bài trở đi 
 
 Mỗi phát nhận trong bài hoặc khi bắn Q0 phát tiếng nổ `assets/sounds/TN.mp3`, giống
 `MBT03-wireless`, kể cả phát trượt hoặc nhận diện lỗi. Âm thanh chạy qua Qt và hỗ trợ
-các phát liên tiếp. Trong bài, nút cài đặt thiết bị bị khóa để không dựng bia Q0 xen
-vào lịch. Phím thử `D` ghi điểm ngẫu nhiên đã được bỏ.
+các phát liên tiếp. Trong bài, hai nút Cài đặt và Quy không bị khóa.
 
 Khi chọn từ **2 bệ trở lên**, hoặc **1 bệ và Gập bia: TẮT**, mỗi lần một bệ trúng một bia lần đầu trong bài,
 ứng dụng đọc số bệ bằng `assets/sounds/noti/1.mp3` đến `4.mp3`, mặc định **1.75×**.
