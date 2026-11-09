@@ -64,8 +64,7 @@ class SettingWindow(QDialog):
         self.channel_combo.clear()
         for channel in (1, 2, 3):
             self.channel_combo.addItem(f"Kênh {channel}", userData=channel)
-        self._initial_channel = cf.config_int("shooting.control_channel", 1, minimum=1, maximum=3)
-        self.channel_combo.setCurrentIndex(self._initial_channel - 1)
+        self.channel_combo.setCurrentIndex(0)
         self.channel_combo.setToolTip("Bấm ĐẶT để áp dụng cổng LoRa và gửi lại kênh cho E32.")
         self._initial_times = get_target_times()
         grid = QGridLayout(self.time_setting_frame)

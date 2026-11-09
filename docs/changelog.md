@@ -1,3 +1,7 @@
+# V65-091126 — Kênh mặc định trong Cài đặt
+
+- Ô chọn kênh hiển thị Kênh 1 khi mở Cài đặt. Bấm ĐẶT để gửi cấu hình đến E32.
+
 # V64-091126 — Chỉ đặt kênh khi bấm ĐẶT
 
 - Mở và kết nối lại COM để gửi lệnh điều khiển. Khung đặt kênh E32 chỉ được gửi từ nút ĐẶT trong Cài đặt.

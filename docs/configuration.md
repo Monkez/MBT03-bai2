@@ -22,7 +22,7 @@ Nhóm `shooting`:
 | `automatic_close_target.commands_by_class` | Lệnh gập/ẩn bia theo class mô hình. Để `command` thành chuỗi rỗng nếu muốn vô hiệu hóa một bia. |
 | `target_times` | Bốn cặp `show_seconds` / `hide_seconds` theo thứ tự 6 → 10 → 7B → 8C; nhập và lưu trong Cài đặt thiết bị. Mốc tính từ lúc bắt đầu bài. |
 | `hardware_delay_time` | Thời gian bù trễ phần cứng, mặc định `1.5` giây. Dùng để tính khoảng nhận điểm sau lệnh ẩn. |
-| `control_channel` | Kênh E32 đã chọn. Mặc định là 1. Kênh 1, 2, 3 tương ứng mã `01`, `03`, `05`. |
+| `control_channel` | Kênh lưu khi bấm ĐẶT. Ô chọn hiển thị Kênh 1 khi mở Cài đặt. Kênh 1, 2, 3 tương ứng mã `01`, `03`, `05`. |
 | `lora_timeline` | Cấu hình cũ: khi chưa có `target_times`, lấy các mốc hiện cũ và thời lượng 7/7/7/28 giây làm giá trị ban đầu; chuyển sang dùng lệnh thủ công bên dưới. |
 
 Bài bắn kết thúc theo bia xe 8C: xác nhận gập +2 giây hoặc hết thời gian chạy +4 giây từ @444#, lấy mốc sớm hơn. Với ba bia đầu cần

@@ -13,7 +13,7 @@ import config as cf
 from gui.main_window import MainWindow, _configured_lora_script
 from gui.setting_window import SettingWindow
 from gui.shooting_session import ShootingSession
-from gui.target_timing import get_target_times, hardware_delay_time, save_timing_settings, validate_times
+from gui.target_timing import get_target_times, hardware_delay_time, save_control_channel, save_timing_settings, validate_times
 
 TIMES = [{"show_seconds": show, "hide_seconds": hide}
          for show, hide in ((10, 17), (27, 37), (40, 50), (59, 79))]
@@ -197,8 +197,9 @@ class TimingUiTests(TimingFixture, unittest.TestCase):
         self.assertTrue(dialog.lora_log_label.isHidden())
 
     def test_general_accept_saves_timing_without_saving_unapplied_channel(self):
+        save_control_channel(2)
         dialog = self.dialog()
-        saved_channel = dialog.channel_combo.currentData()
+        self.assertEqual(dialog.channel_combo.currentData(), 1)
         self.assertEqual([dialog.channel_combo.itemText(i) for i in range(3)],
                          ["Kênh 1", "Kênh 2", "Kênh 3"])
         for pair, values in zip(dialog.target_time_inputs, TIMES):
@@ -209,7 +210,9 @@ class TimingUiTests(TimingFixture, unittest.TestCase):
         self.assertEqual(dialog.result(), dialog.Accepted, dialog.timing_error_label.text())
         reopened = self.dialog()
         self.assertEqual(reopened._target_time_values(), TIMES)
-        self.assertEqual(reopened.channel_combo.currentData(), saved_channel)
+        self.assertEqual(reopened.channel_combo.currentData(), 1)
+        saved = json.loads(self.path.read_text(encoding="utf-8"))["shooting"]
+        self.assertEqual(saved["control_channel"], 2)
         self.assertFalse(hasattr(dialog, "monkezusbcamera"))
 
     def test_target8_absolute_times_persist_and_difference_sets_twenty_second_limit(self):

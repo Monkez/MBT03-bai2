@@ -1,3 +1,8 @@
+## Combo kênh mặc định — 2026-11-09
+
+- SettingWindow chọn index 0 mỗi lần mở. Giá trị đã lưu chỉ được đổi từ thao tác ĐẶT.
+- 17 kiểm tra đạt. Native Qt/PYZ xác nhận hiển thị Kênh 1 với hồ sơ lưu Kênh 3 và chỉ yêu cầu áp dụng khi bấm ĐẶT. Bản V65-091126 trên Desktop.
+
 ## Đặt kênh chỉ qua nút ĐẶT — 2026-11-09
 
 - LoraController tách mở COM và áp dụng kênh. Chỉ force_channel=True từ ĐẶT mới phát C0/đổi RTS. Startup và retry mở COM trực tiếp. Lỗi cấu hình emit configuration_finished riêng, vẫn giữ cổng và gửi lệnh.
