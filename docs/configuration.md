@@ -125,7 +125,7 @@ Nhóm `lora`:
 | `ack_timeout_seconds` | Thời gian chờ phản hồi lặp lại lệnh. |
 | `max_attempts` | Số lần gửi tối đa nếu chưa nhận được phản hồi. |
 
-Khi mở cổng, phần mềm cấu hình E32 ở 9600 bps theo trình tự RTS của bộ chuyển đổi đang dùng. Mỗi lần thử đặt `RTS=False`, chờ 200 ms, xóa bộ đệm nhận rồi gửi `C0 00 00 1A CH 44`. Sau 200 ms, phần mềm đọc và đối chiếu phản hồi đủ sáu byte. Thử tối đa ba lần rồi đặt `RTS=True` và chờ 200 ms trước khi truyền nhận. Nếu E32 chưa xác nhận, phần mềm báo lỗi và chỉ gửi lệnh điều khiển sau khi cấu hình lại thành công.
+Khi khởi động hoặc kết nối lại, phần mềm mở cổng ở 9600 bps để truyền lệnh. Thao tác **ĐẶT** trong Cài đặt mới cấu hình E32 theo trình tự RTS của bộ chuyển đổi đang dùng. Mỗi lần thử đặt `RTS=False`, chờ 200 ms, xóa bộ đệm nhận rồi gửi `C0 00 00 1A CH 44`. Sau 200 ms, phần mềm đọc và đối chiếu phản hồi đủ sáu byte. Thử tối đa ba lần rồi đặt `RTS=True` và chờ 200 ms trước khi truyền nhận. Nếu E32 chưa xác nhận, Cài đặt báo lỗi đặt kênh. Cổng vẫn dùng để gửi và nhận lệnh điều khiển.
 
 Nút **ĐẶT** lưu lựa chọn kênh và gửi lại cấu hình, kể cả khi giá trị kênh giữ nguyên. Cổng COM đang mở được dùng lại khi tên cổng giữ nguyên. Dòng báo lỗi LoRa trong Cài đặt hiện khi lỗi kết nối, lỗi đặt kênh hoặc lệnh điều khiển thiếu phản hồi. Chọn Không sử dụng LoRa và bấm ĐẶT hiện thông báo màu vàng.
 

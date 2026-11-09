@@ -1,3 +1,8 @@
+## Đặt kênh chỉ qua nút ĐẶT — 2026-11-09
+
+- LoraController tách mở COM và áp dụng kênh. Chỉ force_channel=True từ ĐẶT mới phát C0/đổi RTS. Startup và retry mở COM trực tiếp. Lỗi cấu hình emit configuration_finished riêng, vẫn giữ cổng và gửi lệnh.
+- 394 kiểm tra đạt. Native Qt/PYZ giả lập xác nhận ĐẶT lỗi rồi BẮT ĐẦU gửi 0F016/0A000 tới súng và COM mở lại gửi @114# theo lịch. Bản V64-091126 trên Desktop.
+
 ## Chiều cao Cài đặt — 2026-11-07
 
 - Hàng ảnh cao 58 px logic, ảnh vừa khung 100 × 52 giữ tỉ lệ. Cửa sổ lấy chiều cao theo sizeHint sau khi tạo nội dung.

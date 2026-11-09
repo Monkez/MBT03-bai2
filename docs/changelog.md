@@ -1,3 +1,8 @@
+# V64-091126 — Chỉ đặt kênh khi bấm ĐẶT
+
+- Mở và kết nối lại COM để gửi lệnh điều khiển. Khung đặt kênh E32 chỉ được gửi từ nút ĐẶT trong Cài đặt.
+- Cài đặt báo lỗi nếu E32 thiếu xác nhận. Cổng COM tiếp tục phục vụ gửi nhận lệnh điều khiển.
+
 # V63-071126 — Hiện trọn ảnh bia trong Cài đặt
 
 - Tăng chiều cao mở cửa sổ theo bố cục và chừa đủ chỗ cho ảnh bia.

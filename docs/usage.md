@@ -220,7 +220,7 @@ nối vẫn được ưu tiên. Chỉ gửi đến súng đang kết nối, khô
 thất bại. Mất kết nối sẽ xóa trạng thái tìm súng trên giao diện; đóng ứng dụng gửi
 lệnh trở về đèn xanh tới các súng đang tìm và còn kết nối.
 
-Trong **Cài đặt thiết bị**, chọn **Cổng LoRa** và **Kênh 1, 2 hoặc 3**, rồi bấm **ĐẶT**. Mỗi lần bấm sẽ gửi lại cấu hình kênh cho E32 trên cổng đã chọn, kể cả khi chọn lại kênh hiện tại. Nếu cổng đang mở và giữ nguyên, phần mềm dùng kết nối COM đó. Dòng đỏ dưới phần LoRa báo lỗi kết nối, đặt kênh hoặc lệnh thiếu phản hồi. Khi chọn Không sử dụng LoRa rồi bấm ĐẶT, dòng chữ vàng báo chế độ đang dùng. **ĐÓNG CỬA SỔ** tự lưu thời gian bia. Khi khởi động, phần mềm áp dụng kênh đã lưu, mặc định là Kênh 1. Các module LoRa của cùng bộ luyện tập cần dùng cùng kênh.
+Trong **Cài đặt thiết bị**, chọn **Cổng LoRa** và **Kênh 1, 2 hoặc 3**, rồi bấm **ĐẶT**. Mỗi lần bấm sẽ gửi lại cấu hình kênh cho E32 trên cổng đã chọn, kể cả khi chọn lại kênh hiện tại. Nếu cổng đang mở và giữ nguyên, phần mềm dùng kết nối COM đó. Dòng đỏ dưới phần LoRa báo lỗi kết nối, đặt kênh hoặc lệnh thiếu phản hồi. Khi chọn Không sử dụng LoRa rồi bấm ĐẶT, dòng chữ vàng báo chế độ đang dùng. **ĐÓNG CỬA SỔ** tự lưu thời gian bia. Khi khởi động, phần mềm mở cổng COM để truyền lệnh. Ô chọn kênh hiển thị giá trị đã lưu, mặc định Kênh 1. Bấm ĐẶT để gửi cấu hình đó cho E32. Các module LoRa của cùng bộ luyện tập cần dùng cùng kênh.
 
 Nhấn nút **ẨN BIA** (`close_target_btn`) để gửi `@661#` qua LoRa **một lần**,
 không chờ ACK và không gửi lại. Nút

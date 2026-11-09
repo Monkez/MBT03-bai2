@@ -45,7 +45,6 @@ class LoraController(QObject):
         self._serial = None
         self._port_name = None
         self._channel = cf.config_int("shooting.control_channel", 1, minimum=1, maximum=3)
-        self._channel_config_failed = False
         self.connection_error = ""
         self._lock = threading.Lock()
         self._executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="LoRa")
@@ -65,7 +64,7 @@ class LoraController(QObject):
     @property
     def is_connected(self):
         with self._lock:
-            return bool(self._serial is not None and self._serial.is_open and not self._channel_config_failed)
+            return bool(self._serial is not None and self._serial.is_open)
 
     @staticmethod
     def available_ports():
@@ -115,30 +114,30 @@ class LoraController(QObject):
             return False
         with self._lock:
             if self._closing:
-                success, message = False, "Đang đóng LoRa"
+                connected, message = False, "Đang đóng LoRa"
             elif self._serial is not None and self._serial.is_open and self._port_name == port_name:
-                if force_channel or self._channel != channel or self._channel_config_failed:
-                    self._channel = channel
-                    success, message = self._configure_open_port_locked()
-                else:
-                    success, message = True, f"{port_name} · Kênh {channel}"
+                connected, message = True, f"{port_name} · Đã mở cổng"
             else:
                 self._close_locked()
                 self._port_name = port_name or None
-                self._channel = channel
                 if port_name:
-                    success, message = self._open_configured_locked()
+                    connected, message = self._open_port_locked()
                 else:
-                    success, message = False, "Không sử dụng LoRa"
-        self._report_connection(success, message)
-        self.configuration_finished.emit(success or not port_name, message)
-        return success
+                    connected, message = False, "Không sử dụng LoRa"
+            self._channel = channel
+            applied = connected or not port_name
+            apply_message = message
+            if connected and force_channel:
+                applied, apply_message = self._apply_channel_locked()
+        self._report_connection(connected, message)
+        self.configuration_finished.emit(applied, apply_message)
+        return connected and applied
 
     def _report_connection(self, connected, message):
         self.connection_error = message if not connected and self._port_name else ""
         self.connection_changed.emit(connected, message)
 
-    def _open_configured_locked(self):
+    def _open_port_locked(self):
         port_name = self._port_name
         if serial is None:
             return False, "Chưa cài thư viện pyserial"
@@ -151,17 +150,12 @@ class LoraController(QObject):
             )
         except (OSError, serial.SerialException) as error:
             return False, f"Không mở được {port_name}: {error}"
-        success, message = self._configure_open_port_locked()
-        if not success:
-            self._close_locked()
-        return success, message
+        return True, f"{port_name} · Đã mở cổng"
 
-    def _configure_open_port_locked(self):
+    def _apply_channel_locked(self):
         port_name, channel = self._port_name, self._channel
-        self._channel_config_failed = True
         try:
             if self._program_e32_channel(self._serial, channel) and not self._closing:
-                self._channel_config_failed = False
                 return True, f"{port_name} · Kênh {channel}"
             return False, f"{port_name} · E32 chưa xác nhận Kênh {channel}"
         except (OSError, serial.SerialException) as error:
@@ -248,12 +242,12 @@ class LoraController(QObject):
             device = self._serial
             if not self._closing and self._port_name and (device is None or not device.is_open):
                 self._close_locked()
-                connection_result = self._open_configured_locked()
+                connection_result = self._open_port_locked()
                 device = self._serial
 
             max_attempts = self.MAX_ATTEMPTS if requires_ack and not status_query else 1
             for attempts in range(1, max_attempts + 1):
-                if self._closing or device is None or not device.is_open or self._channel_config_failed:
+                if self._closing or device is None or not device.is_open:
                     attempts = 0
                     break
                 try:
@@ -309,7 +303,6 @@ class LoraController(QObject):
     def _close_locked(self):
         device = self._serial
         self._serial = None
-        self._channel_config_failed = False
         if device is not None:
             try:
                 device.close()
@@ -323,7 +316,7 @@ class LoraController(QObject):
         # the only hide of a target raised with a persistent manual command.
         with self._lock:
             device = self._serial
-            if device is not None and device.is_open and not self._channel_config_failed:
+            if device is not None and device.is_open:
                 for command in final_commands:
                     try:
                         device.write(command.encode("ascii"))
