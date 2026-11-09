@@ -231,8 +231,7 @@ class LoraController(QObject):
     def _send_with_retry(self, command, queued_at=None):
         queued_at = time.monotonic() if queued_at is None else queued_at
         payload = command.encode("ascii")
-        # Broadcast and carriage launch are sent once; poll 8C for its state.
-        requires_ack = command not in ("@661#", "@444#")
+        requires_ack = command != "@661#"
         status_query = command == "@448#"
         attempts = 0
         success = False
@@ -246,6 +245,8 @@ class LoraController(QObject):
                 device = self._serial
 
             max_attempts = self.MAX_ATTEMPTS if requires_ack and not status_query else 1
+            if command == "@444#":
+                max_attempts = min(max_attempts, 3)
             for attempts in range(1, max_attempts + 1):
                 if self._closing or device is None or not device.is_open:
                     attempts = 0

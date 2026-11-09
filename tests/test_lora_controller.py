@@ -266,14 +266,22 @@ class LoraControllerTests(unittest.TestCase):
         self.assertEqual(results, [("@114#", False, 3)])
         controller.close()
 
-    def test_carriage_launch_sends_once_without_restarting_on_missing_echo(self):
-        controller = LoraController()
-        self.addCleanup(controller.close)
-        device = FakeSerialPort()
-        controller._serial = device
-        with patch.object(device, "read", side_effect=AssertionError("Launch uses status polling")):
-            self.assertTrue(controller._send_with_retry("@444#"))
-        self.assertEqual(device.write_count, 1)
+    def test_carriage_launch_retries_until_echo_with_three_attempt_limit(self):
+        for echo_on, expected_writes in ((1, 1), (2, 2), (3, 3), (None, 3)):
+            with self.subTest(echo_on=echo_on):
+                controller = LoraController()
+                self.addCleanup(controller.close)
+                controller.ACK_TIMEOUT_SECONDS = .01
+                controller.MAX_ATTEMPTS = 8
+                device = FakeSerialPort(echo_on_attempt=echo_on)
+                controller._serial = device
+                sent, results = [], []
+                controller.command_sent.connect(lambda *args: sent.append(args))
+                controller.command_finished.connect(lambda *args: results.append(args))
+                self.assertEqual(controller._send_with_retry("@444#"), echo_on is not None)
+                self.assertEqual(device.write_count, expected_writes)
+                self.assertEqual(len(sent), 1)
+                self.assertEqual(results, [("@444#", echo_on is not None, expected_writes)])
 
     def test_target8_status_accepts_fragmented_lines_and_rejects_echo_or_invalid_state(self):
         for response, expected in ((b"@4480\n", False), (b"@4481\r\n", True),

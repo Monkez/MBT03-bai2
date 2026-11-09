@@ -50,7 +50,7 @@ Hình mô phỏng hiện tại thời điểm gửi lệnh hiện và gập sau 
 | `1` | BIA SỐ 6 | `@114#` | `@112#` |
 | `0` | BIA SỐ 10 | `@224#` | `@222#` |
 | `2` | BIA SỐ 7B | `@334#` | `@332#` |
-| `3` | BIA SỐ 8C | `@444#` (chạy một lần) | Tự gập, hỏi `@448#` mỗi giây |
+| `3` | BIA SỐ 8C | `@444#` (tối đa 3 lần gửi khi thiếu echo) | Tự gập, hỏi `@448#` mỗi giây |
 
 Nút **HIỆN BIA** dựng 8C bằng `@441#` sau ba lệnh dựng `@114#`, `@224#`, `@334#`.
 
@@ -123,7 +123,7 @@ Nhóm `lora`:
 | `port_description` | Chuỗi dùng tìm cổng COM LoRa tự động. |
 | `baud_rate` | Tốc độ dùng cho E32 là 9600 bps, 8N1. |
 | `ack_timeout_seconds` | Thời gian chờ phản hồi lặp lại lệnh. |
-| `max_attempts` | Số lần gửi tối đa nếu chưa nhận được phản hồi. |
+| `max_attempts` | Số lần gửi tối đa nếu chưa nhận phản hồi. Lệnh chạy xe `@444#` có giới hạn 3 lần gửi. |
 
 Khi khởi động hoặc kết nối lại, phần mềm mở cổng ở 9600 bps để truyền lệnh. Thao tác **ĐẶT** trong Cài đặt mới cấu hình E32 theo trình tự RTS của bộ chuyển đổi đang dùng. Mỗi lần thử đặt `RTS=False`, chờ 200 ms, xóa bộ đệm nhận rồi gửi `C0 00 00 1A CH 44`. Sau 200 ms, phần mềm đọc và đối chiếu phản hồi đủ sáu byte. Thử tối đa ba lần rồi đặt `RTS=True` và chờ 200 ms trước khi truyền nhận. Nếu E32 chưa xác nhận, Cài đặt báo lỗi đặt kênh. Cổng vẫn dùng để gửi và nhận lệnh điều khiển.
 

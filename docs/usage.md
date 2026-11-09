@@ -245,7 +245,7 @@ Tắt Q0, đổi bệ hoặc đóng cửa sổ sẽ hủy lệnh còn chờ; đ�
 bệ trước. Nếu gửi `0F003` thất bại hoặc bệ mất kết nối trước khi hết thời gian chờ,
 phần mềm không gửi tiếp `0Q000`.
 
-Riêng **bia số 8C**, phần mềm gửi **@444# một lần** cho xe chạy, rồi hỏi **@448# mỗi giây**. Phản hồi `@4481` kèm xuống dòng là đang hiện, `@4480` là đã ẩn. Màn hình cập nhật theo phản hồi, không cộng thêm độ trễ hiển thị. Không gửi @442# do trúng, theo lịch, khi hết giờ hoặc thoát bài; xe tự chạy hết hành trình và gập.
+Riêng **bia số 8C**, phần mềm gửi **@444#** cho xe chạy và thử lại khi thiếu phản hồi, tối đa 3 lần gửi. Khi nhận echo `@444#`, phần mềm dừng thử lại. Trạng thái xe được hỏi bằng **@448#**. Phản hồi `@4481` kèm xuống dòng là đang hiện, `@4480` là đã ẩn. Màn hình cập nhật theo phản hồi, không cộng thêm độ trễ hiển thị. Không gửi @442# do trúng, theo lịch, khi hết giờ hoặc thoát bài; xe tự chạy hết hành trình và gập.
 
 Ô **Ẩn của 8C** là **mốc thời gian từ đầu bài**, giống ba bia còn lại. Thời gian chạy bằng **Ẩn − Hiện**; giới hạn chờ từ lần ghi @444# thực tế bằng **Ẩn − Hiện + 4 giây**. Ví dụ **Hiện 64, Ẩn 80 → chạy 16 giây, giới hạn chờ 20 giây**. Nếu đã thấy bia hiện rồi nhận phản hồi gập, kết thúc bài sau **2 giây**, nhưng không vượt giới hạn trên. Phản hồi 0 lúc xe vừa khởi hành chưa làm kết thúc bài; mất phản hồi vẫn kết thúc khi hết giới hạn chờ. Có thể kết thúc thủ công bằng nút trên màn hình. Các khoảng +2/+4 giây riêng của 8C là số giây cố định, không nhân hardware_delay_time.
 Khi kết thúc bài (thủ công, hết giờ hoặc thoát ứng dụng trong bài), phần mềm gửi

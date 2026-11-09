@@ -1,3 +1,7 @@
+# V66-091126 — Thử lại lệnh chạy xe bia
+
+- @444# gửi tối đa 3 lần khi thiếu echo. Khi nhận xác nhận, dừng thử lại.
+
 # V65-091126 — Kênh mặc định trong Cài đặt
 
 - Ô chọn kênh hiển thị Kênh 1 khi mở Cài đặt. Bấm ĐẶT để gửi cấu hình đến E32.

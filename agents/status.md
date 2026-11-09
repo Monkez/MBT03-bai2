@@ -1,3 +1,8 @@
+## Thử lại lệnh chạy xe bia — 2026-11-09
+
+- @444# dùng ACK echo như lệnh bia thường, giới hạn min(max_attempts, 3). command_sent chỉ emit lần ghi đầu để giữ mốc 8C. @661# vẫn gửi một lần.
+- 45 kiểm tra liên quan đạt. PYZ đóng gói xác nhận echo 1/2/3 và hết 3 lần, một mốc command_sent. V66-091126 trên Desktop.
+
 ## Combo kênh mặc định — 2026-11-09
 
 - SettingWindow chọn index 0 mỗi lần mở. Giá trị đã lưu chỉ được đổi từ thao tác ĐẶT.
