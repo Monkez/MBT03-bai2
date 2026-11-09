@@ -37,13 +37,15 @@ TWO_PEDESTAL_TARGET_LAYOUT = {
 }
 
 
-def classify_hits(hit_targets, has_single_shots=False):
+RANKS = ("Không đạt", "Đạt", "Khá", "Giỏi")
+
+
+def classify_hits(hit_targets, single_shot_count=0):
     count = len(hit_targets)
-    if count == 4:
-        return "Khá" if has_single_shots else "Giỏi"
-    if count == 3 and 3 in hit_targets:
-        return "Đạt" if has_single_shots else "Khá"
-    return "Đạt" if count >= 2 else "Không đạt"
+    if count < 2:
+        return RANKS[0]
+    rank = 3 if count == 4 else 2 if count == 3 and 3 in hit_targets else 1
+    return RANKS[max(1, rank - max(0, single_shot_count))]
 
 
 class ClientWidget(QFrame):
@@ -51,17 +53,18 @@ class ClientWidget(QFrame):
     review_requested = pyqtSignal(int)
     locate_requested = pyqtSignal(int)
 
-    def __init__(self, pedestal_id, parent=None, target_layout_mode="default"):
+    def __init__(self, pedestal_id, parent=None, target_layout_mode="default", *, score_mode_enabled=False):
         super().__init__(parent)
         uic.loadUi(cf.DATA_DIR + "assets/qt/client.ui", self)
         self._bind_ui_widgets()
 
         self.id = pedestal_id
         self.target_layout_mode = target_layout_mode
+        self.score_mode_enabled = score_mode_enabled
         self.bullet_limit = cf.max_bullets()
         self.bullet_count = 0
         self.hit_targets = set()
-        self.has_single_shots = False
+        self.single_shot_count = 0
         self.single_shot_targets = set()
         self._target_rounds = {}
         self.hit_counts = [0] * 4
@@ -226,7 +229,7 @@ class ClientWidget(QFrame):
         self.clear_error()
         self.bullet_count = 0
         self.hit_targets.clear()
-        self.has_single_shots = False
+        self.single_shot_count = 0
         self.single_shot_targets.clear()
         self._target_rounds = {}
         self.hit_counts = [0] * 4
@@ -381,7 +384,7 @@ class ClientWidget(QFrame):
         self._show_final_results = False
         self.bullet_count = 0
         self.hit_targets.clear()
-        self.has_single_shots = False
+        self.single_shot_count = 0
         self.single_shot_targets.clear()
         self._target_rounds = {}
         self.hit_counts = [0] * 4
@@ -438,13 +441,14 @@ class ClientWidget(QFrame):
         )
 
     def _rank_text(self):
-        return classify_hits(self.hit_targets, self.has_single_shots)
+        penalty = self.single_shot_count if self.score_mode_enabled else 0
+        return classify_hits(self.hit_targets, penalty)
 
     def set_burst_assessment(self, singles, targets):
-        state = (bool(singles), set(targets))
-        if state == (self.has_single_shots, self.single_shot_targets):
+        state = (len(singles), set(targets))
+        if state == (self.single_shot_count, self.single_shot_targets):
             return
-        self.has_single_shots, self.single_shot_targets = state
+        self.single_shot_count, self.single_shot_targets = state
         self.update_result_label()
         self.show_target_simulation()
 

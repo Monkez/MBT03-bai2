@@ -106,7 +106,7 @@ class RosterReaderTests(unittest.TestCase):
 
     def test_invalid_or_incomplete_results_report_row_and_keep_source(self):
         for flags, rank in [([None, 1, 1, 1], "Khá"), ([2, 1, 1, 1], "Giỏi"),
-                            ([1, 1, 1, 1], "Đạt"), ([1, 1, 0, 0], "Không đạt"),
+                            ([1, 1, 1, 1], "Không đạt"), ([1, 1, 0, 0], "Không đạt"),
                             ([True, 1, 1, 1], "Giỏi"), ([0.5, 1, 1, 1], "Khá"),
                             ([None] * 4, "Đạt"), ([1, 1, 1, 0], "Khá")]:
             with self.subTest(flags=flags, rank=rank):
@@ -248,19 +248,23 @@ class ShootingRosterTests(unittest.TestCase):
         self.window._review_sessions[sid][1] = shots
         for shot in shots:
             widget.record_shot(shot["target_index"], .5, .5)
+        self.window._refresh_burst_assessment(sid, 1)
+        self.assertEqual(widget._rank_text(), "Giỏi")
+        self.assertEqual(self.roster._session_result(1).rank, "Giỏi")
+        widget.score_mode_enabled = True
         self.window.stop_test()
-        self.assertEqual(widget._rank_text(), "Khá")
+        self.assertEqual(widget._rank_text(), "Đạt")
         self.assertEqual(widget.single_shot_targets, {0, 1})
         self.assertEqual(widget._target_border_color(1), TARGET_GREEN)
         self.assertEqual(widget._target_border_color(3), TARGET_GREEN)
         self.assertEqual(self.roster.results[1].rank, widget._rank_text())
         output = save_roster_results(self.path, tuple(self.roster.people.values()), self.roster.results)
         loaded = read_roster(output, 2)
-        self.assertEqual(loaded[0].result.rank, "Khá")
-        self.assertTrue(loaded[0].result.rank_penalty_applied)
+        self.assertEqual(loaded[0].result.rank, "Đạt")
+        self.assertEqual(loaded[0].result.rank_penalty_steps, 2)
         self.assertEqual([shot["single_shot"] for shot in shots], [True, True, False, False])
         widget.reset_results()
-        self.assertFalse(widget.has_single_shots)
+        self.assertEqual(widget.single_shot_count, 0)
         self.assertEqual(widget.single_shot_targets, set())
         self.assertEqual(widget._target_border_color(1), TARGET_RED)
         widget.set_burst_assessment((1,), {1})

@@ -16,7 +16,9 @@ class SingleShotTests(unittest.TestCase):
                                     ({1}, "Không đạt", "Không đạt")):
             with self.subTest(hits=hits):
                 self.assertEqual(classify_hits(hits), before)
-                self.assertEqual(classify_hits(hits, True), after)
+                self.assertEqual(classify_hits(hits, 1), after)
+                self.assertEqual(classify_hits(hits, 2), "Đạt" if len(hits) >= 2 else "Không đạt")
+                self.assertEqual(classify_hits(hits, 16), "Đạt" if len(hits) >= 2 else "Không đạt")
 
     def test_pending_inference_does_not_split_burst(self):
         receipts = {1: {"received_at": 10, "burst_id": 1},

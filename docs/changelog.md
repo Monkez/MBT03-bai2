@@ -1,3 +1,8 @@
+# V67-091126 — Tùy chọn hạ xếp loại theo từng loạt lẻ
+
+- Bật ô Trừ điểm bắn tắc cú ở Khởi động để hạ một bậc mỗi loạt chỉ một viên. Mức sàn của bài đã đạt là Đạt.
+- Màn hình, lời đọc và Excel dùng cùng quy tắc. Excel đọc lại được kết quả Giỏi đã hạ hai bậc.
+
 # V66-091126 — Thử lại lệnh chạy xe bia
 
 - @444# gửi tối đa 3 lần khi thiếu echo. Khi nhận xác nhận, dừng thử lại.

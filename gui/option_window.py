@@ -35,6 +35,7 @@ class OptionWindow(QDialog):
         self.start = False
         self.p_num = 1
         self.automatic_close_target_enabled = False
+        self.score_mode_enabled = False
 
         self.p_num_btns = [
             self.p_num1_btn,
@@ -104,5 +105,6 @@ class OptionWindow(QDialog):
             btn.setStyleSheet(OPTION_ACTIVE_STYLE if selected else OPTION_INACTIVE_STYLE)
 
     def start_btn_clicked(self):
+        self.score_mode_enabled = self.score_mode_checkbox.isChecked()
         self.start = True
         self.accept()

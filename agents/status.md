@@ -1,3 +1,9 @@
+## Tùy chọn hạ xếp loại bắn lẻ — 2026-11-09
+
+- OptionWindow đọc score_mode_checkbox khi chấp nhận. ClientWidget tính mỗi singleton một bậc khi bật, sàn Đạt nếu gốc đạt. Dải đạn vẫn phân nhóm.
+- ShootingRoster tính cùng quy tắc, lưu số bậc hạ hữu hiệu. Excel đọc lại các bậc từ xếp loại gốc đến Đạt, hoặc Không đạt nếu gốc không đạt.
+- 395 kiểm tra đạt. Native Qt và mã trong gói V67-091126 xác nhận cả hai trạng thái ô chọn và mức sàn Đạt. Bản chạy được bàn giao trên Desktop.
+
 ## Thử lại lệnh chạy xe bia — 2026-11-09
 
 - @444# dùng ACK echo như lệnh bia thường, giới hạn min(max_attempts, 3). command_sent chỉ emit lần ghi đầu để giữ mốc 8C. @661# vẫn gửi một lần.

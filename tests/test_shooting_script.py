@@ -351,6 +351,16 @@ class ShootingScriptTests(unittest.TestCase):
             [(15, "@114#"), (32, "@224#"), (42, "@334#"), (64, "@444#")],
         )
 
+    def test_start_accept_uses_score_mode_checkbox(self):
+        for enabled in (False, True):
+            with self.subTest(enabled=enabled):
+                dialog = OptionWindow()
+                self.addCleanup(dialog.deleteLater)
+                dialog.score_mode_checkbox.setChecked(enabled)
+                dialog.start_btn.click()
+                self.assertEqual(dialog.score_mode_enabled, enabled)
+                self.assertTrue(dialog.start)
+
     def test_single_pedestal_defaults_auto_close_on_and_allows_toggle(self):
         window = OptionWindow()
 

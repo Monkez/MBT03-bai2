@@ -309,13 +309,13 @@ PushButton:pressed, ToolButton:pressed, ToggleButton:pressed, ToggleToolButton:p
         <property name="minimumSize">
          <size>
           <width>0</width>
-          <height>100</height>
+          <height>125</height>
          </size>
         </property>
         <property name="maximumSize">
          <size>
           <width>16777215</width>
-          <height>100</height>
+          <height>125</height>
          </size>
         </property>
         <property name="font">
@@ -344,45 +344,32 @@ margin-top: 10px;
         <property name="checkable">
          <bool>false</bool>
         </property>
-        <layout class="QHBoxLayout" name="horizontalLayout_3">
-         <property name="spacing">
-          <number>15</number>
-         </property>
-         <property name="leftMargin">
-          <number>15</number>
-         </property>
-         <property name="topMargin">
-          <number>4</number>
-         </property>
-         <property name="rightMargin">
-          <number>15</number>
-         </property>
-         <property name="bottomMargin">
-          <number>4</number>
-         </property>
+        <layout class="QVBoxLayout" name="verticalLayout_3">
          <item>
-          <widget class="PushButton" name="automatic_close_target">
-           <property name="minimumSize">
-            <size>
-             <width>0</width>
-             <height>45</height>
-            </size>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>16777215</width>
-             <height>45</height>
-            </size>
-           </property>
-           <property name="font">
-            <font>
-             <family>Tahoma</family>
-             <pointsize>12</pointsize>
-             <bold>true</bold>
-            </font>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">PushButton, ToolButton, ToggleButton, ToggleToolButton {
+          <layout class="QHBoxLayout" name="horizontalLayout">
+           <item>
+            <widget class="PushButton" name="automatic_close_target">
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>45</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>45</height>
+              </size>
+             </property>
+             <property name="font">
+              <font>
+               <family>Tahoma</family>
+               <pointsize>12</pointsize>
+               <bold>true</bold>
+              </font>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">PushButton, ToolButton, ToggleButton, ToggleToolButton {
     color: white;
 	background-color: rgb(0, 153, 0);
     border: 1px solid rgba(0, 0, 0, 0.073);
@@ -402,35 +389,115 @@ PushButton:pressed, ToolButton:pressed, ToggleButton:pressed, ToggleToolButton:p
 	background-color: rgb(52, 157, 0);
     border-bottom: 1px solid rgba(0, 0, 0, 0.073);
 }</string>
-           </property>
-           <property name="text">
-            <string>Gập bia: BẬT</string>
-           </property>
-          </widget>
+             </property>
+             <property name="text">
+              <string>Gập bia: BẬT</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="PushButton" name="group_test">
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>45</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>45</height>
+              </size>
+             </property>
+             <property name="font">
+              <font>
+               <family>Tahoma</family>
+               <pointsize>12</pointsize>
+               <bold>true</bold>
+              </font>
+             </property>
+             <property name="text">
+              <string>Thành tích nhóm</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
          </item>
          <item>
-          <widget class="PushButton" name="group_test">
-           <property name="minimumSize">
-            <size>
-             <width>0</width>
-             <height>45</height>
-            </size>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>16777215</width>
-             <height>45</height>
-            </size>
-           </property>
+          <widget class="CheckBox" name="score_mode_checkbox">
            <property name="font">
             <font>
-             <family>Tahoma</family>
-             <pointsize>12</pointsize>
-             <bold>true</bold>
+             <family>Segoe UI</family>
+             <pointsize>-1</pointsize>
+             <italic>false</italic>
+             <bold>false</bold>
             </font>
            </property>
+           <property name="styleSheet">
+            <string notr="true">CheckBox {
+    color: white;
+    font: 14px 'Segoe UI', 'Microsoft YaHei', 'PingFang SC';
+    spacing: 8px;
+    min-width: 28px;
+    min-height: 22px;
+    outline: none;
+    margin-left: 1px;
+}
+
+CheckBox::indicator {
+    width: 18px;
+    height: 18px;
+    border-radius: 5px;
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    background-color: rgba(0, 0, 0, 0.022);
+}
+
+CheckBox::indicator:hover {
+    border: 1px solid rgba(255, 255, 255, 1);;
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+CheckBox::indicator:pressed {
+    border: 1px solid rgba(0, 0, 0, 0.27);
+    background-color: rgba(0, 0, 0, 0.12);
+}
+
+CheckBox::indicator:checked,
+CheckBox::indicator:indeterminate {
+    border: 1px solid #009faa;
+    background-color: #009faa;
+}
+
+
+CheckBox::indicator:checked:hover,
+CheckBox::indicator:indeterminate:hover {
+    border: 1px solid #00a7b3;
+    background-color: #00a7b3;
+}
+
+CheckBox::indicator:checked:pressed,
+CheckBox::indicator:indeterminate:pressed {
+    border: 1px solid #3eabb3;
+    background-color: #3eabb3;
+}
+
+CheckBox:disabled {
+    color: rgba(0, 0, 0, 110);
+}
+
+CheckBox::indicator:disabled {
+    border: 1px solid rgba(0, 0, 0, 0.27);
+    background-color: transparent;
+}
+
+CheckBox::indicator:checked:disabled,
+CheckBox::indicator:indeterminate:disabled {
+    border: 1px solid rgb(199, 199, 199);
+    background-color: rgb(199, 199, 199);
+}</string>
+           </property>
            <property name="text">
-            <string>Thành tích nhóm</string>
+            <string>Trừ điểm bắn tắc cú</string>
            </property>
           </widget>
          </item>
@@ -485,6 +552,11 @@ PushButton:pressed, ToolButton:pressed, ToggleButton:pressed, ToggleToolButton:p
   </layout>
  </widget>
  <customwidgets>
+  <customwidget>
+   <class>CheckBox</class>
+   <extends>QCheckBox</extends>
+   <header>qfluentwidgets</header>
+  </customwidget>
   <customwidget>
    <class>PushButton</class>
    <extends>QPushButton</extends>

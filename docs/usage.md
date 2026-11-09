@@ -21,7 +21,7 @@ Tham khảo [cơ chế DPI của Qt 5.15](https://doc.qt.io/archives/qt-5.15/hig
    0 = không trúng); cột **J** là **Xếp loại**. Để trống cả F–J cho người chưa bắn.
    Kết quả có sẵn được nạp lại lên thẻ; Loạt bắn mới bỏ qua người đã có kết quả.
    Nếu đã có đủ bốn giá trị 0/1 nhưng J trống, ứng dụng tự tính xếp loại. Nếu có
-   xếp loại thì phải khớp kết quả bốn bia hoặc thấp hơn đúng một bậc do bắn lẻ (không hạ Đạt); dữ liệu thiếu/sai được báo rõ dòng lỗi.
+   xếp loại thì phải khớp kết quả bốn bia hoặc thấp hơn do bắn lẻ đến mức Đạt. Dữ liệu thiếu hoặc sai được báo rõ dòng lỗi.
    Vẫn nhận danh sách A–D chưa có cột kết quả; khi lưu sẽ bổ sung tiêu đề F–J.
 2. Mỗi người hiển thị bằng `assets/qt/score_card.ui`, có nút **Vào bắn** riêng.
    Bấm nút này để đưa người vào bệ; nút chuyển xanh như bản wireless.
@@ -126,9 +126,10 @@ Xếp loại cập nhật theo số mục tiêu khác nhau đã bắn trúng: **
 **Không đạt: 0–1**. Trúng nhiều viên vào cùng một bia vẫn chỉ tính một
 mục tiêu; không cần bắn hết 16 viên mới hiển thị xếp loại.
 
-Mỗi loạt yêu cầu ít nhất **2 viên**. Có ít nhất một loạt chỉ một viên thì
-hạ **một bậc cho cả bài**: Giỏi → Khá, Khá → Đạt; Đạt và Không đạt giữ nguyên.
-Nhiều viên bắn lẻ không hạ cộng dồn. Mỗi bia có dải các viên đã bắn căn trái, phía trên ảnh bia: trúng màu xanh lá, trượt màu đỏ, đang chờ chấm màu xám. Trên dải đạn từng bia, viên lẻ có khung vàng; loạt từ hai viên có khung xanh blue. Số trên viên là số thứ tự chung của phát bắn để đối chiếu với Xem lại. Dải tự xuống hàng khi cần. Vùng dành cho toàn bộ đạn được chừa sẵn phía trên ngay từ đầu, nên ảnh bia giữ nguyên vị trí và kích thước khi có viên mới hoặc xuống hàng. Viền bia vẫn xanh khi trúng, đỏ khi chưa trúng. Viên lẻ được tính cho bia hiển thị tại thời điểm PC nhận phát bắn, kể cả bia đang gập hoặc đang chờ hiện. Khi nhiều bia cùng mở, dùng bia nhận diện trong ảnh để phân biệt. Mốc phân loạt dùng `shooting.burst_gap_seconds`. Khi đang bắn,
+Bật **Trừ điểm bắn tắc cú** ở cửa sổ **Khởi động** để áp dụng hạ xếp loại.
+Mỗi loạt chỉ có một viên hạ một bậc, với mức sàn **Đạt** cho bài đã đạt.
+Ví dụ, trúng cả bốn bia và có hai loạt lẻ thì xếp loại Đạt. Khi tắt tùy chọn,
+xếp loại dựa trên số bia trúng. Mỗi bia có dải các viên đã bắn căn trái, phía trên ảnh bia: trúng màu xanh lá, trượt màu đỏ, đang chờ chấm màu xám. Trên dải đạn từng bia, viên lẻ có khung vàng; loạt từ hai viên có khung xanh blue. Số trên viên là số thứ tự chung của phát bắn để đối chiếu với Xem lại. Dải tự xuống hàng khi cần. Vùng dành cho toàn bộ đạn được chừa sẵn phía trên ngay từ đầu, nên ảnh bia giữ nguyên vị trí và kích thước khi có viên mới hoặc xuống hàng. Viền bia vẫn xanh khi trúng, đỏ khi chưa trúng. Viên lẻ được tính cho bia hiển thị tại thời điểm PC nhận phát bắn, kể cả bia đang gập hoặc đang chờ hiện. Khi nhiều bia cùng mở, dùng bia nhận diện trong ảnh để phân biệt. Mốc phân loạt dùng `shooting.burst_gap_seconds`. Khi đang bắn,
 chờ đủ khoảng này trước khi kết luận viên cuối là bắn lẻ; khi dừng bài thì chốt ngay.
 Ảnh chấm về chậm không tách một loạt đã nhận thành nhiều viên lẻ. Xếp loại trên
 màn hình, đọc kết quả và lưu/nạp Excel dùng chung kết quả sau khi hạ bậc.

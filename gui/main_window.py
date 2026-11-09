@@ -219,7 +219,10 @@ class MainWindow(QMainWindow):
         positions = self._client_positions(self.p_num)
         target_layout_mode = "two_pedestals" if self.p_num == 2 else "default"
         for index in range(self.p_num):
-            widget = ClientWidget(index + 1, self, target_layout_mode=target_layout_mode)
+            widget = ClientWidget(
+                index + 1, self, target_layout_mode=target_layout_mode,
+                score_mode_enabled=self.options.score_mode_enabled is True,
+            )
             widget.score_speak_requested.connect(self.request_score_speak)
             widget.review_requested.connect(self.open_shot_review)
             widget.locate_requested.connect(self._toggle_pedestal_locate)

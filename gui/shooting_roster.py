@@ -14,7 +14,7 @@ from PyQt5.QtCore import QEvent, QObject, Qt, pyqtSignal
 from PyQt5.QtWidgets import QFileDialog, QMessageBox, QSizePolicy, QWidget
 
 import config as cf
-from gui.client_widget import classify_hits
+from gui.client_widget import RANKS, classify_hits
 from gui.shot_groups import single_shot_violations
 
 
@@ -24,11 +24,11 @@ RESULT_COLUMNS = ((1, "Bia số 6"), (0, "Bia số 10"), (2, "Bia số 7b"), (3,
 @dataclass(frozen=True)
 class RosterResult:
     hit_targets: frozenset[int]
-    rank_penalty_applied: bool = False
+    rank_penalty_steps: int = 0
 
     @property
     def rank(self):
-        return classify_hits(self.hit_targets, self.rank_penalty_applied)
+        return classify_hits(self.hit_targets, self.rank_penalty_steps)
 
 
 @dataclass(frozen=True)
@@ -68,16 +68,16 @@ def _read_result(values, row_number):
                              "người chưa bắn để trống cả F–J.")
         if float(value) == 1:
             hits.add(target)
-    result = RosterResult(frozenset(hits))
-    if not _blank(values[4]) and _normalized(values[4]) != _normalized(result.rank):
-        penalized = RosterResult(frozenset(hits), True)
-        if _normalized(values[4]) == _normalized(penalized.rank):
-            return penalized
-        allowed = f"'{result.rank}'"
-        if penalized.rank != result.rank:
-            allowed += f" hoặc '{penalized.rank}' khi có bắn lẻ"
-        raise ValueError(f"Dòng {row_number}: xếp loại phải là {allowed} theo kết quả bốn bia.")
-    return result
+    targets = frozenset(hits)
+    base = RANKS.index(classify_hits(targets))
+    if _blank(values[4]):
+        return RosterResult(targets)
+    lowest = min(1, base)
+    for index in range(lowest, base + 1):
+        if _normalized(values[4]) == _normalized(RANKS[index]):
+            return RosterResult(targets, base - index)
+    allowed = ", ".join(f"'{rank}'" for rank in RANKS[lowest:base + 1])
+    raise ValueError(f"Dòng {row_number}: xếp loại hợp lệ theo kết quả bốn bia gồm {allowed}.")
 
 
 def read_roster(path, pedestal_count):
@@ -404,16 +404,19 @@ class ShootingRoster(QObject):
         self.refresh_controls()
 
     def _session_result(self, port):
-        limit = self.window.client_widgets[port - 1].bullet_limit
+        widget = self.window.client_widgets[port - 1]
+        limit = widget.bullet_limit
         shots = self.window._review_sessions.get(self.session_id, {}).get(port, [])[:limit]
-        hits = {shot["target_index"] for shot in shots if shot.get("hit") is True}
+        hits = frozenset(shot["target_index"] for shot in shots if shot.get("hit") is True)
+        if not widget.score_mode_enabled:
+            return RosterResult(hits)
         receipts = {number: info for (sid, pid, number), info in self.window._review_receipts.items()
                     if sid == self.session_id and pid == port}
         singles, _ = single_shot_violations(
             shots, receipts, cf.burst_gap_seconds(), limit=limit,
             final=not self.window.testing, now=time.monotonic())
-        penalty = bool(singles) and classify_hits(hits, True) != classify_hits(hits)
-        return RosterResult(frozenset(hits), penalty)
+        penalty = RANKS.index(classify_hits(hits)) - RANKS.index(classify_hits(hits, len(singles)))
+        return RosterResult(hits, penalty)
 
     def save_results(self):
         if self.locked() or self.closed or not self.file_path:
