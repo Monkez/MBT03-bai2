@@ -316,16 +316,17 @@ class ShotReviewDialog(QDialog):
         while number <= capacity:
             grouped = number in starts
             slots = starts[number] if grouped else []
+            border_color = "transparent"
             if not grouped:
                 while number <= capacity and number not in starts:
                     slots.append(number)
                     number += 1
             else:
                 number = slots[-1] + 1
+                border_color = "#1769ff" if slots == [capacity] else "#eab52c"
             frame = QFrame(self.ammo_content)
-            frame.setStyleSheet("QFrame { background: transparent; border: "
-                                + ("2px solid #eab52c;" if grouped else "2px solid transparent;")
-                                + "border-radius: 8px; }")
+            frame.setStyleSheet("QFrame { background: transparent; "
+                                f"border: 2px solid {border_color}; border-radius: 8px; }}")
             frame.setFixedHeight(48)
             row = QHBoxLayout(frame)
             row.setContentsMargins(4, 4, 4, 4)

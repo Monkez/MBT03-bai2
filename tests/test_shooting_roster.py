@@ -241,10 +241,12 @@ class ShootingRosterTests(unittest.TestCase):
         self.begin()
         sid = self.window._active_review_session_id
         widget = self.window.client_widgets[0]
-        # All four targets hit, two single bursts, one valid two-shot burst.
+        # Two penalized singles, one two-shot burst, and the exempt capacity round.
         shots = [{"shot_number": n, "target_index": target, "hit": True,
                   "received_at": at} for n, (target, at) in enumerate(
                       ((1, 10), (0, 11), (2, 12), (3, 12.1)), 1)]
+        shots.append({"shot_number": widget.bullet_limit, "target_index": 3,
+                      "hit": True, "received_at": 13})
         self.window._review_sessions[sid][1] = shots
         for shot in shots:
             widget.record_shot(shot["target_index"], .5, .5)
@@ -262,7 +264,8 @@ class ShootingRosterTests(unittest.TestCase):
         loaded = read_roster(output, 2)
         self.assertEqual(loaded[0].result.rank, "Đạt")
         self.assertEqual(loaded[0].result.rank_penalty_steps, 2)
-        self.assertEqual([shot["single_shot"] for shot in shots], [True, True, False, False])
+        self.assertEqual([shot["single_shot"] for shot in shots], [True, True, False, False, False])
+        self.assertEqual(widget.single_shot_count, 2)
         widget.reset_results()
         self.assertEqual(widget.single_shot_count, 0)
         self.assertEqual(widget.single_shot_targets, set())

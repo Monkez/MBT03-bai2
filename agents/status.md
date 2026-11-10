@@ -1,3 +1,9 @@
+## Dừng riêng bia 8C và miễn trừ điểm viên cuối — 2026-11-10
+
+- Nút stop_8c_btn gửi @446# qua hàng đợi LoRa trong và ngoài bài bắn. Theo dõi 8C vẫn dựa trên @448#. Khôi phục tên close_target_btn để form mới nạp được.
+- Viên cuối theo giới hạn đạn nếu bắn riêng được bỏ qua khi tính lỗi bắn lẻ. Dải đạn theo bia và Xem lại có khung xanh dương cho viên này.
+- 397 kiểm tra đạt. Native Qt và bản đóng gói V68-101126 xác nhận thao tác bàn phím tới COM giả lập, khung xanh và xếp loại. Bản chạy trên Desktop.
+
 ## Tùy chọn hạ xếp loại bắn lẻ — 2026-11-09
 
 - OptionWindow đọc score_mode_checkbox khi chấp nhận. ClientWidget tính mỗi singleton một bậc khi bật, sàn Đạt nếu gốc đạt. Dải đạn vẫn phân nhóm.

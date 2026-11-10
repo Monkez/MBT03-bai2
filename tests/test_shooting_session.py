@@ -339,6 +339,14 @@ class ShootingFlowTests(unittest.TestCase):
         self.assertTrue(self.window.open_target_btn.isEnabled())
         self.assertTrue(self.window.close_target_btn.isEnabled())
 
+    def test_stop_8c_sends_only_carriage_stop_during_exercise(self):
+        self.assertTrue(self.window.testing)
+        self.assertTrue(self.window.stop_8c_btn.isEnabled())
+        self.window.stop_8c_btn.click()
+        self.window.lora.send_command.assert_called_once_with("@446#")
+        self.window.lora.send_sequence.assert_not_called()
+        self.assertTrue(self.window.testing)
+
     def test_manual_targets_recover_if_controller_cannot_queue_sequence(self):
         self.window.stop_test()
         self.window.lora.send_sequence.return_value = False

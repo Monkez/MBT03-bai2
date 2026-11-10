@@ -55,6 +55,23 @@ class SingleShotTests(unittest.TestCase):
                     17: {"received_at": 110, "expected_target_index": 3}}
         self.assertEqual(self.assess(receipts=receipts), ((1, 2), frozenset()))
 
+    def test_only_isolated_capacity_round_is_exempt(self):
+        for limit in (16, 24):
+            receipts = {n: {"received_at": n, "displayed_target_index": target}
+                        for n, target in ((1, 0), (2, 1), (3, 2),
+                                          (limit - 1, 3), (limit, 3), (limit + 1, 3))}
+            for final in (False, True):
+                with self.subTest(limit=limit, final=final):
+                    singles, targets = single_shot_violations(
+                        (), receipts, .3, limit=limit, final=final, now=limit + 2)
+                    self.assertEqual((singles, targets),
+                                     ((1, 2, 3, limit - 1), frozenset(range(4))))
+                    groups = target_round_groups((), receipts, .3, limit=limit, singles=singles)
+                    for target in range(3):
+                        self.assertEqual(groups[target], [("single", ((target + 1, "pending"),))])
+                    self.assertEqual(groups[3], [("single", ((limit - 1, "pending"),)),
+                                                 ("burst", ((limit, "pending"),))])
+
 
 class TargetRoundGroupsTests(unittest.TestCase):
     def test_pending_misses_and_singles_follow_displayed_target(self):

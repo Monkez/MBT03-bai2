@@ -1,3 +1,8 @@
+# V68-101126 — Dừng riêng bia 8C và miễn trừ điểm viên cuối
+
+- Nút DỪNG BIA 8C gửi `@446#` qua LoRa trong và ngoài bài bắn.
+- Viên cuối theo giới hạn đạn nếu bắn riêng có khung xanh dương và không bị hạ bậc xếp loại.
+
 # V67-091126 — Tùy chọn hạ xếp loại theo từng loạt lẻ
 
 - Bật ô Trừ điểm bắn tắc cú ở Khởi động để hạ một bậc mỗi loạt chỉ một viên. Mức sàn của bài đã đạt là Đạt.

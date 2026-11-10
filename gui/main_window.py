@@ -204,6 +204,7 @@ class MainWindow(QMainWindow):
         self.start_btn.clicked.connect(self.start_btn_clicked)
         self.close_target_btn.clicked.connect(self._close_targets_manually)
         self.open_target_btn.clicked.connect(self._open_targets_manually)
+        self.stop_8c_btn.clicked.connect(lambda: self.lora.send_command("@446#"))
         self._uart_debug_shortcut = QShortcut(QtGui.QKeySequence("Ctrl+S"), self)
         self._uart_debug_shortcut.activated.connect(self._open_uart_debug_dialog)
 
@@ -922,6 +923,7 @@ class MainWindow(QMainWindow):
         enabled = not (self.testing or self._manual_targets_busy or self._lora_configuring or self._closing)
         for button in (self.close_target_btn, self.open_target_btn, self.setting_btn, self.quy_khong_btn):
             button.setEnabled(enabled)
+        self.stop_8c_btn.setEnabled(not (self._lora_configuring or self._closing))
 
     def _send_manual_target_sequence(self, commands):
         if self.testing or self._manual_targets_busy or self._lora_configuring or self._closing:

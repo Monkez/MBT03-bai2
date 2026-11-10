@@ -47,6 +47,8 @@ def single_shot_violations(shots, receipts, threshold, *, limit, final=True, now
         if len(group) != 1:
             continue
         number = group[0]
+        if number == limit:
+            continue
         record = records[number]
         at = record.get("received_at")
         valid_time = isinstance(at, (int, float)) and not isinstance(at, bool) and math.isfinite(at)
@@ -86,7 +88,10 @@ def target_round_groups(shots, receipts, threshold, *, limit, singles=()):
             hit = record.get("hit")
             status = "hit" if hit is True else "miss" if hit is False or record.get("complete") else "pending"
             per_target.setdefault(target, []).append((n, status))
+        if len(group) > 1 or group[0] == limit:
+            kind = "burst"
+        else:
+            kind = "single" if group[0] in singles else "pending"
         for target, rounds in per_target.items():
-            kind = "single" if len(group) == 1 and group[0] in singles else "burst" if len(group) > 1 else "pending"
             result[target].append((kind, tuple(rounds)))
     return result

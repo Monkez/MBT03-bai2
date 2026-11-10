@@ -102,6 +102,8 @@ class ReviewStripTests(unittest.TestCase):
                              receipt_info={n: {"burst_id": n} for n in range(1, 26)})
         self.assertEqual(len(dialog.shots), 16)
         self.assertEqual(set(dialog.round_buttons), set(range(1, 17)))
+        self.assertIn("#1769ff", dialog.round_buttons[16].parentWidget().styleSheet())
+        self.assertIn("#eab52c", dialog.round_buttons[15].parentWidget().styleSheet())
         dialog.show_last()
         self.assertEqual(dialog.counter_label.text(), "16 / 16")
         self.assertFalse(dialog.next_btn.isEnabled())

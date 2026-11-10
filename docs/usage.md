@@ -128,6 +128,8 @@ mục tiêu; không cần bắn hết 16 viên mới hiển thị xếp loại.
 
 Bật **Trừ điểm bắn tắc cú** ở cửa sổ **Khởi động** để áp dụng hạ xếp loại.
 Mỗi loạt chỉ có một viên hạ một bậc, với mức sàn **Đạt** cho bài đã đạt.
+Viên cuối theo giới hạn đạn (mặc định là viên 16) khi bắn riêng được miễn
+trừ điểm và có khung xanh dương trên dải đạn và trong **Xem lại**.
 Ví dụ, trúng cả bốn bia và có hai loạt lẻ thì xếp loại Đạt. Khi tắt tùy chọn,
 xếp loại dựa trên số bia trúng. Mỗi bia có dải các viên đã bắn căn trái, phía trên ảnh bia: trúng màu xanh lá, trượt màu đỏ, đang chờ chấm màu xám. Trên dải đạn từng bia, viên lẻ có khung vàng; loạt từ hai viên có khung xanh blue. Số trên viên là số thứ tự chung của phát bắn để đối chiếu với Xem lại. Dải tự xuống hàng khi cần. Vùng dành cho toàn bộ đạn được chừa sẵn phía trên ngay từ đầu, nên ảnh bia giữ nguyên vị trí và kích thước khi có viên mới hoặc xuống hàng. Viền bia vẫn xanh khi trúng, đỏ khi chưa trúng. Viên lẻ được tính cho bia hiển thị tại thời điểm PC nhận phát bắn, kể cả bia đang gập hoặc đang chờ hiện. Khi nhiều bia cùng mở, dùng bia nhận diện trong ảnh để phân biệt. Mốc phân loạt dùng `shooting.burst_gap_seconds`. Khi đang bắn,
 chờ đủ khoảng này trước khi kết luận viên cuối là bắn lẻ; khi dừng bài thì chốt ngay.
@@ -232,6 +234,10 @@ hết số lần thử tối đa mà không có ACK thì chuyển ngay sang bia 
 chờ và số lần thử dùng `lora.ack_timeout_seconds` / `lora.max_attempts` (mặc định
 1 giây / 3 lần gửi tổng cộng). Trong lúc gửi, hai nút điều khiển bia, Cài đặt và
 BẮT ĐẦU tạm khóa; hai nút điều khiển bia cũng khóa khi bài bắn đang chạy.
+
+Nút **DỪNG BIA 8C** gửi riêng lệnh `@446#` qua LoRa, kể cả khi bài bắn
+đang chạy. Phần mềm chờ ACK theo cài đặt LoRa và tiếp tục cập nhật trạng thái
+bia từ phản hồi `@448#`.
 
 Nút CẤP ĐẠN đã gộp vào **BẮT ĐẦU**. Khi nhấn `BẮT ĐẦU`, ứng dụng gửi
 `0F016\n` cấp 16 viên cho súng ở mỗi bệ, lập lịch bài bắn và sau khoảng **300 ms**
