@@ -1,3 +1,7 @@
+# V69-101126 — Nhớ kênh LoRa đã chọn
+
+- Cài đặt hiển thị lại kênh LoRa đã lưu khi bấm ĐẶT, kể cả sau khi khởi động lại. Lần đầu dùng mặc định Kênh 1.
+
 # V68-101126 — Dừng riêng bia 8C và miễn trừ điểm viên cuối
 
 - Nút DỪNG BIA 8C gửi `@446#` qua LoRa trong và ngoài bài bắn.

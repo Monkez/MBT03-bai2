@@ -1,3 +1,8 @@
+## Nhớ kênh LoRa đã chọn — 2026-11-10
+
+- Cài đặt chọn sẵn shooting.control_channel từ cấu hình. Nếu chưa lưu, dùng Kênh 1. Nút ĐẶT lưu lựa chọn và là thao tác gửi cấu hình kênh E32.
+- 397 kiểm tra đạt. Kiểm tra Native Qt với COM giả lập qua các lần khởi động xác nhận nạp lần lượt Kênh 1, 2 và 3. Kiểm tra lại bằng mã đóng gói trong bản V69-101126 trên Desktop.
+
 ## Dừng riêng bia 8C và miễn trừ điểm viên cuối — 2026-11-10
 
 - Nút stop_8c_btn gửi @446# qua hàng đợi LoRa trong và ngoài bài bắn. Theo dõi 8C vẫn dựa trên @448#. Khôi phục tên close_target_btn để form mới nạp được.

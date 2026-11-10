@@ -163,6 +163,11 @@ class TimingUiTests(TimingFixture, unittest.TestCase):
         saved = json.loads(self.path.read_text(encoding="utf-8"))["shooting"]
         self.assertEqual(saved["control_channel"], 3)
         self.assertNotIn("target_times", saved)
+        with patch.object(cf, "APP_CONFIG", cf.load_app_config(self.path)):
+            reopened = SettingWindow(lora_controller=lora)
+            self.addCleanup(reopened.reject)
+            self.assertEqual(reopened.channel_combo.currentData(), 3)
+        self.assertEqual(lora.request_connection.call_count, 2)
 
     def test_pressing_lora_apply_in_no_lora_mode_shows_yellow_notice(self):
         lora = MagicMock(port_name=None, connection_error="")
@@ -199,7 +204,7 @@ class TimingUiTests(TimingFixture, unittest.TestCase):
     def test_general_accept_saves_timing_without_saving_unapplied_channel(self):
         save_control_channel(2)
         dialog = self.dialog()
-        self.assertEqual(dialog.channel_combo.currentData(), 1)
+        self.assertEqual(dialog.channel_combo.currentData(), 2)
         self.assertEqual([dialog.channel_combo.itemText(i) for i in range(3)],
                          ["Kênh 1", "Kênh 2", "Kênh 3"])
         for pair, values in zip(dialog.target_time_inputs, TIMES):
@@ -210,7 +215,7 @@ class TimingUiTests(TimingFixture, unittest.TestCase):
         self.assertEqual(dialog.result(), dialog.Accepted, dialog.timing_error_label.text())
         reopened = self.dialog()
         self.assertEqual(reopened._target_time_values(), TIMES)
-        self.assertEqual(reopened.channel_combo.currentData(), 1)
+        self.assertEqual(reopened.channel_combo.currentData(), 2)
         saved = json.loads(self.path.read_text(encoding="utf-8"))["shooting"]
         self.assertEqual(saved["control_channel"], 2)
         self.assertFalse(hasattr(dialog, "monkezusbcamera"))
